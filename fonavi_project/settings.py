@@ -37,7 +37,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    # tu app
+    'autenticacion',
 ]
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -51,13 +55,22 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'fonavi_project.urls'
 
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [ BASE_DIR / 'static' ]
+
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [ BASE_DIR / 'templates' ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
+                'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
@@ -74,10 +87,17 @@ WSGI_APPLICATION = 'fonavi_project.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE':   'django.db.backends.mysql',
+        'NAME':     'fonavi_db',
+        'USER':     'root',
+        'PASSWORD': 'fernando',
+        'HOST':     'localhost',
+        'PORT':     '3306',
     }
 }
+
+
+
 
 
 # Password validation
@@ -120,3 +140,25 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# *** al final de settings.py ***
+
+# Autenticación personalizada
+AUTHENTICATION_BACKENDS = [
+    'autenticacion.backend.UsuariosBackend',  
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = '/admin/'
+
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [ BASE_DIR / 'static' ]
+
+
+
+INSTALLED_APPS += ['widget_tweaks']
+
+TEMPLATES[0]['DIRS'] = [ BASE_DIR / 'templates' ]
+

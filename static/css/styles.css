@@ -1,0 +1,80 @@
+/* Reset y tipografía */
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Fondo neutro para centrar el panel */
+.login-bg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: #f0f2f5;
+}
+
+/* Panel de login */
+.login-panel {
+  width: 100%;
+  max-width: 360px;
+  background: #ffffff;
+  padding: 2.5rem 2rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* Título */
+.login-panel h2 {
+  font-weight: 600;
+  color: #333;
+}
+
+/* Inputs */
+.input-group {
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+.input-group-text {
+  background: #f7f9fc;
+  border: none;
+  color: #6c757d;
+  padding: 0.75rem;
+}
+.form-control {
+  border: none;
+  padding: 0.75rem;
+  box-shadow: none;
+}
+.form-control:focus {
+  outline: none;
+  box-shadow: inset 0 0 0 2px #4e73df;
+}
+
+/* Toggle password icon */
+.toggle-password {
+  cursor: pointer;
+}
+
+/* Enlace recuperación */
+.login-panel a.small {
+  color: #6c757d;
+  text-decoration: none;
+}
+.login-panel a.small:hover {
+  text-decoration: underline;
+}
+
+/* Botón */
+.btn-primary {
+  background-color: #4e73df;
+  border: none;
+  padding: 0.75rem;
+  font-weight: 500;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+.btn-primary:hover {
+  background-color: #2e59d9;
+}
