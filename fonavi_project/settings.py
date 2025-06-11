@@ -9,6 +9,8 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
+import pymysql
+pymysql.install_as_MySQLdb()
 
 from pathlib import Path
 
@@ -90,7 +92,7 @@ DATABASES = {
         'ENGINE':   'django.db.backends.mysql',
         'NAME':     'fonavi_db',
         'USER':     'root',
-        'PASSWORD': 'fernando',
+        'PASSWORD': 'g4m3r0n3',
         'HOST':     'localhost',
         'PORT':     '3306',
     }
@@ -151,7 +153,7 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = '/admin/'
+LOGIN_REDIRECT_URL = '/menu/'
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [ BASE_DIR / 'static' ]

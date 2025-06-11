@@ -1,0 +1,40 @@
+<h2>Empleados</h2>
+<table border="1">
+    <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Apellido</th>
+        <th>DNI</th>
+        <th>CUIL</th>
+        <th>Número de Cuenta</th>
+        <th>Situación</th>
+        <th>Estado</th>
+        <th>Fecha Ingreso</th>
+        <th>Antigüedad</th>
+        <th>Fecha Salida</th>
+    </tr>
+    {% for empleado in empleados %}
+    <tr>
+        <td>{{ empleado.id_empleado }}</td>
+        <td>{{ empleado.nombre }}</td>
+        <td>{{ empleado.apellido }}</td>
+        <td>{{ empleado.dni }}</td>
+        <td>{{ empleado.cuil }}</td>
+        <td>{{ empleado.numero_cuenta }}</td>
+        <td>
+            {% if empleado.situacion == 1 %}Activo
+            {% elif empleado.situacion == 2 %}Inactivo
+            {% else %}{{ empleado.situacion }}{% endif %}
+        </td>
+        <td>
+            {% if empleado.estado == 1 %}En planta
+            {% elif empleado.estado == 2 %}Baja
+            {% else %}{{ empleado.estado }}{% endif %}
+        </td>
+        <td>{{ empleado.fecha_ingreso }}</td>
+        <td>{{ empleado.antiguedad }}</td>
+        <td>{{ empleado.fecha_salida }}</td>
+    </tr>
+    {% endfor %}
+</table>
+<a href="/listados/">Volver a Listados</a>

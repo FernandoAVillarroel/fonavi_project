@@ -1,0 +1,14 @@
+<h2>Oficinas</h2>
+<table border="1">
+    <tr>
+        <th>ID Oficina</th>
+        <th>Nombre</th>
+    </tr>
+    {% for oficina in oficinas %}
+    <tr>
+        <td>{{ oficina.id_oficina }}</td>
+        <td>{{ oficina.nombre }}</td>
+    </tr>
+    {% endfor %}
+</table>
+<a href="/listados/">Volver a Listados</a>
