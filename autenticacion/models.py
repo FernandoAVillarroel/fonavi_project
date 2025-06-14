@@ -11,3 +11,4 @@ class Usuarios(models.Model):
         managed  = False      # Django NO creará/alterará esta tabla
         db_table = 'usuarios' # nombre exacto de tu tabla en MySQL
 
+

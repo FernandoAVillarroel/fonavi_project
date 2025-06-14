@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>{% if pre_form.instance.pk %}Editar{% else %}Nueva{% endif %} Liquidación</h1>
+<form method="post" class="row g-3">
+  {% csrf_token %}
+  <div class="col-md-6">
+    <fieldset class="border p-3">
+      <legend class="w-auto">Preliquidación</legend>
+      {{ pre_form.as_p }}
+    </fieldset>
+  </div>
+  <div class="col-md-6">
+    <fieldset class="border p-3">
+      <legend class="w-auto">Liquidación</legend>
+      {{ liq_form.as_p }}
+    </fieldset>
+  </div>
+  <div class="col-12">
+    <button type="submit" class="btn btn-success">Guardar</button>
+  </div>
+</form>
+{% endblock %}
