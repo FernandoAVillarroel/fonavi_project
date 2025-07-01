@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -28,14 +29,18 @@ INSTALLED_APPS = [
 
     # Tus apps
     'autenticacion',
-    'empleados',
+    'empleados.apps.EmpleadosConfig',
     'widget_tweaks',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+
+    # LocaleMiddleware debe ir antes de CommonMiddleware
+    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
+
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -84,10 +89,27 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+# Internationalización / Localización
 USE_I18N = True
-USE_TZ = True
+USE_L10N = True
+USE_TZ   = True
+
+# Idioma por defecto a español
+LANGUAGE_CODE = 'es'
+
+# Solo español en la interfaz
+LANGUAGES = [
+    ('es', 'Español'),
+]
+
+# Ruta para archivos de traducción de tus propias apps (opcional)
+LOCALE_PATHS = [
+    os.path.join(BASE_DIR, 'locale'),
+]
+
+TIME_ZONE = 'America/Argentina/Cordoba'
+
+
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [ BASE_DIR / 'static' ]
@@ -100,5 +122,4 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = '/liquidaciones/'
-
+LOGIN_REDIRECT_URL = '/administracion/'
