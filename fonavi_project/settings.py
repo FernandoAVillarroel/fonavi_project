@@ -72,7 +72,7 @@ DATABASES = {
         'ENGINE':   'django.db.backends.mysql',
         'NAME':     'fonavi_db',
         'USER':     'root',
-        'PASSWORD': 'fernando',
+        'PASSWORD': 'root',
         'HOST':     'localhost',
         'PORT':     '3306',
         'OPTIONS': {
@@ -121,5 +121,6 @@ AUTHENTICATION_BACKENDS = [
     'autenticacion.backend.UsuariosBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
-LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = '/administracion/'
+LOGIN_URL = '/login/'  # A dónde redirigir si no está autenticado
+LOGIN_REDIRECT_URL = '/dashboard/'  # A dónde ir después del login exitoso
+LOGOUT_REDIRECT_URL = '/login/'  # A dónde ir después del logout

@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}{{ accion }} Categoría{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>{{ accion }} Categoría</h2>
+    <form method="post" novalidate>
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        <div class="mb-3">
+            {{ form.nombre.label_tag }}
+            {{ form.nombre }}
+            {{ form.nombre.errors }}
+        </div>
+        <div class="mb-3">
+            {{ form.nivel.label_tag }}
+            {{ form.nivel }}
+            {{ form.nivel.errors }}
+        </div>
+        <!-- Repetí para los demás campos o podés hacer un loop -->
+        <button type="submit" class="btn btn-success">Guardar</button>
+        <a href="{% url 'listar_categorias' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

@@ -14,26 +14,26 @@ class Categoria(models.Model):
         blank=True,       
     )
 
-    sup1       = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    tipo_sup1  = models.IntegerField(db_column='tipo_sup1', null=True, blank=True)
+    sup1       = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, db_column='supl1')
+    tipo_sup1  = models.IntegerField(db_column='tipo_supl1', null=True, blank=True)
 
-    sup2       = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    tipo_sup2  = models.IntegerField(db_column='tipo_sup2', null=True, blank=True)
+    sup2       = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, db_column='supl2')
+    tipo_sup2  = models.IntegerField(db_column='tipo_supl2', null=True, blank=True)
 
-    sup3       = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    tipo_sup3  = models.IntegerField(db_column='tipo_sup3', null=True, blank=True)
+    sup3       = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, db_column='supl3')
+    tipo_sup3  = models.IntegerField(db_column='tipo_supl3', null=True, blank=True)
 
-    sup4       = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    tipo_sup4  = models.IntegerField(db_column='tipo_sup4', null=True, blank=True)
+    sup4       = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, db_column='supl4')
+    tipo_sup4  = models.IntegerField(db_column='tipo_supl4', null=True, blank=True)
 
-    sup6       = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    tipo_sup6  = models.IntegerField(db_column='tipo_sup6', null=True, blank=True)
+    sup6       = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, db_column='supl6')
+    tipo_sup6  = models.IntegerField(db_column='tipo_supl6', null=True, blank=True)
 
-    sup8       = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    tipo_sup8  = models.IntegerField(db_column='tipo_sup8', null=True, blank=True)
+    sup8       = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, db_column='supl8')
+    tipo_sup8  = models.IntegerField(db_column='tipo_supl8', null=True, blank=True)
 
-    sup12      = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    tipo_sup12 = models.IntegerField(db_column='tipo_sup12', null=True, blank=True)
+    sup12      = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, db_column='supl12')
+    tipo_sup12 = models.IntegerField(db_column='tipo_supl12', null=True, blank=True,)
 
     def __str__(self):
         return self.nombre
@@ -61,7 +61,7 @@ class NivelBasico(models.Model):
     nivel = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        db_column="monto",          
+        db_column="nivel",          
         verbose_name="Monto",        
         unique=True,
     )
@@ -83,15 +83,15 @@ class NivelBasico(models.Model):
 
 class Titulo(models.Model):
     id_titulo = models.AutoField(primary_key=True)
-    titulo_completo = models.CharField(max_length=100, db_column='titulo_completo')
-    tipo = models.ForeignKey('TipoTitulo', on_delete=models.PROTECT, db_column='id_tipo')
+    titulo_completo = models.CharField(max_length=100, db_column='porcentaje')
+    tipo = models.ForeignKey('TipoTitulo', on_delete=models.PROTECT, db_column='nombre')
 
     def __str__(self):
         return self.titulo_completo
 
     class Meta:
         db_table = 'titulos'
-        managed = False
+        managed = True
 
 
 class TipoTitulo(models.Model):
@@ -104,7 +104,7 @@ class TipoTitulo(models.Model):
 
     class Meta:
         db_table = 'tipo_titulos'
-        managed = False
+        managed = True
         
 
 

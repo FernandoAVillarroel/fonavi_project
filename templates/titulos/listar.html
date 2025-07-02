@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}Títulos{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Listado de Títulos</h2>
+    <a class="btn btn-primary mb-3" href="{% url 'crear_titulo' %}">Agregar nuevo título</a>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Porcentaje</th>
+                <th>Fecha Resolución</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for titulo in titulos %}
+            <tr>
+                <td>{{ titulo.nombre }}</td>
+                <td>{{ titulo.porcentaje }}%</td>
+                <td>{{ titulo.fecha_resolucion }}</td>
+                <td>
+                    <a class="btn btn-sm btn-warning" href="{% url 'editar_titulo' titulo.pk %}">Editar</a>
+                    <a class="btn btn-sm btn-danger" href="{% url 'eliminar_titulo' titulo.pk %}">Eliminar</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4">No hay títulos cargados.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
