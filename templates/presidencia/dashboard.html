@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>Administrador del IPVU</h1>
+
+  <form method="get">
+    <label>Área:
+      <select name="area" onchange="this.form.submit()">
+        {% for a in areas %}
+          <option value="{{ a }}" {% if a == area_sel %}selected{% endif %}>{{ a }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label>Mes:
+      <select name="mes" onchange="this.form.submit()">
+        {% for m,a in periodos %}
+          <option value="{{ m }}" {% if m|stringformat:"s" == mes_sel|stringformat:"s" %}selected{% endif %}>{{ m }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label>Año:
+      <select name="año" onchange="this.form.submit()">
+        {% for m,a in periodos %}
+          <option value="{{ a }}" {% if a|stringformat:"s" == año_sel|stringformat:"s" %}selected{% endif %}>{{ a }}</option>
+        {% endfor %}
+      </select>
+    </label>
+  </form>
+
+  <h2>ABM</h2>
+<ul>
+  <li><a href="{% url 'admin:empleados_empleado_changelist' %}">Empleados</a></li>
+  <li><a href="{% url 'admin:empleados_calificacion_changelist' %}">Calificaciones</a></li>
+  <li><a href="{% url 'admin:empleados_categoria_changelist' %}">Categorías</a></li>
+  <li><a href="{% url 'admin:empleados_oficiojudicial_changelist' %}">Oficios Judiciales</a></li>
+  <li><a href="{% url 'admin:empleados_nivelbasico_changelist' %}">Niveles Básicos</a></li>
+  <li><a href="{% url 'admin:empleados_oficina_changelist' %}">Oficinas</a></li>
+  <li><a href="{% url 'admin:empleados_tipotitulo_changelist' %}">Tipo Títulos</a></li>
+  <li><a href="{% url 'admin:empleados_titulo_changelist' %}">Títulos</a></li>
+</ul>
+
+
+
+  <h2>Novedades Mensuales</h2>
+  <table border="1" cellpadding="4">
+    <thead>
+      <tr><th>Tipo</th><th>Detalle</th></tr>
+    </thead>
+    <tbody>
+      <tr><td colspan="2">— Sin novedades —</td></tr>
+    </tbody>
+  </table>
+
+  <form action="{% url 'preliquidacion-generar' %}" method="get" style="display:inline">
+    <input type="hidden" name="area"  value="{{ area_sel }}">
+    <input type="hidden" name="mes"   value="{{ mes_sel }}">
+    <input type="hidden" name="año"   value="{{ año_sel }}">
+    <button type="submit">Iniciar Preliquidación</button>
+  </form>
+
+  <form action="{% url 'liquidacion-confirmar' %}" method="get" style="display:inline">
+    <input type="hidden" name="area"  value="{{ area_sel }}">
+    <input type="hidden" name="mes"   value="{{ mes_sel }}">
+    <input type="hidden" name="año"   value="{{ año_sel }}">
+    <button type="submit">Confirmar Liquidación</button>
+  </form>
+{% endblock %}

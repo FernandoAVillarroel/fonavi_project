@@ -167,9 +167,11 @@ from datetime import date
 from django.contrib import admin, messages
 from django.urls import path, reverse
 from django.shortcuts import redirect
+from datetime import date
+from decimal import Decimal
+from django.apps import apps
 
-from .models import Empleado, Preliquidacion
-
+from .models import Preliquidacion, Empleado
 
 @admin.register(Preliquidacion)
 class PreliquidacionAdmin(admin.ModelAdmin):
@@ -184,7 +186,7 @@ class PreliquidacionAdmin(admin.ModelAdmin):
         'bruto',
         'jubilacion',
         'obra_social',
-        'oficio_descuento',   # <-- ahora sale también en la lista
+        'oficio_judicial',   # ← columna nueva
         'liquido',
     )
     list_filter   = ('categoria', 'situacion', 'año', 'mes')
@@ -227,8 +229,6 @@ class PreliquidacionAdmin(admin.ModelAdmin):
                 empleado=emp, año=año, mes=mes,
                 defaults=defaults
             )
-            # Aquí forzamos el save() para que se vuelva a ejecutar
-            # tu lógica en save() y aplique el descuento en liquido
             pl.save()
 
         self.message_user(
@@ -246,6 +246,20 @@ class PreliquidacionAdmin(admin.ModelAdmin):
     def categoria_codigo(self, obj):
         return f"CAT-{obj.categoria.id_categoria:02d}"
 
+    def oficio_judicial(self, obj):
+        OficioJudicial = apps.get_model('empleados', 'OficioJudicial')
+        try:
+            oj = OficioJudicial.objects.get(
+                anio=obj.año,
+                mes=obj.mes,
+                empleado=obj.empleado
+            )
+        except OficioJudicial.DoesNotExist:
+            return '–'
+        if oj.tipo == OficioJudicial.TIPO_MONTO:
+            return f"${oj.monto_descontar:.2f}"
+        return f"{oj.porcentaje_descontar:.2f}%"
+    oficio_judicial.short_description = 'Oficio Judicial'
 
 
 @admin.register(Liquidacion)
@@ -258,7 +272,7 @@ class LiquidacionAdmin(admin.ModelAdmin):
         'calificacion', 'antiguedad',
         'supl1', 'supl2', 'supl3', 'supl4', 'supl6', 'supl8', 'supl12',
         'bruto', 'jubilacion', 'obra_social',
-        'oficio_descuento',   # <-- nuevo
+        'oficio_judicial',   # <-- nuevo
         'liquido'
     ]
     list_filter   = ['año', 'mes', 'categoria_nombre', 'situacion', 'oficina_nombre']
@@ -297,7 +311,7 @@ from .models import OficioJudicial
 
 @admin.register(OficioJudicial)
 class OficioJudicialAdmin(admin.ModelAdmin):
-    list_display = ('empleado','anio','mes','monto_descontar')
+    list_display = ('empleado','anio','mes','monto_descontar','porcentaje_descontar','tipo')
     # …
 
     def save_model(self, request, obj, form, change):
