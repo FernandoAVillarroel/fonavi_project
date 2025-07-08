@@ -130,48 +130,18 @@ class EmpleadoAdmin(admin.ModelAdmin):
     )
 
 
-from datetime import date
-from django.contrib import admin, messages
-from django.urls import path
-from django.shortcuts import redirect
-
-from empleados.models import Empleado, Preliquidacion
-
 # empleados/admin.py
 
 from datetime import date
 from decimal import Decimal
-from django.contrib import admin, messages
-from django.urls import path, reverse
-from django.shortcuts import redirect
-
-from empleados.models import Empleado, Preliquidacion
-
-
-from .models import Empleado, Preliquidacion, Liquidacion
-
-
-from decimal import Decimal
-from datetime import date
 
 from django.contrib import admin, messages
-from django.urls import path, reverse
 from django.shortcuts import redirect
-
-from .models import Empleado, Preliquidacion
-
-
-from decimal import Decimal
-from datetime import date
-
-from django.contrib import admin, messages
 from django.urls import path, reverse
-from django.shortcuts import redirect
-from datetime import date
-from decimal import Decimal
 from django.apps import apps
 
-from .models import Preliquidacion, Empleado
+from .models import Empleado, Preliquidacion, Calificacion
+
 
 @admin.register(Preliquidacion)
 class PreliquidacionAdmin(admin.ModelAdmin):
@@ -186,12 +156,11 @@ class PreliquidacionAdmin(admin.ModelAdmin):
         'bruto',
         'jubilacion',
         'obra_social',
-        'oficio_judicial',   # ← columna nueva
+        'oficio_judicial',
         'liquido',
     )
     list_filter   = ('categoria', 'situacion', 'año', 'mes')
     search_fields = ('empleado__nombre', 'empleado__apellido', 'empleado__dni')
-
     change_list_template = "admin/empleados/preliquidacion/change_list.html"
 
     def get_urls(self):
@@ -207,29 +176,45 @@ class PreliquidacionAdmin(admin.ModelAdmin):
 
     def generar_preliquidacion(self, request):
         hoy       = date.today()
-        año       = hoy.year
-        mes       = hoy.month
+        año, mes  = hoy.year, hoy.month
         empleados = Empleado.objects.all()
         total     = empleados.count()
 
         for emp in empleados:
+            # 1) obtener o crear calificación para este mes
+            cal_obj, created_cal = Calificacion.objects.get_or_create(
+                empleado=emp,
+                año=año,
+                mes=mes,
+                defaults={
+                    'calificacion': Decimal('100.00'),
+                    'id_usuario':   request.user,
+                }
+            )
+
+            # 2) determinar valores base
+            cat        = emp.categoria
+            nivel      = cat.nivel if cat and cat.nivel else None
+            basico_val = nivel.nivel if nivel else Decimal('0')
+
             defaults = {
-                'categoria'       : emp.categoria,
-                'oficina'         : emp.oficina,
-                'titulo'          : emp.titulo,
-                'nivel'           : emp.categoria.nivel,
-                'basico'          : emp.categoria.nivel.nivel or Decimal('0'),
-                'calificacion'    : Decimal('100'),
-                'situacion'       : emp.situacion,
-                'categoria_nombre': emp.categoria.nombre if emp.categoria else '',
-                'oficina_nombre'  : emp.oficina.nombre   if emp.oficina   else '',
-                'titulo_completo' : emp.titulo.titulo_completo if emp.titulo else '',
+                'categoria'        : cat,
+                'oficina'          : emp.oficina,
+                'titulo'           : emp.titulo,
+                'nivel'            : nivel,
+                'basico'           : basico_val,
+                'calificacion'     : cal_obj.calificacion,
+                'situacion'        : emp.situacion,
+                'categoria_nombre' : cat.nombre if cat else '',
+                'oficina_nombre'   : emp.oficina.nombre if emp.oficina else '',
+                'titulo_completo'  : emp.titulo.titulo_completo if emp.titulo else '',
             }
+
             pl, created = Preliquidacion.objects.update_or_create(
                 empleado=emp, año=año, mes=mes,
                 defaults=defaults
             )
-            pl.save()
+            pl.save()  # dispara recálculo
 
         self.message_user(
             request,

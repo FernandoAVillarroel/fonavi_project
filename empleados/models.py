@@ -139,9 +139,9 @@ class Empleado(models.Model):
 
 
 from decimal import Decimal
+from datetime import date
 from django.db import models
 from django.apps import apps
-
 
 class Preliquidacion(models.Model):
     id_preliquidacion = models.AutoField(primary_key=True)
@@ -194,17 +194,16 @@ class Preliquidacion(models.Model):
         blank=True
     )
 
-    # Volcado "plano" de nombres de las FKs
+    # Volcado “plano” de nombres de las FKs
     categoria_nombre  = models.TextField(null=True, blank=True)
     oficina_nombre    = models.TextField(null=True, blank=True)
     titulo_completo   = models.TextField(null=True, blank=True)
 
     calificacion      = models.DecimalField(max_digits=5, decimal_places=2)
-    antiguedad        = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
+    antiguedad        = models.PositiveSmallIntegerField(
         null=True,
-        blank=True
+        blank=True,
+        help_text="Años de servicio"
     )
 
     # Suplementos calculados
@@ -216,32 +215,30 @@ class Preliquidacion(models.Model):
     supl8   = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     supl12  = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
 
-    bruto      = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
-    jubilacion = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
-    obra_social= models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    bruto       = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    jubilacion  = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    obra_social = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
 
-    # Campo para aplicar el descuento judicial, aparece antes de 'liquido'
     oficio_judicial = models.DecimalField(
-        max_digits=10, decimal_places=2,
+        max_digits=10,
+        decimal_places=2,
         default=Decimal('0.00'),
         verbose_name='Oficio Judicial',
         db_column='oficio_judicial',
     )
-    liquido = models.DecimalField(
-        max_digits=12, decimal_places=2,
-        null=True, blank=True
-    )
-
-    liquido  = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    liquido = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
 
     def save(self, *args, **kwargs):
         # 1) Básico calificado
         bq = (self.basico * (self.calificacion / Decimal('100'))).quantize(Decimal('0.01'))
 
-        # 2) Antigüedad (2% anual sobre bq)
-        años = self.antiguedad or Decimal('0')
-        ant = (bq * Decimal('0.02') * años).quantize(Decimal('0.01'))
-        self.antiguedad = ant
+        # 2) Antigüedad: años enteros de servicio
+        ingreso = getattr(self.empleado, 'fecha_ingreso', None)
+        if ingreso:
+            años_servicio = (date.today() - ingreso).days // 365
+        else:
+            años_servicio = 0
+        self.antiguedad = años_servicio
 
         # 3) Bonificación por título
         tipo_str = str(self.titulo.tipo) if (self.titulo and self.titulo.tipo) else None
@@ -254,16 +251,25 @@ class Preliquidacion(models.Model):
         bonif = (bq * pct_tit).quantize(Decimal('0.01'))
 
         # 4) Subtotal
-        subtotal = (bq + ant + bonif).quantize(Decimal('0.01'))
+        subtotal = (bq + bonif + (bq * Decimal('0.02') * años_servicio)).quantize(Decimal('0.01'))
 
-        # 5) Suplementos
-        self.supl1  = (subtotal * (self.categoria.sup1  or 0)).quantize(Decimal('0.01'))
-        self.supl2  = (subtotal * (self.categoria.sup2  or 0)).quantize(Decimal('0.01'))
-        self.supl3  = (subtotal * (self.categoria.sup3  or 0)).quantize(Decimal('0.01'))
-        self.supl4  = (subtotal * (self.categoria.sup4  or 0)).quantize(Decimal('0.01'))
-        self.supl6  = (subtotal * (self.categoria.sup6  or 0)).quantize(Decimal('0.01'))
-        self.supl8  = (subtotal * (self.categoria.sup8  or 0)).quantize(Decimal('0.01'))
-        self.supl12 = (self.categoria.sup12 or Decimal('0')).quantize(Decimal('0.01'))
+        # 5) Suplementos (divididos por 100 si los tenías como %)
+        sup = self.categoria
+        p1  = (sup.sup1  or Decimal('0')) / Decimal('100')
+        p2  = (sup.sup2  or Decimal('0')) / Decimal('100')
+        p3  = (sup.sup3  or Decimal('0')) / Decimal('100')
+        p4  = (sup.sup4  or Decimal('0')) / Decimal('100')
+        p6  = (sup.sup6  or Decimal('0')) / Decimal('100')
+        p8  = (sup.sup8  or Decimal('0')) / Decimal('100')
+        p12 = (sup.sup12 or Decimal('0')) / Decimal('100')
+
+        self.supl1  = (subtotal * p1 ).quantize(Decimal('0.01'))
+        self.supl2  = (subtotal * p2 ).quantize(Decimal('0.01'))
+        self.supl3  = (subtotal * p3 ).quantize(Decimal('0.01'))
+        self.supl4  = (subtotal * p4 ).quantize(Decimal('0.01'))
+        self.supl6  = (subtotal * p6 ).quantize(Decimal('0.01'))
+        self.supl8  = (subtotal * p8 ).quantize(Decimal('0.01'))
+        self.supl12 = (subtotal * p12).quantize(Decimal('0.01'))
 
         # 6) Bruto
         total_supl = sum(filter(None, [
@@ -299,9 +305,9 @@ class Preliquidacion(models.Model):
 
         # 10) Asignar oficio_judicial y líquido final
         self.oficio_judicial = descuento
-        self.liquido = (neto - descuento).quantize(Decimal('0.01'))
+        self.liquido         = (neto - descuento).quantize(Decimal('0.01'))
 
-        # 11) Volcar nombres de FK
+        # 11) Volcar nombres “planos” de las FKs
         self.categoria_nombre = self.categoria.nombre if self.categoria else None
         self.oficina_nombre   = self.oficina.nombre   if self.oficina   else None
         self.titulo_completo  = self.titulo.titulo_completo if self.titulo else None
@@ -315,6 +321,7 @@ class Preliquidacion(models.Model):
         db_table = 'preliquidacion'
         verbose_name = "Preliquidación"
         verbose_name_plural = "Preliquidaciones"
+
 
 
 
@@ -490,6 +497,7 @@ class Calificacion(models.Model):
 
     class Meta:
         db_table = 'calificacion'
+        unique_together = ('empleado', 'año', 'mes')
 
     def __str__(self):
         return f"{self.empleado} – {self.año}/{self.mes}: {self.calificacion}"

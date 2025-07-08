@@ -2,15 +2,6 @@
 {% block content %}
   <h1>Administrador del IPVU</h1>
 
-  <form method="get">
-    <label>Área:
-      <select name="area" onchange="this.form.submit()">
-        {% for a in areas %}
-          <option value="{{ a }}" {% if a == area_sel %}selected{% endif %}>{{ a }}</option>
-        {% endfor %}
-      </select>
-    </label>
-
     <label>Mes:
       <select name="mes" onchange="this.form.submit()">
         {% for m,a in periodos %}
@@ -34,9 +25,7 @@
   <li><a href="{% url 'admin:empleados_calificacion_changelist' %}">Calificaciones</a></li>
   <li><a href="{% url 'admin:empleados_categoria_changelist' %}">Categorías</a></li>
   <li><a href="{% url 'admin:empleados_oficiojudicial_changelist' %}">Oficios Judiciales</a></li>
-  <li><a href="{% url 'admin:empleados_nivelbasico_changelist' %}">Niveles Básicos</a></li>
   <li><a href="{% url 'admin:empleados_oficina_changelist' %}">Oficinas</a></li>
-  <li><a href="{% url 'admin:empleados_tipotitulo_changelist' %}">Tipo Títulos</a></li>
   <li><a href="{% url 'admin:empleados_titulo_changelist' %}">Títulos</a></li>
 </ul>
 
