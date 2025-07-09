@@ -14,7 +14,7 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
 </head>
-<body>
+<body class="dashboard">
     <!-- Header -->
     <header class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
         <div class="container-fluid">
@@ -100,174 +100,106 @@
 
         <div class="row g-4 mb-5">
             <!-- Liquidación -->
-            <div class="col-lg-6 col-xl-4">
-                <div class="card action-category h-100">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="card-title mb-0">
-                            <i class="bi bi-briefcase me-2"></i>
-                            Liquidación
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-grid gap-2">
-                            <button type="button" class="btn btn-outline-primary"            
-                                <i class="bi bi-search me-2"></i>
-                                Preliquidar Sueldos
-                            </button>
-                            <button type="button" class="btn btn-outline-primary" 
-                                <i class="bi bi-check-lg me-2"></i>
-                                Liquidar Sueldos
-                            </button>
-                            <button type="button" class="btn btn-outline-primary" 
-                                <i class="bi bi-arrow-repeat me-2"></i>
-                                Recalcular Liquidaciones
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <div class="col-md-6">
+              <div class="card action-category h-100">
+                 <div class="card-header bg-primary text-white">
+                      <h5 class="card-title mb-0">
+                         <i class="bi bi-briefcase me-2"></i>
+                           Liquidación
+                     </h5>
+                 </div>
+                 <div class="card-body">
+                     <div class="d-grid gap-2">
+                          <button type="button" class="btn btn-outline-primary">
+                              <span><i class="bi bi-search me-2"></i> Cargar Calificaciones</span>
+                         </button>
+                          <button type="button" class="btn btn-outline-primary">
+                               <span><i class="bi bi-check-lg me-2"></i> Cargar Oficios Judiciales</span>
+                          </button>
+                         <button type="button" class="btn btn-outline-primary">
+                               <span><i class="bi bi-arrow-repeat me-2"></i> Liquidar FONAVI</span>
+                         </button>
+                     </div>
+                 </div>
+             </div>
+          </div>
+            
+   
 
-            <!-- Calificación -->
-            <div class="col-lg-6 col-xl-4">
+
+
+            <!-- Consultas -->
+            <div class="col-md-6">
                 <div class="card action-category h-100">
                     <div class="card-header bg-success text-white">
                         <h5 class="card-title mb-0">
-                            <i class="bi bi-star me-2"></i>
-                            Calificación
+                            <i class="bi bi-search me-2"></i>
+                            Consultas
                         </h5>
                     </div>
-                    <div class="card-body d-flex align-items-center justify-content-center">
-                        <button type="button" class="btn btn-success btn-lg w-100" 
-                            <i class="bi bi-star-fill me-2"></i>
-                            Calificación Mensual
-                        </button>
-                    </div>
+                    <div class="card-body"> 
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-outline-success">
+                                <i class="bi bi-file-earmark-text me-2"></i>
+                                Consultar Liquidaciones
+                            </button>
+                            <button type="button" class="btn btn-outline-success">
+                                <i class="bi bi-graph-up me-2"></i>
+                                Generar Pdf
+                            </button>       
+                            <button type="button" class="btn btn-outline-success">
+                                <i class="bi bi-file-earmark-spreadsheet me-2"></i>
+                                Generar y enviar Txt
+                            </button>   
+                        </div>
+                    </div>          
                 </div>
             </div>
-
-            <!-- Administración -->
-            <div class="col-lg-6 col-xl-4">
+     
+        <!-- Reportes Section -->
+        <div class="row g-4 mb-5">
+            <div class="col-12">
                 <div class="card action-category h-100">
-                    <div class="card-header bg-warning text-dark">
+                    <div class="card-header bg-info text-white">
                         <h5 class="card-title mb-0">
-                            <i class="bi bi-gear me-2"></i>
+                            <i class="bi bi-file-earmark-text me-2"></i>
                             Administración
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div class="d-grid gap-2">
-                            <button type="button" class="btn btn-outline-warning" >
-                                <i class="bi bi-people me-2"></i>
-                                ABM Empleados
-                            </button>
-                            <button type="button" class="btn btn-outline-warning" >
-                                <i class="bi bi-lightbulb me-2"></i>
-                                ABM Titulos
-                            </button>
-                            <button type="button" class="btn btn-outline-warning" onclick="navigateTo('{% url 'listar_categorias' %}')">
-                                <i class="bi bi-tags me-2"></i>
-                                ABM Categorías
-                            </button>
-                            <button type="button" class="btn btn-outline-warning" >
-                                <i class="bi bi-building me-2"></i>
-                                ABM Centros de Costo
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Reportes Section -->
-        <div class="row g-4 mb-5">
-            <div class="col-12">
-                <div class="card action-category">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="card-title mb-0">
-                            <i class="bi bi-file-earmark-text me-2"></i>
-                            Reportes y Exportación
-                        </h5>
-                    </div>
-                    <div class="card-body">
                         <div class="row g-3">
-                            <div class="col-md-4">
-                                <button type="button" class="btn btn-outline-info w-100" 
+                            <div class="col-md-6">
+                                <button type="button" class="btn btn-outline-info w-100">
                                     <i class="bi bi-file-text me-2"></i>
                                     Reportes de Liquidación
                                 </button>
                             </div>
-                            <div class="col-md-4">
-                                <button type="button" class="btn btn-outline-info w-100" 
+                            <div class="col-md-6">
+                                <button type="button" class="btn btn-outline-info w-100">
                                     <i class="bi bi-receipt me-2"></i>
                                     Generar Recibos de Sueldo
                                 </button>
                             </div>
-                            <div class="col-md-4">
-                                <button type="button" class="btn btn-outline-info w-100" 
+                            <div class="col-md-6">
+                                <button type="button" class="btn btn-outline-info w-100">
                                     <i class="bi bi-download me-2"></i>
                                     Exportar Datos
                                 </button>
                             </div>
-                        </div>
+                            <div class="col-md-6">
+                                <button type="button" class="btn btn-outline-info w-100">
+                                    <i class="bi bi-gear me-2"></i>
+                                    Configuración de Sistema    
+                               </button>
+                            </div>
+                        </div> 
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Quick Access -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">
-                            <i class="bi bi-lightning me-2"></i>
-                            Acceso Rápido
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-2 col-sm-4 col-6">
-                                <a href="#" class="btn btn-outline-secondary w-100"> 
-                                    <i class="bi bi-calendar3 d-block mb-1"></i>
-                                    <small>Calendario</small>
-                                </a>
-                            </div>
-                            <div class="col-md-2 col-sm-4 col-6">
-                                <a href="#" class="btn btn-outline-secondary w-100">
-                                    <i class="bi bi-calculator d-block mb-1"></i>
-                                    <small>Calculadora</small>
-                                </a>
-                            </div>
-                            <div class="col-md-2 col-sm-4 col-6">
-                                <a href="#" class="btn btn-outline-secondary w-100">
-                                    <i class="bi bi-gear d-block mb-1"></i>
-                                    <small>Configuración</small>
-                                </a>
-                            </div>
-                            <div class="col-md-2 col-sm-4 col-6">
-                                <a href="#" class="btn btn-outline-secondary w-100">
-                                    <i class="bi bi-question-circle d-block mb-1"></i>
-                                    <small>Ayuda</small>
-                                </a>
-                            </div>
-                            <div class="col-md-2 col-sm-4 col-6">
-                                <a href="#" class="btn btn-outline-secondary w-100">
-                                    <i class="bi bi-shield-check d-block mb-1"></i>
-                                    <small>Backup</small>
-                                </a>
-                            </div>
-                            <div class="col-md-2 col-sm-4 col-6">
-                                <a href="#" class="btn btn-outline-secondary w-100">
-                                    <i class="bi bi-sliders d-block mb-1"></i>
-                                    <small>Avanzado</small>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
+        
+      
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
