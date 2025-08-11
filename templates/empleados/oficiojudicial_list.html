@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block content %}
+
+<style>
+  .oficios-wrap{padding:1.25rem;margin:1rem auto;max-width:1100px;background:#fff;border-radius:.75rem;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+  .oficios-header{text-align:center;margin-bottom:.75rem}
+  .oficios-title{font-size:1.6rem;font-weight:700;color:#004085}
+  .oficios-periodo{font-size:1rem;color:#007bff}
+  .oficios-filtros{display:grid;grid-template-columns:1.2fr .5fr .5fr .8fr .8fr auto;gap:.5rem;align-items:end;margin:.9rem 0}
+  .oficios-filtros label{font-weight:600;color:#343a40;margin-bottom:.2rem;font-size:.95rem}
+  .oficios-filtros input,.oficios-filtros select{padding:.45rem .6rem;border:1px solid #ced4da;border-radius:.5rem;font-size:.95rem}
+  .btn-primary{background:#007bff;border:none}.btn-primary:hover{background:#0069d9}
+  .btn-secondary{background:#6c757d;border:none}.btn-secondary:hover{background:#5a6268}
+  .btn-success{background:#20c997;border:none}.btn-success:hover{background:#17b187}
+  .table-responsive{border-radius:.75rem;overflow-x:auto}
+  .table thead th{background:#007bff;color:#fff}
+  .fade-in{opacity:0;transform:translateY(6px)}.fade-in.show{opacity:1;transform:translateY(0);transition:opacity .3s ease,transform .3s ease}
+  @media (max-width:720px){.oficios-wrap{padding:.8rem}.oficios-filtros{grid-template-columns:1fr 1fr}}
+</style>
+
+<div class="mb-3">
+  <a href="{% url 'presidencia_dashboard' %}" class="btn btn-secondary">← Volver</a>
+</div>
+
+<div class="oficios-wrap">
+  <div class="oficios-header">
+    <div class="oficios-title">Oficios judiciales de empleados</div>
+    <div class="oficios-periodo">Período: {{ f_mes|default:mes_actual }}/{{ f_anio|default:anio_actual }}</div>
+  </div>
+
+  <form method="get" class="oficios-filtros" id="filtrosForm">
+    <div>
+      <label for="empleado">Empleado</label>
+      <input type="text" name="empleado" id="empleado" value="{{ f_empleado }}" placeholder="Apellido, nombre, CUIL o DNI…">
+    </div>
+    <div>
+      <label for="anio">Año</label>
+      <input type="number" name="anio" id="anio" value="{{ f_anio|default:anio_actual }}" min="2000" max="2100">
+    </div>
+    <div>
+      <label for="mes">Mes</label>
+      <input type="number" name="mes" id="mes" value="{{ f_mes|default:mes_actual }}" min="1" max="12">
+    </div>
+    <div>
+      <label for="tipo">Tipo</label>
+      <select name="tipo" id="tipo">
+        <option value="">Todos</option>
+        <option value="1" {% if f_tipo == '1' %}selected{% endif %}>Monto</option>
+        <option value="2" {% if f_tipo == '2' %}selected{% endif %}>Porcentaje</option>
+      </select>
+    </div>
+    <div>
+      <label for="area">Área</label>
+      <select name="area" id="area">
+        <option value="">Todas</option>
+        {% for value in areas %}
+          <option value="{{ value }}" {% if f_area == value %}selected{% endif %}>{{ value }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-success" type="submit">Filtrar</button>
+      <a class="btn btn-secondary" href="{% url 'empleados:oficiojudicial-list' %}">Limpiar</a>
+    </div>
+  </form>
+
+  <div class="mb-2">
+    <a href="{% url 'empleados:oficiojudicial-create' %}?anio={{ f_anio|default:anio_actual }}&mes={{ f_mes|default:mes_actual }}" class="btn btn-success">
+      + Nuevo Oficio Judicial
+    </a>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-striped table-bordered align-middle">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Apellido</th>
+          <th>CUIL</th>
+          <th>DNI</th>
+          <th>Tipo</th>
+          <th>Monto ($)</th>
+          <th>%</th>
+          <th style="width:220px;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyOficios">
+        {% for row in rows %}
+        <tr class="fade-in">
+          <td>{{ row.nombre }}</td>
+          <td><b>{{ row.apellido }}</b></td>
+          <td>{{ row.cuil }}</td>
+          <td>{{ row.dni }}</td>
+          <td>{% if row.oj_tipo == 1 %}Monto{% elif row.oj_tipo == 2 %}Porcentaje{% else %}—{% endif %}</td>
+
+          <td>
+            {% if row.oj_id and row.oj_tipo == 1 %}
+              $ {{ row.oj_monto|floatformat:2|intcomma }}
+            {% else %}
+              —
+            {% endif %}
+          </td>
+          <td>
+            {% if row.oj_id and row.oj_tipo == 2 %}
+              {{ row.oj_porc|floatformat:2 }}%
+            {% else %}
+              —
+            {% endif %}
+          </td>
+
+          <td>
+            <div class="d-flex gap-2 justify-content-center">
+              {% if row.oj_id %}
+                <a class="btn btn-sm btn-secondary" href="{% url 'empleados:oficiojudicial-update' row.oj_id %}">Editar</a>
+                <form method="post" action="{% url 'empleados:oficiojudicial-delete' row.oj_id %}" onsubmit="return confirm('¿Eliminar este oficio judicial?');">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                </form>
+              {% else %}
+                <a class="btn btn-sm btn-primary"
+                   href="{% url 'empleados:oficiojudicial-create' %}?empleado={{ row.pk }}&anio={{ f_anio|default:anio_actual }}&mes={{ f_mes|default:mes_actual }}">
+                  Crear
+                </a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+          <tr><td colspan="8">No hay empleados activos para el filtro.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if is_paginated %}
+  <nav aria-label="paginacion">
+    <ul class="pagination justify-content-center">
+      {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.previous_page_number }}&empleado={{ f_empleado }}&anio={{ f_anio|default:anio_actual }}&mes={{ f_mes|default:mes_actual }}&tipo={{ f_tipo }}&area={{ f_area }}">Anterior</a>
+        </li>
+      {% endif %}
+      <li class="page-item disabled"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
+      {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.next_page_number }}&empleado={{ f_empleado }}&anio={{ f_anio|default:anio_actual }}&mes={{ f_mes|default:mes_actual }}&tipo={{ f_tipo }}&area={{ f_area }}">Siguiente</a>
+        </li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+</div>
+
+<script>
+  document.getElementById('area')?.addEventListener('change', ()=>document.getElementById('filtrosForm').submit());
+  document.getElementById('tipo')?.addEventListener('change', ()=>document.getElementById('filtrosForm').submit());
+
+  window.addEventListener('load', () => {
+    document.querySelectorAll('#tbodyOficios .fade-in').forEach((row, i) => {
+      setTimeout(() => row.classList.add('show'), 35 * i);
+    });
+  });
+</script>
+
+{% endblock %}

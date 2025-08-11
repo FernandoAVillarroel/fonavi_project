@@ -1,0 +1,80 @@
+{# templates/empleados/empleado_form.html #}
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block content %}
+  <h1>
+    {% if object %}Editar Empleado{% else %}Nuevo Empleado{% endif %}
+  </h1>
+
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="row gx-3 gy-3 mb-4">
+      <div class="col-md-6">
+        {{ form.nombre.label_tag }}
+        {{ form.nombre|add_class:"form-control" }}
+      </div>
+      <div class="col-md-6">
+        {{ form.apellido.label_tag }}
+        {{ form.apellido|add_class:"form-control" }}
+      </div>
+
+      <div class="col-md-4">
+        {{ form.dni.label_tag }}
+        {{ form.dni|add_class:"form-control" }}
+      </div>
+      <div class="col-md-4">
+        {{ form.cuil.label_tag }}
+        {{ form.cuil|add_class:"form-control" }}
+      </div>
+      <div class="col-md-4">
+        {{ form.numero_cuenta.label_tag }}
+        {{ form.numero_cuenta|add_class:"form-control" }}
+      </div>
+
+      <div class="col-md-4">
+        {{ form.situacion.label_tag }}
+        {{ form.situacion|add_class:"form-control" }}
+      </div>
+      <div class="col-md-4">
+        {{ form.estado.label_tag }}
+        {{ form.estado|add_class:"form-control" }}
+      </div>
+      <div class="col-md-4">
+        {{ form.fecha_ingreso.label_tag }}
+        {{ form.fecha_ingreso|add_class:"form-control" }}
+      </div>
+
+      <div class="col-md-6">
+        {{ form.area.label_tag }}
+        {{ form.area|add_class:"form-control" }}
+      </div>
+      <div class="col-md-6">
+        {{ form.categoria.label_tag }}
+        {{ form.categoria|add_class:"form-control" }}
+      </div>
+
+      <div class="col-md-6">
+        {{ form.oficina.label_tag }}
+        {{ form.oficina|add_class:"form-control" }}
+      </div>
+      <div class="col-md-6">
+        {{ form.nivel_basico.label_tag }}
+        {{ form.nivel_basico|add_class:"form-control" }}
+      </div>
+
+      <div class="col-md-6">
+        {{ form.titulo.label_tag }}
+        {{ form.titulo|add_class:"form-control" }}
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-success me-2">
+      {% if object %}Guardar cambios{% else %}Crear Empleado{% endif %}
+    </button>
+    <a href="{% url 'presidencia_dashboard' %}" class="btn btn-secondary">
+      Cancelar
+    </a>
+  </form>
+{% endblock %}

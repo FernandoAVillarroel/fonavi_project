@@ -1,0 +1,11 @@
+{# templates/empleados/empleado_confirm_delete.html #}
+{% extends "base.html" %}
+{% block content %}
+  <h1>Confirmar borrado</h1>
+  <p>¿Seguro que quieres borrar a {{ object.apellido }}, {{ object.nombre }}?</p>
+  <form method="post" class="d-inline">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Sí, borrar</button>
+  </form>
+  <a href="{% url 'presidencia_dashboard' %}" class="btn btn-secondary">Cancelar</a>
+{% endblock %}

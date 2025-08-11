@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block content %}
+
+<style>
+  .card-wrap{max-width:760px;margin:1rem auto;background:#fff;border-radius:.75rem;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+  .card-head{padding:1rem 1.25rem;border-bottom:1px solid #e9ecef}
+  .card-title{margin:0;font-weight:700;color:#004085;font-size:1.25rem}
+  .card-body{padding:1rem 1.25rem}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
+  .grid .full{grid-column:1 / -1}
+  .readonly-chip{display:inline-block;background:#e9f2ff;color:#0b5ed7;border-radius:999px;padding:.25rem .6rem;font-weight:600;font-size:.9rem}
+  .muted{color:#6c757d}
+</style>
+
+<div class="mb-3">
+  <a href="{% url 'empleados:oficiojudicial-list' %}" class="btn btn-secondary">← Volver</a>
+</div>
+
+<div class="card-wrap">
+  <div class="card-head">
+    <h1 class="card-title">
+      {% if modo == 'update' %}Editar{% else %}Nuevo{% endif %} oficio judicial
+    </h1>
+  </div>
+
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      {# Campos ocultos fijados por la view (empleado, anio, mes) #}
+      {{ form.empleado }} {{ form.anio }} {{ form.mes }}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="grid">
+
+        <div class="full">
+          <label class="form-label">Empleado</label><br>
+          <span class="readonly-chip">
+            {{ empleado_obj.apellido|default_if_none:"" }} {{ empleado_obj.nombre|default_if_none:"" }}
+          </span>
+        </div>
+
+        <div>
+          <label class="form-label">Año</label><br>
+          <span class="readonly-chip">{{ anio_fijo }}</span>
+        </div>
+
+        <div>
+          <label class="form-label">Mes</label><br>
+          <span class="readonly-chip">{{ mes_fijo }}</span>
+        </div>
+
+        <div class="full">
+          <label class="form-label" for="{{ form.tipo.id_for_label }}">Tipo de descuento</label>
+          {{ form.tipo }}
+          {% if form.tipo.errors %}<div class="text-danger small">{{ form.tipo.errors }}</div>{% endif %}
+        </div>
+
+        <div id="rowMonto">
+          <label class="form-label" for="{{ form.monto_descontar.id_for_label }}">Monto ($)</label>
+          {{ form.monto_descontar }}
+          {% if form.monto_descontar.errors %}<div class="text-danger small">{{ form.monto_descontar.errors }}</div>{% endif %}
+        </div>
+
+        <div id="rowPorc">
+          <label class="form-label" for="{{ form.porcentaje_descontar.id_for_label }}">Porcentaje (%)</label>
+          {{ form.porcentaje_descontar }}
+          {% if form.porcentaje_descontar.errors %}<div class="text-danger small">{{ form.porcentaje_descontar.errors }}</div>{% endif %}
+        </div>
+
+      </div>
+
+      <div class="mt-3">
+        <button type="submit" class="btn btn-success">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  (function(){
+    const tipo = document.getElementById('{{ form.tipo.id_for_label }}') || document.getElementById('id_tipo');
+    const rowMonto = document.getElementById('rowMonto');
+    const rowPorc  = document.getElementById('rowPorc');
+    const inpMonto = document.getElementById('{{ form.monto_descontar.id_for_label }}') || document.getElementById('id_monto_descontar');
+    const inpPorc  = document.getElementById('{{ form.porcentaje_descontar.id_for_label }}') || document.getElementById('id_porcentaje_descontar');
+
+    function toggleCampos() {
+      const v = parseInt(tipo.value, 10);
+      if (v === 1) { // Monto
+        rowMonto.style.display = '';
+        rowPorc.style.display  = 'none';
+        if (inpPorc) { inpPorc.value = '0'; }
+      } else if (v === 2) { // Porcentaje
+        rowMonto.style.display = 'none';
+        rowPorc.style.display  = '';
+        if (inpMonto) { inpMonto.value = '0'; }
+      } else {
+        rowMonto.style.display = '';
+        rowPorc.style.display  = '';
+      }
+    }
+
+    if (tipo) {
+      toggleCampos();
+      tipo.addEventListener('change', toggleCampos);
+    }
+  })();
+</script>
+
+{% endblock %}

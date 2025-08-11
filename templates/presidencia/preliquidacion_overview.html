@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+/* Estilos generales */
+body {
+  background: #f6f7fb;
+}
+
+h1, h2 {
+  font-weight: 700;
+  color: #22223b;
+}
+
+h1 {
+  font-size: 2rem;
+}
+
+h2 {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.card {
+  border-radius: 1rem;
+  box-shadow: 0 2px 16px rgba(50,50,93,0.06), 0 0.5px 2px rgba(0,0,0,0.04);
+  padding: 2rem 2rem 1.5rem 2rem;
+  background: #fff;
+  margin-bottom: 2rem;
+}
+
+/* Barra superior */
+.d-flex {
+  background: #fff;
+  border-radius: 1rem;
+  box-shadow: 0 2px 10px rgba(44,62,80,.06);
+  padding: 1.5rem 2rem;
+}
+
+/* Select área, botones */
+select.form-select {
+  border-radius: 0.5rem;
+  min-width: 180px;
+}
+
+.btn-success {
+  border-radius: 0.5rem;
+  font-weight: 600;
+  padding: 0.5rem 1.4rem;
+}
+
+.btn-outline-primary {
+  border-radius: 0.5rem;
+  font-weight: 500;
+  padding: 0.4rem 1.2rem;
+}
+
+.form-control {
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  padding: 0.6rem 1.2rem;
+  border: 1.5px solid #e4e4ef;
+}
+
+/* Tabla de resultados */
+.table {
+  margin-top: 2rem;
+  background: #fff;
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(60,60,120,0.04);
+}
+
+.table thead th {
+  background: #e9ecef;
+  color: #313258;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.table td, .table th {
+  text-align: center;
+  vertical-align: middle;
+  padding: 0.7rem 0.4rem;
+}
+
+.table-sm td, .table-sm th {
+  padding: 0.6rem 0.3rem;
+}
+
+.table-bordered > :not(caption) > * > * {
+  border-width: 1px;
+}
+
+.table tbody tr:nth-child(even) {
+  background-color: #f6f7fb;
+}
+
+/* Responsive horizontal scroll para tablas anchas */
+.table-responsive {
+  border-radius: 1rem;
+  overflow-x: auto;
+  box-shadow: 0 2px 10px rgba(60,60,120,0.04);
+}
+
+/* Total de preliquidaciones */
+.mb-3 strong {
+  color: #313258;
+  font-size: 1.07rem;
+}
+
+/* Ajustes para botón buscar */
+form.mb-4.row {
+  gap: 0.8rem 0.3rem;
+}
+
+@media (max-width: 900px) {
+  .d-flex {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 1rem;
+    padding: 1rem;
+  }
+  .card {
+    padding: 1rem;
+  }
+  .table-responsive {
+    padding: 0.2rem;
+  }
+}
+
+</style>
+
+<div class="card">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="mb-0">
+        Preliquidaciones — Área:
+        <form method="get" class="d-inline">
+          <select name="area"
+                  onchange="this.form.submit()"
+                  class="form-select d-inline w-auto">
+            {% for area in areas %}
+              <option value="{{ area }}"
+                      {% if area == area_sel %}selected{% endif %}>
+                {{ area }}
+              </option>
+            {% endfor %}
+          </select>
+          <input type="hidden" name="mes"  value="{{ mes_sel }}">
+          <input type="hidden" name="año"  value="{{ año_sel }}">
+          <input type="hidden" name="q"    value="{{ q }}">
+        </form>
+        — Periodo: {{ mes_sel }}/{{ año_sel }}
+      </h1>
+    </div>
+
+    {# Aquí pasamos mes, año y area en el querystring #}
+    <form method="post"
+          action="{% url 'empleados:confirmar_liquidacion' %}?mes={{ mes_sel }}&año={{ año_sel }}&area={{ area_sel }}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-success shadow-sm">
+        Confirmar Liquidación
+      </button>
+    </form>
+  </div>
+
+  <form method="get" class="mb-4 row gx-2 gy-1 align-items-center">
+    <div class="col-auto">
+      <input
+        type="text"
+        name="q"
+        value="{{ q }}"
+        class="form-control"
+        placeholder="Buscar por nombre completo o CUIL…"
+      >
+    </div>
+    <input type="hidden" name="area" value="{{ area_sel }}">
+    <input type="hidden" name="mes"   value="{{ mes_sel }}">
+    <input type="hidden" name="año"   value="{{ año_sel }}">
+    <div class="col-auto">
+      <button type="submit" class="btn btn-outline-primary shadow-sm">
+        Buscar
+      </button>
+    </div>
+  </form>
+
+  <div class="mb-3">
+    <strong>Total de preliquidaciones:</strong>
+    {{ preliquidaciones|length }}
+  </div>
+  
+  <h2 class="mt-2">Listado</h2>
+  <div class="table-responsive">
+    <table class="table table-bordered table-sm mb-5">
+      <thead class="table-light">
+        <tr>
+          <th>Empleado</th>
+          <th>CUIL</th>
+          <th>Categoría</th>
+          <th>Oficina</th>
+          <th>Título</th>
+          <th>Nivel</th>
+          <th>Básico</th>
+          <th>Calif.</th>
+          <th>Antigüedad</th>
+          <th>Imp. Antig.</th>
+          <th>Imp. Título</th>
+          <th>Total Básico</th>
+          <th>Sup.1</th>
+          <th>Sup.2</th>
+          <th>Sup.3</th>
+          <th>Sup.4</th>
+          <th>Sup.6</th>
+          <th>Sup.8</th>
+          <th>Sup.12</th>
+          <th>Total Sup.</th>
+          <th>Bruto</th>
+          <th>Jub.</th>
+          <th>Obra Soc.</th>
+          <th>Of. Judicial</th>
+          <th>Total Desc.</th>
+          <th>Líquido</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for preliq in preliquidaciones %}
+          <tr>
+            <td>{{ preliq.empleado }}</td>
+            <td>{{ preliq.empleado.cuil }}</td>
+            <td>{{ preliq.categoria_nombre }}</td>
+            <td>{{ preliq.oficina_nombre }}</td>
+            <td>{{ preliq.titulo_completo }}</td>
+            <td>{{ preliq.nivel }}</td>
+            <td class="text-end">{{ preliq.basico|floatformat:2 }}</td>
+            <td class="text-end">{{ preliq.calificacion|floatformat:0 }}</td>
+            <td class="text-end">
+                {{ preliq.antiguedad }}
+            </td>
+            <td class="text-end">${{ preliq.importe_antiguedad|floatformat:2 }}</td>
+            <td class="text-end">${{ preliq.importe_titulo|floatformat:2 }}</td>
+            <td class="text-end">${{ preliq.basico_total|floatformat:2 }}</td>
+            <td class="text-end">{{ preliq.supl1|floatformat:2 }}</td>
+            <td class="text-end">{{ preliq.supl2|floatformat:2 }}</td>
+            <td class="text-end">{{ preliq.supl3|floatformat:2 }}</td>
+            <td class="text-end">{{ preliq.supl4|floatformat:2 }}</td>
+            <td class="text-end">{{ preliq.supl6|floatformat:2 }}</td>
+            <td class="text-end">{{ preliq.supl8|floatformat:2 }}</td>
+            <td class="text-end">{{ preliq.supl12|floatformat:2 }}</td>
+            <td class="text-end">{{ preliq.total_suplementos|floatformat:2 }}</td>
+            <td class="text-end">{{ preliq.bruto|floatformat:2 }}</td>
+            <td class="text-end">{{ preliq.jubilacion|floatformat:2 }}</td>
+            <td class="text-end">{{ preliq.obra_social|floatformat:2 }}</td>
+            <td class="text-end">{{ preliq.oficio_judicial|floatformat:2 }}</td>
+            <td class="text-end">{{ preliq.total_descuentos|floatformat:2 }}</td>
+            <td class="text-end">{{ preliq.liquido|floatformat:2 }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="26" class="text-center">
+              No hay preliquidaciones para este período.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

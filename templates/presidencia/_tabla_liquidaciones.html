@@ -1,0 +1,70 @@
+{# templates/presidencia/_tabla_liquidaciones.html #}
+<div class="table-responsive">
+  <table class="table table-bordered table-sm text-center align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>Oficina</th>
+        <th>Empleado</th>
+        <th>CUIL</th>
+        <th>Básico</th>
+        <th>Imp. Antig.</th>
+        <th>Imp. Título</th>
+        <th>Total Básico</th>
+        <th>Sup. I</th>
+        <th>Sup. II</th>
+        <th>Sup. III</th>
+        <th>Sup. IV</th>
+        <th>Sup. VI</th>
+        <th>Sup. VIII</th>
+        <th>Sup. XII</th>
+        <th>Total Sup.</th>
+        <th>Remuneración</th>
+        <th>Jub. 11%</th>
+        <th>Obra Soc. 5%</th>
+        <th>Of. Judicial</th>
+        <th>Total Desc.</th>
+        <th>Líquido</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for liq in liqs %}
+        {# solo empleados activos #}
+        {% if liq.empleado.estado == 1 and liq.empleado.fecha_salida is None %}
+          <tr>
+            <td>{{ liq.oficina_nombre }}</td>
+            <td>{{ liq.empleado }}</td>
+            <td>{{ liq.empleado.cuil }}</td>
+            <td class="text-end">${{ liq.basico|floatformat:2 }}</td>
+            <td class="text-end">${{ liq.importe_antiguedad|floatformat:2 }}</td>
+            <td class="text-end">${{ liq.importe_titulo|floatformat:2 }}</td>
+            <td class="text-end">${{ liq.basico_total|floatformat:2 }}</td>
+            <td class="text-end">{{ liq.supl1|floatformat:2 }}</td>
+            <td class="text-end">{{ liq.supl2|floatformat:2 }}</td>
+            <td class="text-end">{{ liq.supl3|floatformat:2 }}</td>
+            <td class="text-end">{{ liq.supl4|floatformat:2 }}</td>
+            <td class="text-end">{{ liq.supl6|floatformat:2 }}</td>
+            <td class="text-end">{{ liq.supl8|floatformat:2 }}</td>
+            <td class="text-end">{{ liq.supl12|floatformat:2 }}</td>
+            <td class="text-end">${{ liq.total_suplementos|floatformat:2 }}</td>
+            <td class="text-end">${{ liq.bruto|floatformat:2 }}</td>
+            <td class="text-end">${{ liq.jubilacion|floatformat:2 }}</td>
+            <td class="text-end">${{ liq.obra_social|floatformat:2 }}</td>
+            <td class="text-end">${{ liq.oficio_judicial|floatformat:2 }}</td>
+            <td class="text-end">${{ liq.total_descuentos|floatformat:2 }}</td>
+            <td class="text-end fw-bold">${{ liq.liquido|floatformat:2 }}</td>
+          </tr>
+        {% endif %}
+      {% empty %}
+        <tr>
+          <td colspan="21">No hay registros.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr class="fw-bold">
+        <td colspan="20" class="text-end">Total Líquido:</td>
+        <td class="text-end">${{ tot.liquido|floatformat:2 }}</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>

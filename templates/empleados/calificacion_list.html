@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<style>
+  /* Container */
+  .calif-wrap {
+    padding: 2rem;
+    margin: 1rem auto;
+    max-width: 1200px;
+  }
+  /* Header */
+  .calif-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+  .calif-title {
+    font-size: 2.4rem;
+    font-weight: 700;
+    color: #2c3e50;
+  }
+  .calif-periodo {
+    font-size: 1.6rem;
+    color: #16a085;
+  }
+  /* Filtros */
+  .filtros-categoria,
+  .filtros-buscador {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .filtros-categoria .form-select,
+  .filtros-buscador .form-control {
+    width: 220px;
+  }
+  /* Botones */
+  .nueva-calif-btn {
+    text-align: left;
+    margin-bottom: 1rem;
+  }
+  .btn-success {
+    background-color: #1abc9c;
+    border-color: #16a085;
+  }
+  .btn-success:hover {
+    background-color: #16a085;
+  }
+  /* Tabla */
+  .table-responsive {
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .table thead th {
+    background-color: #2980b9;
+    color: #fff;
+  }
+  .table tbody tr:hover {
+    background-color: #ecf0f1;
+  }
+  /* Animación de entrada */
+  .employee-list {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 0.6s forwards;
+    animation-delay: 0.2s;
+  }
+  @keyframes fadeInUp {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>
+
+<div class="mb-4">
+  <a href="{% url 'presidencia_dashboard' %}" class="btn btn-secondary">
+    ← Volver al panel
+  </a>
+</div>
+
+<div class="calif-wrap">
+  <div class="calif-header">
+    <div class="calif-title">Calificaciones de Empleados</div>
+    <div class="calif-periodo">{{ month_name|capfirst }} de {{ año_actual }}</div>
+  </div>
+
+  <!-- Selector de área -->
+  <div class="filtros-categoria">
+    <form method="get" id="area-form" style="display:inline-flex;align-items:center;">
+      <label for="area" class="me-2">Área:</label>
+      <select name="area" id="area" class="form-select" onchange="this.form.submit()">
+        {% for a in areas %}
+          <option value="{{ a }}" {% if a == area_sel %}selected{% endif %}>
+            {{ a }}
+          </option>
+        {% endfor %}
+      </select>
+      {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+    </form>
+  </div>
+
+  <!-- Buscador -->
+  <form method="get" class="filtros-buscador">
+    <input type="hidden" name="area" value="{{ area_sel }}">
+    <input type="text" name="q" class="form-control" placeholder="Buscar nombre, CUIL o DNI" value="{{ q }}">
+    <button type="submit" class="btn btn-primary">Buscar</button>
+    {% if q or area_sel %}
+      <a href="{% url 'empleados:calificacion-list' %}?area={{ area_sel }}" class="btn btn-secondary">
+        Limpiar
+      </a>
+    {% endif %}
+  </form>
+
+  <!-- Botón Nueva Calificación -->
+  <div class="nueva-calif-btn">
+    <a href="{% url 'empleados:calificacion-create' %}" class="btn btn-success">
+      + Nueva Calificación
+    </a>
+  </div>
+
+  <!-- Tabla -->
+  <div class="table-responsive employee-list" id="employeeList">
+    <table class="table table-bordered table-sm text-center align-middle">
+      <thead>
+        <tr>
+          <th>#</th><th>Apellido</th><th>Nombre</th>
+          <th>CUIL</th><th>DNI</th><th>Categoría</th>
+          <th>Calificación</th><th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for emp in empleados %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ emp.apellido }}</td>
+            <td>{{ emp.nombre }}</td>
+            <td>{{ emp.cuil }}</td>
+            <td>{{ emp.dni }}</td>
+            <td>{{ emp.categoria.nombre }}</td>
+            <td>{{ emp.calificacion_actual }}%</td>
+            <td>
+              <a href="{% if emp.cal_pk %}
+                          {% url 'empleados:calificacion-update' emp.cal_pk %}
+                        {% else %}
+                          {% url 'empleados:calificacion-create' %}?empleado={{ emp.id_empleado }}
+                        {% endif %}"
+                 class="btn btn-sm btn-primary">
+                Editar
+              </a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="8">No hay empleados activos en esta área.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="mt-3 text-center">
+    Mostrando <b>{{ empleados|length }}</b> empleados
+    {% if area_sel %} en el área <b>{{ area_sel }}</b>{% endif %}.
+  </div>
+</div>
+
+{% endblock %}

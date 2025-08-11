@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>Eliminar Oficio Judicial</h1>
+  <p>¿Seguro que querés eliminar este oficio?</p>
+  <form method="post">
+    {% csrf_token %}
+    <button class="btn btn-danger" type="submit">Eliminar</button>
+    <a href="{% url 'empleados:oficiojudicial_list' %}" class="btn btn-secondary">Cancelar</a>
+  </form>
+{% endblock %}

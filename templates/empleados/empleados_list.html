@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>Empleados</h1>
+  <a class="btn btn-primary mb-3" href="{% url 'empleados:empleado-create' %}">Nuevo Empleado</a>
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Nombre</th><th>Apellido</th><th>DNI</th><th>CUIL</th><th>Cuenta</th>
+        <th>Situación</th><th>Estado</th><th>Ingreso</th><th>Salida</th>
+        <th>Categoría</th><th>Oficina</th><th>Título</th><th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for emp in empleados %}
+      <tr>
+        <td>{{ emp.nombre }}</td>
+        <td>{{ emp.apellido }}</td>
+        <td>{{ emp.dni }}</td>
+        <td>{{ emp.cuil }}</td>
+        <td>{{ emp.numero_cuenta }}</td>
+        <td>{{ emp.situacion }}</td>
+        <td>{{ emp.estado }}</td>
+        <td>{{ emp.fecha_ingreso }}</td>
+        <td>{{ emp.fecha_salida }}</td>
+        <td>{{ emp.categoria.nombre }}</td>
+        <td>{{ emp.oficina.nombre }}</td>
+        <td>{{ emp.titulo.titulo_completo }}</td>
+        <td>
+          <a class="btn btn-sm btn-secondary"
+             href="{% url 'empleados:empleado-update' emp.pk %}">Editar</a>
+          <a class="btn btn-sm btn-danger"
+             href="{% url 'empleados:empleado-delete' emp.pk %}">Borrar</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="13">No hay empleados.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}
