@@ -1,91 +1,152 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <style>
-    @page { size: A4 landscape; margin: 1.1cm; }
-    body { font-family: Arial, sans-serif; font-size: 10px; }
-    h2, h3 { margin-bottom: 2px; }
-    .pdf-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 9.6px;
-      table-layout: fixed;
-    }
-    .pdf-table th, .pdf-table td {
-      border: 1px solid #555;
-      padding: 2px 3px;
-      text-align: center;
-      vertical-align: middle;
-      word-break: break-word;
-      overflow-wrap: break-word;
-      white-space: pre-line;
-    }
-    .pdf-table th { background: #e6e6e6; font-weight: bold; font-size: 10px; }
-    .pdf-table tr:nth-child(even) { background: #fafbfc; }
-    .header { margin-bottom: 10px; }
-    .totals { margin-top: 10px; font-weight: bold; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Liquidaciones — {{ month_name }} / {{ año_sel }}</title>
+<style>
+  @page { size: A4 landscape; margin: 0.5cm; }
+
+  body {
+    font-family: Arial, sans-serif;
+    font-size: 9px;
+    margin: 0;
+    padding: 5px;
+  }
+
+  h2, h3 { margin: 2px 0; }
+  .header { margin-bottom: 5px; }
+  .totals { margin-top: 5px; font-weight: bold; font-size: 9px; }
+
+  /* Contenedor scroll para navegador */
+  .table-container {
+    overflow-x: auto;
+    max-width: 100%;
+    border: 1px solid #ccc;
+  }
+
+  .pdf-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    min-width: 1600px;
+  }
+
+  .pdf-table th, .pdf-table td {
+    border: 1px solid #555;
+    padding: 1px 2px;
+    vertical-align: middle;
+    text-align: center;
+    word-break: break-word;
+    white-space: normal;
+    overflow-wrap: break-word;
+  }
+
+  .pdf-table th {
+    background: #e6e6e6;
+    font-weight: bold;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  .pdf-table tr:nth-child(even) { background: #fafbfc; }
+
+  /* Ajustes de ancho de columnas */
+  .col-oficina { width: 6%; text-align: left; }
+  .col-empleado { width: 7%; text-align: left; } 
+  .col-cuil { width: 6%; }
+  .col-basico, .col-antiguedad, .col-titulo, .col-total-basico,
+  .col-supl { width: 4%; text-align: right; font-size: 8px; }
+
+  .col-total-supl { width: 6%; text-align: right; }
+  .col-remuneracion { width: 7%; text-align: right; }
+  .col-descuento { width: 5%; text-align: right; }
+  .col-oficio { width: 3%; text-align: right; }
+  .col-liquido { width: 7%; text-align: right; }
+
+  .money { text-align: right; font-size: 8px; }
+
+  @media print {
+    body { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
+    .table-container { overflow-x: visible; }
+  }
+</style>
 </head>
 <body>
-  <div class="header">
-    <h2>Liquidaciones — {{ month_name }} / {{ año_sel }}</h2>
-    <h3>Área: {{ area_sel|default:"PRESIDENCIA" }} — {{ title }}</h3>
-    <p class="totals">Total Bruto: ${{ tot.bruto|floatformat:2 }} — Total Líquido: ${{ tot.liquido|floatformat:2 }}</p>
-  </div>
+
+<div class="header">
+  <h2>Liquidaciones — {{ month_name }} / {{ año_sel }}</h2>
+  <h3>Área: {{ area_sel|default:"PRESIDENCIA" }} — {{ title|default:"Liquidaciones Mensuales" }}</h3>
+  <p class="totals">
+    Total Bruto: ${{ tot.bruto|floatformat:2 }} —
+    Total Líquido: ${{ tot.liquido|floatformat:2 }} —
+    Total Empleados: {{ liqs|length }}
+  </p>
+</div>
+
+<div class="table-container">
   <table class="pdf-table">
     <thead>
       <tr>
-        <th>Oficina</th>
-        <th>Empleado</th>
-        <th>CUIL</th>
-        <th>Básico</th>
-        <th>Imp. Antig.</th>
-        <th>Imp. Título</th>
-        <th>Total Básico</th>
-        <th>Sup. I</th>
-        <th>Sup. II</th>
-        <th>Sup. III</th>
-        <th>Sup. IV</th>
-        <th>Sup. VI</th>
-        <th>Sup. VIII</th>
-        <th>Sup. XII</th>
-        <th>Total Sup.</th>
-        <th>Remuneración</th>
-        <th>Jub. 11%</th>
-        <th>Obra Soc. 5%</th>
-        <th>Of. Judicial</th>
-        <th>Total Desc.</th>
-        <th>Líquido</th>
+        <th class="col-oficina">Oficina</th>
+        <th class="col-empleado">Empleado</th>
+        <th class="col-cuil">CUIL</th>
+        <th class="col-basico">Básico</th>
+        <th class="col-antiguedad">Imp. Antig.</th>
+        <th class="col-titulo">Imp. Título</th>
+        <th class="col-total-basico">Tot. Básico</th>
+        <th class="col-supl">Sup. I</th>
+        <th class="col-supl">Sup. II</th>
+        <th class="col-supl">Sup. III</th>
+        <th class="col-supl">Sup. IV</th>
+        <th class="col-supl">Sup. VI</th>
+        <th class="col-supl">Sup. VIII</th>
+        <th class="col-supl">Sup. XII</th>
+        <th class="col-total-supl">Tot. Sup.</th>
+        <th class="col-remuneracion">Remuneración</th>
+        <th class="col-descuento">Jub. 11%</th>
+        <th class="col-descuento">Obra Soc. 5%</th>
+        <th class="col-oficio">Of. Judicial</th>
+        <th class="col-descuento">Tot. Desc.</th>
+        <th class="col-liquido">Líquido</th>
       </tr>
     </thead>
     <tbody>
-    {% for liq in liqs %}
+      {% for liq in liqs %}
       <tr>
-        <td>{{ liq.oficina_nombre }}</td>
-        <td>{{ liq.empleado }}</td>
-        <td>{{ liq.empleado.cuil }}</td>
-        <td>${{ liq.basico|floatformat:2 }}</td>
-        <td>${{ liq.importe_antiguedad|floatformat:2 }}</td>
-        <td>${{ liq.importe_titulo|floatformat:2 }}</td>
-        <td>${{ liq.basico_total|floatformat:2 }}</td>
-        <td>{{ liq.supl1|floatformat:2 }}</td>
-        <td>{{ liq.supl2|floatformat:2 }}</td>
-        <td>{{ liq.supl3|floatformat:2 }}</td>
-        <td>{{ liq.supl4|floatformat:2 }}</td>
-        <td>{{ liq.supl6|floatformat:2 }}</td>
-        <td>{{ liq.supl8|floatformat:2 }}</td>
-        <td>{{ liq.supl12|floatformat:2 }}</td>
-        <td>{{ liq.total_suplementos|floatformat:2 }}</td>
-        <td>${{ liq.bruto|floatformat:2 }}</td>
-        <td>${{ liq.jubilacion|floatformat:2 }}</td>
-        <td>${{ liq.obra_social|floatformat:2 }}</td>
-        <td>${{ liq.oficio_judicial|floatformat:2 }}</td>
-        <td>${{ liq.total_descuentos|floatformat:2 }}</td>
-        <td><b>${{ liq.liquido|floatformat:2 }}</b></td>
+        <td class="col-oficina" title="{{ liq.oficina_nombre }}">{{ liq.oficina_nombre|truncatechars:15 }}</td>
+        <td class="col-empleado" title="{{ liq.empleado }}">{{ liq.empleado|truncatechars:12 }}</td>
+        <td class="col-cuil">{{ liq.empleado.cuil|default:"N/A" }}</td>
+        <td class="money">${{ liq.basico|floatformat:2 }}</td>
+        <td class="money">${{ liq.importe_antiguedad|floatformat:2 }}</td>
+        <td class="money">${{ liq.importe_titulo|floatformat:2 }}</td>
+        <td class="money">${{ liq.basico_total|floatformat:2 }}</td>
+        <td class="money">{{ liq.supl1|floatformat:2 }}</td>
+        <td class="money">{{ liq.supl2|floatformat:2 }}</td>
+        <td class="money">{{ liq.supl3|floatformat:2 }}</td>
+        <td class="money">{{ liq.supl4|floatformat:2 }}</td>
+        <td class="money">{{ liq.supl6|floatformat:2 }}</td>
+        <td class="money">{{ liq.supl8|floatformat:2 }}</td>
+        <td class="money">{{ liq.supl12|floatformat:2 }}</td>
+        <td class="money">${{ liq.total_suplementos|floatformat:2 }}</td>
+        <td class="money">${{ liq.bruto|floatformat:2 }}</td>
+        <td class="money">${{ liq.jubilacion|floatformat:2 }}</td>
+        <td class="money">${{ liq.obra_social|floatformat:2 }}</td>
+        <td class="money">${{ liq.oficio_judicial|floatformat:2 }}</td>
+        <td class="money">${{ liq.total_descuentos|floatformat:2 }}</td>
+        <td class="money"><b>${{ liq.liquido|floatformat:2 }}</b></td>
       </tr>
-    {% endfor %}
+      {% empty %}
+      <tr>
+        <td colspan="21" style="text-align:center; color:#666; padding:10px;">
+          No hay liquidaciones para mostrar
+        </td>
+      </tr>
+      {% endfor %}
     </tbody>
   </table>
+</div>
+
 </body>
 </html>
