@@ -5,50 +5,69 @@
   nav.navbar a[href$="/empleados/"] { display: none !important; }
 
   body{background:linear-gradient(135deg,#ecf0f5 0%,#d9e2ec 100%);color:#333;font-family:'Poppins',sans-serif;font-size:14px;line-height:1.6}
+
   .sidebar{width:260px;position:fixed;top:0;left:-260px;height:100%;background:linear-gradient(180deg,#0055A4 0%, #003087 100%);color:#fff;transition:left .3s ease;z-index:1030;padding-top:80px;box-shadow:3px 0 12px rgba(0,0,0,.2)}
-  .sidebar.active{left:0}.sidebar-content{padding:20px}
+  .sidebar.active{left:0}
+  .sidebar-content{padding:20px}
   .sidebar-toggle{position:fixed;left:15px;top:15px;z-index:1031;cursor:pointer;background:#003087;border:none;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;transition:all .3s ease;box-shadow:0 2px 5px rgba(0,0,0,.2)}
   .sidebar-toggle:hover{background:#0041c2;transform:rotate(90deg)}
   .nav-link{color:#fff;padding:12px 20px;display:flex;align-items:center;text-decoration:none;border-radius:6px;margin:8px 0;transition:all .3s ease;font-weight:500}
   .nav-link:hover{background:rgba(255,255,255,.1);transform:translateX(5px)}
   .nav-link.active{background:#fff;color:#0055A4}
+
   .main-content{transition:margin-left .3s ease;margin-left:0;padding:30px;background:#fff;min-height:100vh;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.05)}
   .main-content.shifted{margin-left:260px}
 
   .card{background:#fff;border-radius:10px;box-shadow:0 4px 15px rgba(0,0,0,.1);padding:20px;margin-bottom:30px;transition:transform .3s ease,box-shadow .3s ease}
   .card:hover{transform:translateY(-5px);box-shadow:0 6px 20px rgba(0,0,0,.15)}
-  .period-card{background:linear-gradient(135deg,#0055A4 0%,#003087 100%);color:#fff;padding:40px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.2);margin-bottom:40px}
-  .period-card .card-title{font-size:28px;font-weight:600;margin-bottom:25px}
-  .period-card .form-label{font-size:20px;font-weight:500}
-  .period-card .form-select{font-size:20px;padding:16px;border-radius:8px;background:#fff;color:#333}
 
-  .top-container{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:40px;flex-wrap:wrap}
-  .chart-container{display:flex;align-items:center;background:#fff;border-radius:10px;box-shadow:0 4px 15px rgba(0,0,0,.1);padding:15px;max-width:300px}
-  .chart-canvas{max-width:150px;margin-right:20px}
-  .counts-container{display:flex;flex-direction:column;gap:8px;font-size:14px}
-  .status-active{color:#28a745;font-weight:bold}.status-inactive{color:#dc3545;font-weight:bold}
+  .period-card{background:linear-gradient(135deg,#0055A4 0%,#003087 100%);color:#fff;border-radius:12px}
+  .period-card .card-title{font-size:26px;font-weight:600;margin-bottom:18px}
+  .period-card .form-label{font-size:16px;font-weight:500}
+  .period-card .form-select,.period-card .form-control{font-size:16px;padding:10px;border-radius:8px;background:#fff;color:#333}
+
+  .top-container{display:flex;gap:24px;justify-content:space-between;align-items:stretch;flex-wrap:wrap}
+
+  /* Indicadores → grid para evitar superposición */
+  .stats-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap:18px;
+    width:100%;
+  }
+  .stats-card{
+    display:flex;
+    align-items:center;
+    background:#fff;
+    border-radius:10px;
+    box-shadow:0 4px 15px rgba(0,0,0,.08);
+    padding:16px;
+  }
+  .stats-card .chart-canvas{max-width:150px;margin-right:16px}
+  .counts-container{display:flex;flex-direction:column;gap:6px;font-size:14px}
+  .legend-bar{display:inline-block;width:36px;height:8px;border-radius:4px}
+  .bg-primary{background:#0d6efd}
+  .bg-danger{background:#dc3545}
+  .bg-success{background:#198754}
+  .bg-warning{background:#ffc107}
+  .status-active{color:#28a745;font-weight:bold}
+  .status-inactive{color:#dc3545;font-weight:bold}
 
   .table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;border-radius:8px;overflow:hidden}
-  .table th{background:#0055A4;color:#fff;padding:15px;text-align:left;font-weight:600;cursor:pointer}
+  .table th{background:#0055A4;color:#fff;padding:12px;text-align:left;font-weight:600;cursor:pointer;white-space:nowrap}
   .table th:hover{background:#003087}
-  .table td{padding:15px;border-bottom:1px solid #e9ecef;color:#333}
+  .table td{padding:12px;border-bottom:1px solid #e9ecef;color:#333}
 
-  /* Verde más oscuro para estos dos botones en esta página */
   .btn-success{background:#198754;border-color:#198754;border-radius:8px;padding:10px 18px;font-weight:600}
   .btn-success:hover{background:#146c43;border-color:#146c43;transform:translateY(-1px)}
-
-  /* Click pulse */
+  .btn-outline-primary{border-radius:8px;padding:10px 18px;font-weight:600}
   .btn-pulse:active{animation:pulse .35s}
   @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(25,135,84,.55)}100%{box-shadow:0 0 0 14px rgba(25,135,84,0)}}
 
   @media (max-width:768px){
-    .sidebar{width:200px;left:-200px}.main-content.shifted{margin-left:200px}
-    .card,.chart-container,.period-card{padding:15px}
-    .top-container{flex-direction:column;align-items:center}
-    .chart-container{max-width:250px;flex-direction:column;align-items:flex-start;margin-top:20px}
-    .chart-canvas{max-width:100px;margin-right:0;margin-bottom:15px}
-    .period-card .card-title{font-size:24px}
-    .period-card .form-label,.period-card .form-select{font-size:18px}
+    .sidebar{width:200px;left:-200px}
+    .main-content.shifted{margin-left:200px}
+    .top-container{flex-direction:column}
   }
 </style>
 
@@ -58,11 +77,10 @@
   <div class="sidebar-content">
     <h3 class="text-center mb-4">Menú de Gestión</h3>
     <ul class="nav flex-column">
-      <li class="nav-item"><a href="{% url 'empleados:empleado-list' %}" class="nav-link"><i class="fas fa-users"></i> Empleados</a></li>
-      <li class="nav-item"><a href="{% url 'empleados:calificacion-list' %}" class="nav-link"><i class="fas fa-star"></i> Calificaciones</a></li>
-      <li class="nav-item"><a href="{% url 'empleados:categoria-list' %}" class="nav-link"><i class="fas fa-layer-group"></i> Categorías</a></li>
-      <li class="nav-item"><a href="{% url 'empleados:oficiojudicial-list' %}" class="nav-link"><i class="fas fa-file-alt"></i> Oficios Judiciales</a></li>
-      <li class="nav-item"><a href="{% url 'antiguedad-actualizar' %}" class="nav-link"><i class="fas a-clock"></i> Actualizar Antigüedad</a></li>
+      <li class="nav-item"><a href="{% url 'empleados:empleado-list' %}" class="nav-link"><i class="fas fa-users me-2"></i> Empleados</a></li>
+      <li class="nav-item"><a href="{% url 'empleados:calificacion-list' %}" class="nav-link"><i class="fas fa-star me-2"></i> Calificaciones</a></li>
+      <li class="nav-item"><a href="{% url 'empleados:categoria-list' %}" class="nav-link"><i class="fas fa-layer-group me-2"></i> Categorías</a></li>
+      <li class="nav-item"><a href="{% url 'empleados:oficiojudicial-list' %}" class="nav-link"><i class="fas fa-file-alt me-2"></i> Oficios Judiciales</a></li>
     </ul>
   </div>
 </div>
@@ -72,46 +90,97 @@
     <h1 class="mb-4 text-primary">Administrador del IPVU</h1>
 
     <div class="top-container">
-      <div class="card period-card">
+      <!-- Período -->
+      <div class="card period-card flex-grow-1">
         <div class="card-body">
           <h5 class="card-title">Período</h5>
-          <div class="row g-3">
-            <div class="col-auto">
-              <label for="mes" class="form-label">Mes</label>
-              <select id="mes" name="mes" class="form-select" onchange="updateDashboard()">
-                {% for num,nombre,year in periodos %}
-                  <option value="{{ num }}" {% if num == mes_sel %}selected{% endif %}>{{ nombre }}</option>
-                {% endfor %}
-              </select>
+
+          <!-- Un solo form GET: mes/año/area -->
+          <form id="periodoForm" method="get" action="{% url 'presidencia_dashboard' %}">
+            <div class="row g-3 align-items-end">
+              <div class="col-auto">
+                <label for="mes" class="form-label">Mes</label>
+                <select id="mes" name="mes" class="form-select">
+                  <option value="1"  {% if mes_sel == 1  %}selected{% endif %}>Enero</option>
+                  <option value="2"  {% if mes_sel == 2  %}selected{% endif %}>Febrero</option>
+                  <option value="3"  {% if mes_sel == 3  %}selected{% endif %}>Marzo</option>
+                  <option value="4"  {% if mes_sel == 4  %}selected{% endif %}>Abril</option>
+                  <option value="5"  {% if mes_sel == 5  %}selected{% endif %}>Mayo</option>
+                  <option value="6"  {% if mes_sel == 6  %}selected{% endif %}>Junio</option>
+                  <option value="7"  {% if mes_sel == 7  %}selected{% endif %}>Julio</option>
+                  <option value="8"  {% if mes_sel == 8  %}selected{% endif %}>Agosto</option>
+                  <option value="9"  {% if mes_sel == 9  %}selected{% endif %}>Septiembre</option>
+                  <option value="10" {% if mes_sel == 10 %}selected{% endif %}>Octubre</option>
+                  <option value="11" {% if mes_sel == 11 %}selected{% endif %}>Noviembre</option>
+                  <option value="12" {% if mes_sel == 12 %}selected{% endif %}>Diciembre</option>
+                </select>
+              </div>
+
+              <div class="col-auto">
+                <label for="anio" class="form-label">Año</label>
+                <input id="anio" name="año" type="number" class="form-control" value="{{ año_sel|default:2025 }}" readonly>
+              </div>
+
+              <input type="hidden" name="area" value="{{ area_sel }}"/>
+
+              <div class="col-auto d-flex gap-2">
+                <button type="submit" class="btn btn-outline-primary">
+                  Actualizar período
+                </button>
+
+                <!-- Mismo form, distinta acción -->
+                <button type="submit"
+                        class="btn btn-success btn-pulse"
+                        formaction="{% url 'generar_preliquidacion' %}">
+                  <i class="fas fa-file-invoice"></i> Generar preliquidación
+                </button>
+              </div>
             </div>
-            <div class="col-auto">
-              <label for="año" class="form-label">Año</label>
-              <select id="año" name="año" class="form-select" onchange="updateDashboard()">
-                {% for num,nombre,year in periodos %}
-                  <option value="{{ year }}" {% if year == año_sel %}selected{% endif %}>{{ year }}</option>
-                {% endfor %}
-              </select>
+          </form>
+        </div>
+      </div>
+
+      <!-- Indicadores en GRID -->
+      <div class="stats-grid">
+        <!-- Activos / Inactivos -->
+        <div class="stats-card">
+          <div class="chart-canvas"><canvas id="chartActivos" height="40"></canvas></div>
+          <div class="counts-container">
+            <div class="small text-muted" id="txt-porc-activos">Activos: —, Inactivos: —</div>
+            <div>Total: <strong id="total-empleados">{{ total_empleados }}</strong></div>
+            <div class="status-active">Activos: <strong id="total-activos">{{ total_activos }}</strong></div>
+            <div class="status-inactive">Inactivos: <strong id="total-inactivos">{{ total_inactivos }}</strong></div>
+            <div class="legend mt-2">
+              <div class="d-flex align-items-center mb-1">
+                <span class="legend-bar bg-primary me-2"></span> Activos
+              </div>
+              <div class="d-flex align-items-center">
+                <span class="legend-bar bg-danger me-2"></span> Inactivos
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Permanentes / Contratados -->
+        <div class="stats-card">
+          <div class="chart-canvas"><canvas id="chartSituacion" height="40"></canvas></div>
+          <div class="counts-container">
+            <div class="small text-muted" id="txt-porc-sit">Permanentes: —, Contratados: —</div>
+            <div>Total: <strong id="total-sit">—</strong></div>
+            <div class="text-success">Permanentes: <strong id="n-perm">—</strong></div>
+            <div class="text-warning">Contratados: <strong id="n-cont">—</strong></div>
+            <div class="legend mt-2">
+              <div class="d-flex align-items-center mb-1">
+                <span class="legend-bar bg-success me-2"></span> Permanentes
+              </div>
+              <div class="d-flex align-items-center">
+                <span class="legend-bar bg-warning me-2"></span> Contratados
+              </div>
             </div>
           </div>
         </div>
       </div>
-
-      <div class="chart-container">
-        <div class="chart-canvas"><canvas id="employeeChart" height="40"></canvas></div>
-        <div class="counts-container">
-          <p>Total: <strong id="total-empleados">{{ total_empleados }}</strong></p>
-          <p class="status-active">Activos: <strong id="total-activos">{{ total_activos }}</strong></p>
-          <p class="status-inactive">Inactivos: <strong id="total-inactivos">{{ total_inactivos }}</strong></p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Generar preliquidación -->
-    <div class="mb-4">
-      <a href="{% url 'generar_preliquidacion' %}?mes={{ mes_sel }}&año={{ año_sel }}&area={{ area_sel }}"
-         class="btn btn-success btn-pulse" id="preliquidacion-btn">
-        <i class="fas fa-file-invoice"></i> Generar preliquidación
-      </a>
+      <!-- /stats-grid -->
     </div>
 
     <!-- Empleados -->
@@ -119,12 +188,9 @@
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="card-title m-0">Empleados</h5>
-          <a href="{% url 'empleados:empleado-create' %}" class="btn btn-success btn-pulse">
-            <i class="fas fa-plus"></i> Nuevo empleado
-          </a>
         </div>
 
-        <!-- Buscador simple (sin categorías) -->
+        <!-- Buscador simple -->
         <form method="get" class="input-group mb-3" onsubmit="filterTable();return false;">
           <input type="text" id="search-input" name="q" value="{{ q }}" class="form-control"
                  placeholder="Buscar nombre, apellido, CUIL u oficina…" oninput="filterTable()">
@@ -172,16 +238,26 @@
 </div>
 
 <script>
+  // Sidebar
+  document.addEventListener('DOMContentLoaded', () => {
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('main-content');
+    document.querySelector('.sidebar-toggle')?.addEventListener('click', () => {
+      sidebar.classList.toggle('active'); mainContent.classList.toggle('shifted');
+    });
+  });
+
+  // Datos iniciales para filtro/orden
   const initialData = {
     empleados: [
       {% for emp in empleados %}
       {
-        apellido: "{{ emp.apellido }}",
-        nombre: "{{ emp.nombre }}",
-        cuil: "{{ emp.cuil }}",
-        categoria: "{{ emp.categoria.nombre }}",
-        oficina: "{{ emp.oficina.nombre }}",
-        situacion: "{{ emp.situacion }}",
+        apellido: "{{ emp.apellido|escapejs }}",
+        nombre: "{{ emp.nombre|escapejs }}",
+        cuil: "{{ emp.cuil|escapejs }}",
+        categoria: "{{ emp.categoria.nombre|escapejs }}",
+        oficina: "{{ emp.oficina.nombre|escapejs }}",
+        situacion: "{{ emp.situacion|escapejs }}",
         editUrl: "{% url 'empleados:empleado-update' emp.pk %}",
         deleteUrl: "{% url 'empleados:empleado-delete' emp.pk %}",
         id: {{ emp.pk }}
@@ -190,64 +266,51 @@
     ],
     total_empleados: {{ total_empleados|default:0 }},
     total_activos: {{ total_activos|default:0 }},
-    total_inactivos: {{ total_inactivos|default:0 }},
-    mes: {{ mes_sel|default:7 }},
-    año: {{ año_sel|default:2025 }},
-    area: "{{ area_sel|default:'PRESIDENCIA' }}"
+    total_inactivos: {{ total_inactivos|default:0 }}
   };
 
-  function etiquetaSituacion(s){ return s === 'P' ? 'PERMANENTE' : (s === 'C' ? 'CONTRATADO' : '—'); }
+  function etiquetaSituacion(s){
+    return s === 'P' ? 'PERMANENTE' : (s === 'C' ? 'CONTRATADO' : '—');
+  }
 
+  // Filtro + render
+  function filterTable(){
+    const q = (document.getElementById('search-input').value||'').toLowerCase();
+    const tb = document.getElementById('employee-table-body');
+    tb.innerHTML = '';
+    const rows = initialData.empleados.filter(e =>
+      (e.apellido||'').toLowerCase().includes(q) ||
+      (e.nombre||'').toLowerCase().includes(q) ||
+      (e.cuil||'').toLowerCase().includes(q) ||
+      (e.categoria||'').toLowerCase().includes(q) ||
+      (e.oficina||'').toLowerCase().includes(q)
+    );
+    if(!rows.length){
+      tb.innerHTML = '<tr><td colspan="7">No hay empleados.</td></tr>';
+      return;
+    }
+    rows.forEach(e=>{
+      const tr = document.createElement('tr');
+      tr.setAttribute('data-toggle','tooltip');
+      tr.setAttribute('title',`ID: ${e.id||''}`);
+      tr.innerHTML = `
+        <td>${e.apellido||''}</td>
+        <td>${e.nombre||''}</td>
+        <td>${e.cuil||''}</td>
+        <td>${e.categoria||''}</td>
+        <td>${e.oficina||''}</td>
+        <td>${etiquetaSituacion(e.situacion)}</td>
+        <td>
+          <a class="btn btn-sm btn-secondary" href="${e.editUrl}"><i class="fas fa-edit"></i> Editar</a>
+          <a class="btn btn-sm btn-danger" href="${e.deleteUrl}"><i class="fas fa-trash"></i> Borrar</a>
+        </td>`;
+      tb.appendChild(tr);
+    });
+    $('[data-toggle="tooltip"]').tooltip();
+  }
+
+  // Orden por columna
   document.addEventListener('DOMContentLoaded', () => {
-    const sidebar = document.getElementById('sidebar');
-    const mainContent = document.getElementById('main-content');
-    document.querySelector('.sidebar-toggle')?.addEventListener('click', () => {
-      sidebar.classList.toggle('active'); mainContent.classList.toggle('shifted');
-    });
-
-    // Chart
-    const total = initialData.total_empleados || 1;
-    const activosPct = (initialData.total_activos / total * 100).toFixed(1);
-    const inactivosPct = (initialData.total_inactivos / total * 100).toFixed(1);
-    const chart = new Chart(document.getElementById('employeeChart').getContext('2d'), {
-      type:'pie',
-      data:{labels:['Activos','Inactivos'],datasets:[{data:[initialData.total_activos,initialData.total_inactivos],backgroundColor:['#28a745','#dc3545'],borderColor:'#fff',borderWidth:1}]},
-      options:{plugins:{legend:{position:'bottom'},title:{display:true,text:`Activos: ${activosPct}%, Inactivos: ${inactivosPct}%`}}}
-    });
-
-    // Filtro y render
-    window.filterTable = function(){
-      const q = (document.getElementById('search-input').value||'').toLowerCase();
-      const tb = document.getElementById('employee-table-body');
-      tb.innerHTML = '';
-      const rows = initialData.empleados.filter(e =>
-        (e.apellido?.toLowerCase().includes(q)) ||
-        (e.nombre?.toLowerCase().includes(q)) ||
-        (e.cuil?.toLowerCase().includes(q)) ||
-        (e.categoria?.toLowerCase().includes(q)) ||
-        (e.oficina?.toLowerCase().includes(q))
-      );
-      if(!rows.length){ tb.innerHTML = '<tr><td colspan="7">No hay empleados.</td></tr>'; return; }
-      rows.forEach(e=>{
-        const tr = document.createElement('tr');
-        tr.setAttribute('data-toggle','tooltip'); tr.setAttribute('title',`ID: ${e.id||''}`);
-        tr.innerHTML = `
-          <td>${e.apellido||''}</td>
-          <td>${e.nombre||''}</td>
-          <td>${e.cuil||''}</td>
-          <td>${e.categoria||''}</td>
-          <td>${e.oficina||''}</td>
-          <td>${etiquetaSituacion(e.situacion)}</td>
-          <td>
-            <a class="btn btn-sm btn-secondary" href="${e.editUrl}"><i class="fas fa-edit"></i> Editar</a>
-            <a class="btn btn-sm btn-danger" href="${e.deleteUrl}"><i class="fas fa-trash"></i> Borrar</a>
-          </td>`;
-        tb.appendChild(tr);
-      });
-      $('[data-toggle="tooltip"]').tooltip();
-    };
-
-    // Orden
     document.querySelectorAll('#employee-table th[data-sort]').forEach(th=>{
       th.addEventListener('click', ()=>{
         const key = th.getAttribute('data-sort');
@@ -262,32 +325,41 @@
         filterTable();
       });
     });
-
-    // Update período (AJAX) + actualizar link de generación
-    window.updateDashboard = function(){
-      const mes = document.getElementById('mes').value;
-      const año = document.getElementById('año').value;
-      const url = `{% url 'presidencia_dashboard' %}?mes=${mes}&año=${año}&area=${initialData.area}`;
-      fetch(url,{headers:{'X-Requested-With':'XMLHttpRequest'}})
-        .then(r=>r.json()).then(d=>{
-          initialData.empleados = d.empleados;
-          document.getElementById('total-empleados').textContent = d.total_empleados;
-          document.getElementById('total-activos').textContent = d.total_activos;
-          document.getElementById('total-inactivos').textContent = d.total_inactivos;
-          const total = d.total_empleados||1;
-          chart.data.datasets[0].data = [d.total_activos,d.total_inactivos];
-          chart.options.plugins.title.text = `Activos: ${(d.total_activos/total*100).toFixed(1)}%, Inactivos: ${(d.total_inactivos/total*100).toFixed(1)}%`;
-          chart.update();
-          // actualizar el link para GENERAR preliquidación del período elegido
-          document.getElementById('preliquidacion-btn').href =
-            `{% url 'generar_preliquidacion' %}?mes=${mes}&año=${año}&area=${initialData.area}`;
-          filterTable();
-        }).catch(console.error);
-    };
-
-    // Inicial
     $('[data-toggle="tooltip"]').tooltip();
     filterTable();
+  });
+
+  // Gráficos
+  document.addEventListener('DOMContentLoaded', () => {
+    // Activos/Inactivos
+    const total = initialData.total_empleados || 0;
+    const act   = initialData.total_activos || 0;
+    const ina   = initialData.total_inactivos || 0;
+    const pAct = total ? ((act/total)*100).toFixed(1) : 0;
+    const pIna = total ? ((ina/total)*100).toFixed(1) : 0;
+    document.getElementById('txt-porc-activos').textContent = `Activos: ${pAct}%, Inactivos: ${pIna}%`;
+    new Chart(document.getElementById('chartActivos').getContext('2d'), {
+      type:'pie',
+      data:{ labels:['Activos','Inactivos'], datasets:[{ data:[act,ina], backgroundColor:['#0d6efd','#dc3545'] }] },
+      options:{ plugins:{ legend:{position:'bottom'} } }
+    });
+
+    // Permanentes/Contratados (desde lista)
+    const empleados = initialData.empleados || [];
+    const nPerm = empleados.filter(e => e.situacion === 'P').length;
+    const nCont = empleados.filter(e => e.situacion === 'C').length;
+    const totSit = (nPerm + nCont) || empleados.length || 1;
+    const pPerm = ((nPerm/totSit)*100).toFixed(1);
+    const pCont = ((nCont/totSit)*100).toFixed(1);
+    document.getElementById('total-sit').textContent = totSit;
+    document.getElementById('n-perm').textContent   = nPerm;
+    document.getElementById('n-cont').textContent   = nCont;
+    document.getElementById('txt-porc-sit').textContent = `Permanentes: ${pPerm}%, Contratados: ${pCont}%`;
+    new Chart(document.getElementById('chartSituacion').getContext('2d'), {
+      type:'pie',
+      data:{ labels:['Permanentes','Contratados'], datasets:[{ data:[nPerm,nCont], backgroundColor:['#198754','#ffc107'] }] },
+      options:{ plugins:{ legend:{position:'bottom'} } }
+    });
   });
 </script>
 

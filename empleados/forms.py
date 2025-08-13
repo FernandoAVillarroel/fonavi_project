@@ -58,25 +58,71 @@ class CalificacionForm(forms.ModelForm):
             self.fields.pop('empleado')
 
 
-# forms.py
+# empleados/forms.py
+from django import forms
+from .models import Empleado, Titulo, TipoTitulo, Categoria
+
 class EmpleadoForm(forms.ModelForm):
+    # Campo auxiliar para filtrar los títulos por tipo (NO se guarda en BD)
+    tipo_titulo = forms.ModelChoiceField(
+        queryset=TipoTitulo.objects.all().order_by('descripcion'),
+        required=False,
+        label="Tipo de título"
+    )
+
     class Meta:
         model = Empleado
         fields = [
             'nombre', 'apellido', 'dni', 'cuil', 'numero_cuenta',
             'situacion', 'estado', 'fecha_ingreso',
-            'area',      # <-- Área, debe estar aquí
-            'categoria', # <-- Categoría, debe estar aquí
-            'oficina',
-            'nivel_basico',
-            'titulo'
+            'area', 'categoria', 'oficina',
+            # 'nivel_basico',  # <-- lo quitamos (depende de la categoría)
+            'titulo',        # se guarda normalmente
         ]
+        labels = {
+            'area': 'Área',
+            'categoria': 'Categoría',
+            'oficina': 'Oficina',
+            'titulo': 'Título',
+        }
+        widgets = {
+            'fecha_ingreso': forms.DateInput(attrs={'type': 'date'}),
+        }
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['categoria'].label = "Categoría"
-        self.fields['area'].label = "Área"
-        self.fields['nivel_basico'].label = "Nivel Básico (Sueldo Base)"
-        # Si querés: mostrar sólo categorías del área seleccionada, se hace con JS o lógica avanzada.
+
+        # si edita, “preseleccionamos” el tipo del título existente
+        if self.instance and self.instance.pk and self.instance.titulo:
+            self.fields['tipo_titulo'].initial = self.instance.titulo.tipo
+
+            # limitar la lista de títulos al tipo elegido del empleado
+            self.fields['titulo'].queryset = (
+                Titulo.objects.filter(tipo=self.instance.titulo.tipo)
+                .order_by('titulo_completo')
+            )
+        else:
+            # por defecto, mostrar todos los títulos (los filtramos en el front)
+            self.fields['titulo'].queryset = Titulo.objects.all().order_by('titulo_completo')
+
+        # UX: textos claros
+        self.fields['situacion'].label = "Situación (P=Perm., C=Contr.)"
+        self.fields['estado'].label = "Estado (1=Activo, 0=Inactivo)"
+        self.fields['numero_cuenta'].label = "N° de cuenta"
+
+    def clean(self):
+        data = super().clean()
+
+        # Recordatorio: nivel básico NO se elige; saldrá de la categoría en la preliquidación.
+        if not data.get('categoria'):
+            self.add_error('categoria', 'Elegí la categoría (de allí saldrá el nivel básico).')
+
+        # Si eligieron tipo_titulo pero no título
+        if data.get('tipo_titulo') and not data.get('titulo'):
+            self.add_error('titulo', 'Elegí el título específico para el tipo seleccionado.')
+
+        return data
+
 
 
 
@@ -145,24 +191,19 @@ class CategoriaForm(forms.ModelForm):
         return obj
 
 
-# empleados/forms.py
+# forms.py
 from decimal import Decimal, InvalidOperation
 from django import forms
 from django.utils import timezone
 from .models import OficioJudicial
 
-
-# Fallback por si el modelo no define choices en el campo "tipo"
-TIPO_CHOICES = (
+CHOICES_TIPO = (
     (1, 'Monto fijo'),
     (2, 'Porcentaje'),
 )
 
-
 class OficioJudicialForm(forms.ModelForm):
-    # Si tu modelo ya define choices en "tipo", podés omitir esta línea y
-    # dejar que el ModelForm los tome del modelo.
-    tipo = forms.ChoiceField(choices=TIPO_CHOICES)
+    tipo = forms.TypedChoiceField(choices=CHOICES_TIPO, coerce=int)
 
     class Meta:
         model = OficioJudicial
@@ -172,14 +213,6 @@ class OficioJudicialForm(forms.ModelForm):
             'mes':  forms.NumberInput(attrs={'min': 1, 'max': 12}),
             'monto_descontar': forms.NumberInput(attrs={'step': '0.01', 'inputmode': 'decimal'}),
             'porcentaje_descontar': forms.NumberInput(attrs={'step': '0.01', 'inputmode': 'decimal'}),
-        }
-        labels = {
-            'empleado': 'Empleado',
-            'anio': 'Año',
-            'mes': 'Mes',
-            'tipo': 'Tipo de descuento',
-            'monto_descontar': 'Monto a descontar ($)',
-            'porcentaje_descontar': 'Porcentaje a descontar (%)',
         }
 
     def __init__(self, *args, **kwargs):
@@ -192,46 +225,29 @@ class OficioJudicialForm(forms.ModelForm):
     def clean(self):
         data = super().clean()
 
-        # Normalizar coma -> punto para los numéricos si vinieron como string
+        # coma -> punto si vino como string
         for f in ('monto_descontar', 'porcentaje_descontar'):
             raw = self.data.get(f)
             if isinstance(raw, str) and raw.strip():
-                txt = raw.replace(',', '.')
                 try:
-                    data[f] = Decimal(txt)
+                    data[f] = Decimal(raw.replace(',', '.'))
                 except (InvalidOperation, TypeError):
                     self.add_error(f, 'Número inválido (use punto o coma).')
 
-        anio = data.get('anio')
-        mes  = data.get('mes')
-        if anio and (anio < 2000 or anio > 2100):
-            self.add_error('anio', 'Año fuera de rango (2000–2100).')
-        if mes and (mes < 1 or mes > 12):
-            self.add_error('mes', 'Mes debe ser entre 1 y 12.')
-
-        # Validación según tipo (entero: 1=Monto, 2=Porcentaje)
         tipo = data.get('tipo')
-        try:
-            tipo = int(tipo) if tipo is not None else None
-        except (TypeError, ValueError):
-            tipo = None
-
         monto = data.get('monto_descontar') or Decimal('0')
         porc  = data.get('porcentaje_descontar') or Decimal('0')
 
         if tipo == 1:  # MONTO
             if monto <= 0:
                 self.add_error('monto_descontar', 'Ingrese un monto > 0.')
-            # Apagar el porcentaje
-            data['porcentaje_descontar'] = Decimal('0.00')
-
+            data['porcentaje_descontar'] = Decimal('0')
         elif tipo == 2:  # PORCENTAJE
             if porc <= 0:
                 self.add_error('porcentaje_descontar', 'Ingrese un % > 0.')
-            # Apagar el monto
-            data['monto_descontar'] = Decimal('0.00')
-
+            data['monto_descontar'] = Decimal('0')
         else:
-            self.add_error('tipo', 'Seleccione el tipo de descuento (Monto o Porcentaje).')
+            self.add_error('tipo', 'Seleccione Monto o Porcentaje.')
 
         return data
+

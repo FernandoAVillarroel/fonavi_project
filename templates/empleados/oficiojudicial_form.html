@@ -10,7 +10,6 @@
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
   .grid .full{grid-column:1 / -1}
   .readonly-chip{display:inline-block;background:#e9f2ff;color:#0b5ed7;border-radius:999px;padding:.25rem .6rem;font-weight:600;font-size:.9rem}
-  .muted{color:#6c757d}
 </style>
 
 <div class="mb-3">
@@ -28,7 +27,6 @@
     <form method="post" novalidate>
       {% csrf_token %}
 
-      {# Campos ocultos fijados por la view (empleado, anio, mes) #}
       {{ form.empleado }} {{ form.anio }} {{ form.mes }}
 
       {% if form.non_field_errors %}
@@ -36,11 +34,10 @@
       {% endif %}
 
       <div class="grid">
-
         <div class="full">
           <label class="form-label">Empleado</label><br>
           <span class="readonly-chip">
-            {{ empleado_obj.apellido|default_if_none:"" }} {{ empleado_obj.nombre|default_if_none:"" }}
+            {{ empleado_obj.apellido }} {{ empleado_obj.nombre }}
           </span>
         </div>
 
@@ -71,7 +68,6 @@
           {{ form.porcentaje_descontar }}
           {% if form.porcentaje_descontar.errors %}<div class="text-danger small">{{ form.porcentaje_descontar.errors }}</div>{% endif %}
         </div>
-
       </div>
 
       <div class="mt-3">
@@ -91,14 +87,14 @@
 
     function toggleCampos() {
       const v = parseInt(tipo.value, 10);
-      if (v === 1) { // Monto
+      if (v === 1) {        // 1 = MONTO
         rowMonto.style.display = '';
         rowPorc.style.display  = 'none';
-        if (inpPorc) { inpPorc.value = '0'; }
-      } else if (v === 2) { // Porcentaje
+        if (inpPorc)  inpPorc.value  = '0';
+      } else if (v === 2) { // 2 = PORCENTAJE
         rowMonto.style.display = 'none';
         rowPorc.style.display  = '';
-        if (inpMonto) { inpMonto.value = '0'; }
+        if (inpMonto) inpMonto.value = '0';
       } else {
         rowMonto.style.display = '';
         rowPorc.style.display  = '';

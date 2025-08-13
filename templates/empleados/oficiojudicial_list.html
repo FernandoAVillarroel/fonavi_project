@@ -7,7 +7,7 @@
   .oficios-header{text-align:center;margin-bottom:.75rem}
   .oficios-title{font-size:1.6rem;font-weight:700;color:#004085}
   .oficios-periodo{font-size:1rem;color:#007bff}
-  .oficios-filtros{display:grid;grid-template-columns:1.2fr .5fr .5fr .8fr .8fr auto;gap:.5rem;align-items:end;margin:.9rem 0}
+  .oficios-filtros{display:grid;grid-template-columns:1.2fr .5fr .5fr .8fr .8fr .8fr auto;gap:.5rem;align-items:end;margin:.9rem 0}
   .oficios-filtros label{font-weight:600;color:#343a40;margin-bottom:.2rem;font-size:.95rem}
   .oficios-filtros input,.oficios-filtros select{padding:.45rem .6rem;border:1px solid #ced4da;border-radius:.5rem;font-size:.95rem}
   .btn-primary{background:#007bff;border:none}.btn-primary:hover{background:#0069d9}
@@ -59,6 +59,17 @@
         {% endfor %}
       </select>
     </div>
+
+    {# --- NUEVO: Estado --- #}
+    <div>
+      <label for="estado">Estado</label>
+      <select name="estado" id="estado">
+        <option value="activos"   {% if f_estado == 'activos' %}selected{% endif %}>Activos</option>
+        <option value="inactivos" {% if f_estado == 'inactivos' %}selected{% endif %}>Inactivos</option>
+        <option value="todos"     {% if f_estado == 'todos' %}selected{% endif %}>Todos</option>
+      </select>
+    </div>
+
     <div class="d-flex gap-2">
       <button class="btn btn-success" type="submit">Filtrar</button>
       <a class="btn btn-secondary" href="{% url 'empleados:oficiojudicial-list' %}">Limpiar</a>
@@ -66,7 +77,8 @@
   </form>
 
   <div class="mb-2">
-    <a href="{% url 'empleados:oficiojudicial-create' %}?anio={{ f_anio|default:anio_actual }}&mes={{ f_mes|default:mes_actual }}" class="btn btn-success">
+    <a href="{% url 'empleados:oficiojudicial-create' %}?anio={{ f_anio|default:anio_actual }}&mes={{ f_mes|default:mes_actual }}&estado={{ f_estado }}&area={{ f_area }}&empleado="
+       class="btn btn-success">
       + Nuevo Oficio Judicial
     </a>
   </div>
@@ -93,22 +105,8 @@
           <td>{{ row.cuil }}</td>
           <td>{{ row.dni }}</td>
           <td>{% if row.oj_tipo == 1 %}Monto{% elif row.oj_tipo == 2 %}Porcentaje{% else %}—{% endif %}</td>
-
-          <td>
-            {% if row.oj_id and row.oj_tipo == 1 %}
-              $ {{ row.oj_monto|floatformat:2|intcomma }}
-            {% else %}
-              —
-            {% endif %}
-          </td>
-          <td>
-            {% if row.oj_id and row.oj_tipo == 2 %}
-              {{ row.oj_porc|floatformat:2 }}%
-            {% else %}
-              —
-            {% endif %}
-          </td>
-
+          <td>{% if row.oj_id and row.oj_tipo == 1 %}$ {{ row.oj_monto|floatformat:2|intcomma }}{% else %}—{% endif %}</td>
+          <td>{% if row.oj_id and row.oj_tipo == 2 %}{{ row.oj_porc|floatformat:2 }}%{% else %}—{% endif %}</td>
           <td>
             <div class="d-flex gap-2 justify-content-center">
               {% if row.oj_id %}
@@ -119,7 +117,7 @@
                 </form>
               {% else %}
                 <a class="btn btn-sm btn-primary"
-                   href="{% url 'empleados:oficiojudicial-create' %}?empleado={{ row.pk }}&anio={{ f_anio|default:anio_actual }}&mes={{ f_mes|default:mes_actual }}">
+                   href="{% url 'empleados:oficiojudicial-create' %}?empleado={{ row.pk }}&anio={{ f_anio|default:anio_actual }}&mes={{ f_mes|default:mes_actual }}&estado={{ f_estado }}&area={{ f_area }}">
                   Crear
                 </a>
               {% endif %}
@@ -127,7 +125,7 @@
           </td>
         </tr>
         {% empty %}
-          <tr><td colspan="8">No hay empleados activos para el filtro.</td></tr>
+          <tr><td colspan="8">No hay empleados para el filtro.</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -138,13 +136,13 @@
     <ul class="pagination justify-content-center">
       {% if page_obj.has_previous %}
         <li class="page-item">
-          <a class="page-link" href="?page={{ page_obj.previous_page_number }}&empleado={{ f_empleado }}&anio={{ f_anio|default:anio_actual }}&mes={{ f_mes|default:mes_actual }}&tipo={{ f_tipo }}&area={{ f_area }}">Anterior</a>
+          <a class="page-link" href="?page={{ page_obj.previous_page_number }}&empleado={{ f_empleado }}&anio={{ f_anio|default:anio_actual }}&mes={{ f_mes|default:mes_actual }}&tipo={{ f_tipo }}&area={{ f_area }}&estado={{ f_estado }}">Anterior</a>
         </li>
       {% endif %}
       <li class="page-item disabled"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
       {% if page_obj.has_next %}
         <li class="page-item">
-          <a class="page-link" href="?page={{ page_obj.next_page_number }}&empleado={{ f_empleado }}&anio={{ f_anio|default:anio_actual }}&mes={{ f_mes|default:mes_actual }}&tipo={{ f_tipo }}&area={{ f_area }}">Siguiente</a>
+          <a class="page-link" href="?page={{ page_obj.next_page_number }}&empleado={{ f_empleado }}&anio={{ f_anio|default:anio_actual }}&mes={{ f_mes|default:mes_actual }}&tipo={{ f_tipo }}&area={{ f_area }}&estado={{ f_estado }}">Siguiente</a>
         </li>
       {% endif %}
     </ul>
@@ -153,9 +151,9 @@
 </div>
 
 <script>
-  document.getElementById('area')?.addEventListener('change', ()=>document.getElementById('filtrosForm').submit());
-  document.getElementById('tipo')?.addEventListener('change', ()=>document.getElementById('filtrosForm').submit());
-
+  ['area','tipo','estado'].forEach(id=>{
+    document.getElementById(id)?.addEventListener('change', ()=>document.getElementById('filtrosForm').submit());
+  });
   window.addEventListener('load', () => {
     document.querySelectorAll('#tbodyOficios .fade-in').forEach((row, i) => {
       setTimeout(() => row.classList.add('show'), 35 * i);

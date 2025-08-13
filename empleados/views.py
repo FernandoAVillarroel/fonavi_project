@@ -268,20 +268,37 @@ def is_presidencia(user):
 
 
 
+# views.py
 from datetime import date
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
+
 from django.urls import reverse
 from django.db import transaction
+from django.shortcuts import redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
+
+from .models import Empleado, Preliquidacion, OficioJudicial, Calificacion
+
+# si ya lo tenés definido, dejá tu propia versión
+def _money(x):
+    return Decimal(x or 0).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
 @login_required(login_url='login')
 @user_passes_test(is_presidencia)
 def generar_preliquidacion(request):
+    """
+    Genera/regenerea preliquidaciones del período elegido.
+    - Toma el básico de la categoría/nivel del empleado.
+    - Aplica CALIFICACIÓN (el save() de Preliquidacion ya lo hace; aquí además la seteamos).
+    - Recalcula BRUTO, JUB, OS.
+    - Aplica OFICIO JUDICIAL: 1=monto fijo, 2=% sobre BRUTO (ajusta si querés otra base).
+    - Liquido = Bruto - (Jub + OS + Oficio).
+    """
     mes  = int(request.GET.get('mes',  date.today().month))
     año  = int(request.GET.get('año',  date.today().year))
     area = request.GET.get('area', 'TODAS')
 
-    # Empleados activos (opcionalmente por área)
+    # Empleados activos del área (o todas)
     empleados = (
         Empleado.objects
         .filter(estado=1, fecha_salida__isnull=True)
@@ -290,7 +307,7 @@ def generar_preliquidacion(request):
     if area and area != 'TODAS':
         empleados = empleados.filter(area=area)
 
-    # Limpiar preliqs del período/área
+    # Limpiar preliqs del período/área para regenerar
     preliqs = Preliquidacion.objects.filter(mes=mes, año=año)
     if area and area != 'TODAS':
         preliqs = preliqs.filter(empleado__area=area)
@@ -300,36 +317,78 @@ def generar_preliquidacion(request):
 
     with transaction.atomic():
         for emp in empleados:
-            # Resuelve (nivel, básico) desde emp.nivel_basico o categoria.id_nivel
+            # === Resuelve nivel y básico del empleado (usa tu helper existente) ===
             nivel_fk, basico = _nivel_y_basico_de(emp)
 
+            # Crear/actualizar la preliquidación base
             obj, _ = Preliquidacion.objects.update_or_create(
                 empleado=emp, año=año, mes=mes,
                 defaults={
                     'categoria'        : emp.categoria,
                     'oficina'          : emp.oficina,
                     'titulo'           : emp.titulo,
-                    'nivel'            : nivel_fk,   # puede venir desde la categoría
-                    'basico'           : basico,     # importe del nivel
+                    'nivel'            : nivel_fk,
+                    'basico'           : basico,
                     'situacion'        : emp.situacion,
-                    # estos nombres también se recalculan en save(), pero no molesta setearlos
                     'categoria_nombre' : getattr(emp.categoria, 'nombre', None),
                     'oficina_nombre'   : getattr(emp.oficina, 'nombre', None),
                     'titulo_completo'  : getattr(emp.titulo, 'titulo_completo', None),
                 }
             )
 
-            # Dispara tu cálculo en Preliquidacion.save()
+            # === Forzar calificación del período (por claridad) ===
+            # Tu modelo Preliquidacion.save() ya la busca; esto asegura el valor antes del save.
+            calif = (Calificacion.objects
+                        .filter(empleado=emp, año=año, mes=mes)
+                        .values_list('calificacion', flat=True)
+                        .first())
+            obj.calificacion = calif if calif is not None else Decimal('100')
+
+            # Guarda: el save() del modelo calcula:
+            # - básico calificado (básico * calif/100)
+            # - antigüedad, bonificación por título
+            # - suplementos (según tu Categoría)
+            # - BRUTO, JUB (11%), OS (5%)
             obj.save()
+
+            # === OFICIO JUDICIAL (del período) ===
+            # Regla adoptada aquí:
+            #   tipo=1 -> monto fijo
+            #   tipo=2 -> % aplicado sobre BRUTO (cambiá a otra base si querés)
+            oj = (OficioJudicial.objects
+                    .filter(empleado=emp, anio=año, mes=mes)
+                    .order_by('-id')
+                    .first())
+
+            if oj:
+                if oj.tipo == 1:
+                    # Monto fijo
+                    obj.oficio_judicial = _money(oj.monto_descontar or 0)
+                elif oj.tipo == 2:
+                    # % sobre BRUTO (podés cambiar a basico_total si esa fuera la regla)
+                    base = obj.bruto or Decimal('0')
+                    porc = (oj.porcentaje_descontar or Decimal('0')) / Decimal('100')
+                    obj.oficio_judicial = _money(base * porc)
+                else:
+                    obj.oficio_judicial = Decimal('0.00')
+            else:
+                obj.oficio_judicial = Decimal('0.00')
+
+            # === Recalcular líquido con el oficio incluido ===
+            desc = (obj.jubilacion or 0) + (obj.obra_social or 0) + (obj.oficio_judicial or 0)
+            obj.liquido = _money((obj.bruto or 0) - desc)
+
+            obj.save(update_fields=['oficio_judicial', 'liquido'])
 
             if basico is None or basico <= 0:
                 sin_basico.append(emp.pk)
 
     if sin_basico:
-        # Cambiá por logging/messages si preferís
         print(f"[PRELIQ {mes}/{año}] Empleados sin básico resuelto: {sin_basico}")
 
     return redirect(f"{reverse('preliquidacion_overview')}?mes={mes}&año={año}&area={area}")
+
+
 
 
 
@@ -961,13 +1020,14 @@ def confirmar_liquidacion(request):
 # CRUD DE EMPLEADOS, CALIFICACIONES, CATEGORIAS, OFICIOS
 # ——————————————————————————————————————————————————————————————————————
 
+# empleados/views.py
 from django.views.generic import ListView
 from django.db.models import Q
 from .models import Empleado, Categoria
 
 class EmpleadoListView(ListView):
     model = Empleado
-    template_name = "empleados/empleado_list.html"
+    template_name = "empleados/empleados_list.html"   # ← plural
     context_object_name = "empleados"
     paginate_by = 20
 
@@ -981,7 +1041,6 @@ class EmpleadoListView(ListView):
         situacion  = self.request.GET.get("situacion", "TODAS")
         estado     = self.request.GET.get("estado", "activos")
 
-        # Búsqueda por DNI / CUIL / Nombre / Apellido (incluye "nombre apellido" o "apellido nombre")
         if q:
             base = (Q(dni__icontains=q) | Q(cuil__icontains=q) |
                     Q(nombre__icontains=q) | Q(apellido__icontains=q))
@@ -992,7 +1051,7 @@ class EmpleadoListView(ListView):
                     (Q(nombre__icontains=n1) & Q(apellido__icontains=n2)) |
                     (Q(nombre__icontains=n2) & Q(apellido__icontains=n1))
                 )
-                base = base | combinado
+                base |= combinado
             qs = qs.filter(base)
 
         if area and area != "TODAS":
@@ -1013,7 +1072,6 @@ class EmpleadoListView(ListView):
         ctx["areas"]        = ["TODAS"] + [a for a, _ in Categoria.AREAS]
         ctx["situaciones"]  = ["TODAS", "P", "C"]
         ctx["estados"]      = [("activos", "Activos"), ("inactivos", "Inactivos"), ("todos", "Todos")]
-
         ctx["q"]          = (self.request.GET.get("q") or "").strip()
         ctx["area_sel"]   = self.request.GET.get("area", "TODAS")
         ctx["sit_sel"]    = self.request.GET.get("situacion", "TODAS")
@@ -1023,7 +1081,7 @@ class EmpleadoListView(ListView):
         params.pop("page", None)
         ctx["qs_params"] = params.urlencode()
         return ctx
-    
+
     
 # empleados/views.py (añade estos imports arriba)
 from django.http import JsonResponse, HttpResponseBadRequest
@@ -1297,16 +1355,19 @@ class CategoriaUpdateView(LoginRequiredMixin, UpdateView):
     success_url   = reverse_lazy('empleados:categoria-list')
 
 
-# empleados/views.py (solo la parte de Oficios Judiciales)
+# --- OFICIOS JUDICIALES (LIST/CREATE/UPDATE/DELETE) ---
 from decimal import Decimal
+from django import forms as dj_forms
 from django.utils import timezone
+from django.contrib import messages
+from django.shortcuts import redirect, get_object_or_404
+from django.urls import reverse, reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import ListView
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.db.models import Q, OuterRef, Subquery, DecimalField, IntegerField, Value
 from django.db.models.functions import Coalesce
 
 from .models import Empleado, OficioJudicial
-
 
 class OficioJudicialListView(LoginRequiredMixin, ListView):
     template_name = 'empleados/oficiojudicial_list.html'
@@ -1331,34 +1392,42 @@ class OficioJudicialListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         anio, mes = self._periodo()
 
+        # Subquery: último oficio del período por empleado
         oj_qs = (
             OficioJudicial.objects
             .filter(empleado_id=OuterRef('pk'), anio=anio, mes=mes)
             .order_by('-id')
         )
 
+        # Filtro de estado en la lista (activos | inactivos | todos)
+        estado = self.request.GET.get('estado', 'activos')
+
         qs = (
             Empleado.objects
-            .filter(estado='1')  # activos
             .order_by('apellido', 'nombre')
             .annotate(
-                oj_id   = Subquery(oj_qs.values('id')[:1]),
-                oj_tipo = Subquery(oj_qs.values('tipo')[:1], output_field=IntegerField()),  # 1=monto, 2=porcentaje
-                oj_monto= Coalesce(
+                oj_id    = Subquery(oj_qs.values('id')[:1]),
+                oj_tipo  = Subquery(oj_qs.values('tipo')[:1], output_field=IntegerField()),  # 1=monto, 2=porcentaje
+                oj_monto = Coalesce(
                     Subquery(oj_qs.values('monto_descontar')[:1],
                              output_field=DecimalField(max_digits=12, decimal_places=2)),
                     Value(Decimal('0.00'), output_field=DecimalField(max_digits=12, decimal_places=2)),
-                    output_field=DecimalField(max_digits=12, decimal_places=2),
                 ),
-                oj_porc = Coalesce(
+                oj_porc  = Coalesce(
                     Subquery(oj_qs.values('porcentaje_descontar')[:1],
                              output_field=DecimalField(max_digits=7, decimal_places=2)),
                     Value(Decimal('0.00'), output_field=DecimalField(max_digits=7, decimal_places=2)),
-                    output_field=DecimalField(max_digits=7, decimal_places=2),
                 ),
             )
         )
 
+        if estado == 'activos':
+            qs = qs.filter(estado='1', fecha_salida__isnull=True)
+        elif estado == 'inactivos':
+            qs = qs.filter(Q(estado='0') | Q(fecha_salida__isnull=False))
+        # 'todos' => no se filtra
+
+        # Filtros adicionales
         empleado = self.request.GET.get('empleado')
         tipo     = self.request.GET.get('tipo')   # '1' o '2'
         area     = self.request.GET.get('area')
@@ -1383,11 +1452,12 @@ class OficioJudicialListView(LoginRequiredMixin, ListView):
         ctx['anio_actual'] = anio
         ctx['mes_actual']  = mes
 
-        ctx['f_empleado']  = self.request.GET.get('empleado', '')
-        ctx['f_anio']      = anio
-        ctx['f_mes']       = mes
-        ctx['f_tipo']      = self.request.GET.get('tipo', '')
-        ctx['f_area']      = self.request.GET.get('area', '')
+        ctx['f_empleado'] = self.request.GET.get('empleado', '')
+        ctx['f_anio']     = anio
+        ctx['f_mes']      = mes
+        ctx['f_tipo']     = self.request.GET.get('tipo', '')
+        ctx['f_area']     = self.request.GET.get('area', '')
+        ctx['f_estado']   = self.request.GET.get('estado', 'activos')  # <- para el select
 
         ctx['areas'] = [
             'PRESIDENCIA',
@@ -1398,23 +1468,9 @@ class OficioJudicialListView(LoginRequiredMixin, ListView):
         return ctx
 
 
-
-# --- Oficios Judiciales (Create/Update/Delete) ---
-from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.urls import reverse_lazy
-from django.views.generic import CreateView, UpdateView, DeleteView
-from django.shortcuts import redirect, get_object_or_404
-from django import forms
-from django.utils import timezone
-
-from .models import OficioJudicial, Empleado
-
-
 class OficioJudicialCreateView(LoginRequiredMixin, CreateView):
     model = OficioJudicial
     template_name = 'empleados/oficiojudicial_form.html'
-    success_url = reverse_lazy('empleados:oficiojudicial-list')
     login_url = 'login'
 
     def get_form_class(self):
@@ -1422,7 +1478,7 @@ class OficioJudicialCreateView(LoginRequiredMixin, CreateView):
         return OficioJudicialForm
 
     def dispatch(self, request, *args, **kwargs):
-        # exigir período actual
+        # Exigir período actual
         now = timezone.now()
         anio = int(request.GET.get('anio') or now.year)
         mes  = int(request.GET.get('mes')  or now.month)
@@ -1430,7 +1486,7 @@ class OficioJudicialCreateView(LoginRequiredMixin, CreateView):
             messages.error(request, 'Solo se pueden crear oficios para el período actual.')
             return redirect('empleados:oficiojudicial-list')
 
-        # exigir empleado
+        # Exigir empleado
         emp_id = request.GET.get('empleado')
         if not emp_id:
             messages.error(request, 'Seleccioná un empleado desde la lista para crear el oficio.')
@@ -1443,30 +1499,42 @@ class OficioJudicialCreateView(LoginRequiredMixin, CreateView):
 
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
-        # fijar y ocultar campos
+        # Inicializar y ocultar campos fijos
         form.fields['empleado'].initial = self._empleado.pk
         form.fields['anio'].initial = self._anio
         form.fields['mes'].initial = self._mes
-        form.fields['empleado'].widget = forms.HiddenInput()
-        form.fields['anio'].widget = forms.HiddenInput()
-        form.fields['mes'].widget = forms.HiddenInput()
+        form.fields['empleado'].widget = dj_forms.HiddenInput()
+        form.fields['anio'].widget = dj_forms.HiddenInput()
+        form.fields['mes'].widget = dj_forms.HiddenInput()
         return form
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx['empleado_obj'] = self._empleado
-        ctx['anio_fijo'] = self._anio
-        ctx['mes_fijo'] = self._mes
-        ctx['modo'] = 'create'
+        ctx.update({
+            'empleado_obj': self._empleado,
+            'anio_fijo': self._anio,
+            'mes_fijo': self._mes,
+            'modo': 'create',
+        })
         return ctx
 
     def form_valid(self, form):
-        # redundancia defensiva
-        form.instance.empleado = self._empleado
-        form.instance.anio = self._anio
-        form.instance.mes = self._mes
-        messages.success(self.request, 'Oficio judicial creado correctamente.')
-        return super().form_valid(form)
+        # unique_together (anio, mes, empleado) => update_or_create
+        cd = form.cleaned_data
+        obj, created = OficioJudicial.objects.update_or_create(
+            empleado=self._empleado,
+            anio=self._anio,
+            mes=self._mes,
+            defaults={
+                'tipo': cd['tipo'],
+                'monto_descontar': cd.get('monto_descontar') or Decimal('0'),
+                'porcentaje_descontar': cd.get('porcentaje_descontar') or Decimal('0'),
+            }
+        )
+        messages.success(self.request, f'Oficio judicial {"creado" if created else "actualizado"} correctamente.')
+        # Volver a la lista manteniendo período
+        url = f"{reverse('empleados:oficiojudicial-list')}?anio={self._anio}&mes={self._mes}"
+        return redirect(url)
 
 
 class OficioJudicialUpdateView(LoginRequiredMixin, UpdateView):
@@ -1490,18 +1558,20 @@ class OficioJudicialUpdateView(LoginRequiredMixin, UpdateView):
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
         # ocultar campos fijos
-        form.fields['empleado'].widget = forms.HiddenInput()
-        form.fields['anio'].widget = forms.HiddenInput()
-        form.fields['mes'].widget = forms.HiddenInput()
+        form.fields['empleado'].widget = dj_forms.HiddenInput()
+        form.fields['anio'].widget = dj_forms.HiddenInput()
+        form.fields['mes'].widget = dj_forms.HiddenInput()
         return form
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         obj = self.object
-        ctx['empleado_obj'] = obj.empleado
-        ctx['anio_fijo'] = obj.anio
-        ctx['mes_fijo'] = obj.mes
-        ctx['modo'] = 'update'
+        ctx.update({
+            'empleado_obj': obj.empleado,
+            'anio_fijo': obj.anio,
+            'mes_fijo': obj.mes,
+            'modo': 'update',
+        })
         return ctx
 
     def form_valid(self, form):

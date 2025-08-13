@@ -548,46 +548,93 @@ class Liquidacion(models.Model):
         
 # fonavi_project/apps/empleados/models.py
 
-from decimal import Decimal
+# empleados/models.py
+from decimal import Decimal, ROUND_HALF_UP
 from django.db import models
 
+def _q2(x: Decimal) -> Decimal:
+    return (Decimal(x or 0).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+
 class OficioJudicial(models.Model):
-    anio   = models.PositiveSmallIntegerField()
-    mes    = models.PositiveSmallIntegerField(choices=[(i,i) for i in range(1,13)])
+    anio = models.PositiveSmallIntegerField()
+    mes  = models.PositiveSmallIntegerField(choices=[(i, i) for i in range(1, 13)])
+
     empleado = models.ForeignKey(
         'Empleado',
         on_delete=models.CASCADE,
         db_column='id_empleado'
     )
-    monto_descontar      = models.DecimalField(
+
+    # Si tipo = MONTO -> usar este campo (en $)
+    monto_descontar = models.DecimalField(
         max_digits=10, decimal_places=2,
         null=True, blank=True,
         verbose_name="Monto a descontar"
     )
+    # Si tipo = PORCENTAJE -> usar este campo (en %)
     porcentaje_descontar = models.DecimalField(
         max_digits=5, decimal_places=2,
         null=True, blank=True,
         verbose_name="Porcentaje a descontar"
     )
 
-    TIPO_PORCENTAJE = 1
-    TIPO_MONTO      = 2
-    TIPO_CHOICES    = (
-        (TIPO_PORCENTAJE, 'Porcentaje'),
+    # >>> Alineado con TU BD: 1=Monto, 2=Porcentaje <<<
+    TIPO_MONTO       = 1
+    TIPO_PORCENTAJE  = 2
+    TIPO_CHOICES = (
         (TIPO_MONTO,      'Monto fijo'),
+        (TIPO_PORCENTAJE, 'Porcentaje'),
     )
+
     tipo = models.PositiveSmallIntegerField(
         choices=TIPO_CHOICES,
-        default=TIPO_MONTO,
+        default=TIPO_MONTO,         # opcional; si preferís no generar migración, dejá el valor que tenías
         verbose_name="Tipo de descuento"
     )
 
     class Meta:
         db_table = 'oficio_judicial'
-        unique_together = (('anio','mes','empleado'),)
+        unique_together = (('anio', 'mes', 'empleado'),)
+        indexes = [
+            models.Index(fields=['anio', 'mes', 'empleado']),
+        ]
 
     def __str__(self):
         return f"{self.empleado} – {self.mes}/{self.anio}"
+
+    # --- Validación liviana para el admin/form ---
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.tipo == self.TIPO_MONTO:
+            if not self.monto_descontar and not self.porcentaje_descontar:
+                # permitimos 0 pero no None
+                self.monto_descontar = Decimal('0.00')
+            # inutilizar el otro campo para evitar confusiones
+            self.porcentaje_descontar = None
+        elif self.tipo == self.TIPO_PORCENTAJE:
+            if self.porcentaje_descontar is None:
+                self.porcentaje_descontar = Decimal('0.00')
+            self.monto_descontar = None
+        else:
+            raise ValidationError("Tipo de oficio judicial inválido.")
+
+    # --- Helper para calcular el importe a descontar sobre una base dada ---
+    def calcular_descuento_sobre(self, importe_base: Decimal) -> Decimal:
+        """
+        Devuelve el descuento que corresponde aplicar sobre 'importe_base'.
+        Si es MONTO, devuelve el monto. Si es PORCENTAJE, aplica el %.
+        """
+        if self.tipo == self.TIPO_MONTO:
+            return _q2(self.monto_descontar or 0)
+        # porcentaje
+        pct = (Decimal(self.porcentaje_descontar or 0) / Decimal('100'))
+        return _q2(Decimal(importe_base or 0) * pct)
+
+
+
+# empleados/models.py
+from django.conf import settings
+from django.db import models
 
 class Calificacion(models.Model):
     empleado     = models.ForeignKey(
@@ -596,14 +643,11 @@ class Calificacion(models.Model):
         db_column='id_empleado'
     )
     año          = models.PositiveSmallIntegerField()
-    mes          = models.PositiveSmallIntegerField(
-        choices=[(i, i) for i in range(1, 13)]
-    )
+    mes          = models.PositiveSmallIntegerField(choices=[(i, i) for i in range(1, 13)])
     calificacion = models.DecimalField(max_digits=5, decimal_places=2)
     id_usuario   = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        null=True,
-        blank=True,
+        null=True, blank=True,
         on_delete=models.PROTECT,
         db_column='id_usuario',
         verbose_name="Usuario que registra"
@@ -615,7 +659,3 @@ class Calificacion(models.Model):
 
     def __str__(self):
         return f"{self.empleado} – {self.año}/{self.mes}: {self.calificacion}"
-
-
-
-

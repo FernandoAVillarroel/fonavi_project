@@ -1,80 +1,173 @@
-{# templates/empleados/empleado_form.html #}
 {% extends "base.html" %}
 {% load widget_tweaks %}
 
 {% block content %}
-  <h1>
-    {% if object %}Editar Empleado{% else %}Nuevo Empleado{% endif %}
-  </h1>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 
-  <form method="post">
-    {% csrf_token %}
+<div class="mb-2">
+  <a href="{% url 'empleados:empleado-list' %}" class="btn btn-sm btn-outline-secondary">
+    ← Volver
+  </a>
+</div>
 
-    <div class="row gx-3 gy-3 mb-4">
-      <div class="col-md-6">
-        {{ form.nombre.label_tag }}
-        {{ form.nombre|add_class:"form-control" }}
-      </div>
-      <div class="col-md-6">
-        {{ form.apellido.label_tag }}
-        {{ form.apellido|add_class:"form-control" }}
+<div class="card shadow-sm">
+  <div class="card-body">
+    <h1 class="h4 mb-3">
+      {% if object %}<i class="fa-solid fa-user-pen me-2"></i>Editar empleado
+      {% else %}<i class="fa-solid fa-user-plus me-2"></i>Nuevo empleado{% endif %}
+    </h1>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Nombre</label>
+          {{ form.nombre|add_class:"form-control" }}
+          {{ form.nombre.errors }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Apellido</label>
+          {{ form.apellido|add_class:"form-control" }}
+          {{ form.apellido.errors }}
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">DNI</label>
+          {{ form.dni|add_class:"form-control" }}
+          {{ form.dni.errors }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">CUIL</label>
+          {{ form.cuil|add_class:"form-control" }}
+          {{ form.cuil.errors }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">N° de cuenta</label>
+          {{ form.numero_cuenta|add_class:"form-control" }}
+          {{ form.numero_cuenta.errors }}
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Situación</label>
+          {{ form.situacion|add_class:"form-select" }}
+          {{ form.situacion.errors }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Estado</label>
+          {{ form.estado|add_class:"form-select" }}
+          {{ form.estado.errors }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Fecha de ingreso</label>
+          {{ form.fecha_ingreso|add_class:"form-control" }}
+          {{ form.fecha_ingreso.errors }}
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Área</label>
+          {{ form.area|add_class:"form-select" }}
+          {{ form.area.errors }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Categoría</label>
+          {{ form.categoria|add_class:"form-select" }}
+          <div class="form-text">El nivel básico se toma de la categoría.</div>
+          {{ form.categoria.errors }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Oficina</label>
+          {{ form.oficina|add_class:"form-select" }}
+          {{ form.oficina.errors }}
+        </div>
+
+        <!-- Filtro: Tipo de título -> Título -->
+        <div class="col-md-4">
+          <label class="form-label">Tipo de título</label>
+          {{ form.tipo_titulo|add_class:"form-select" }}
+          <div class="form-text">Usado para filtrar los títulos.</div>
+          {{ form.tipo_titulo.errors }}
+        </div>
+        <div class="col-md-5">
+          <label class="form-label">Título</label>
+          <!-- a cada <option> le agregamos data-tipo para filtrar en el front -->
+          <select name="{{ form.titulo.name }}" id="id_titulo" class="form-select">
+            {% for t in form.fields.titulo.queryset %}
+              <option value="{{ t.pk }}"
+                      data-tipo="{{ t.tipo_id }}"
+                      {% if form.instance.titulo and t.pk == form.instance.titulo.pk %}selected{% endif %}>
+                {{ t.titulo_completo }}
+              </option>
+            {% endfor %}
+          </select>
+          {{ form.titulo.errors }}
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+          <div class="alert alert-info w-100 py-2 mb-0" id="badgePorcentaje">
+            <i class="fa-solid fa-percent me-1"></i>
+            Porcentaje: <strong id="porcValor">—</strong>
+          </div>
+        </div>
       </div>
 
-      <div class="col-md-4">
-        {{ form.dni.label_tag }}
-        {{ form.dni|add_class:"form-control" }}
+      <div class="mt-4 d-flex gap-2">
+        <button type="submit" class="btn btn-success">
+          {% if object %}<i class="fa-solid fa-floppy-disk me-1"></i>Guardar cambios
+          {% else %}<i class="fa-solid fa-check me-1"></i>Crear empleado{% endif %}
+        </button>
+        <a href="{% url 'empleados:empleado-list' %}" class="btn btn-secondary">Cancelar</a>
       </div>
-      <div class="col-md-4">
-        {{ form.cuil.label_tag }}
-        {{ form.cuil|add_class:"form-control" }}
-      </div>
-      <div class="col-md-4">
-        {{ form.numero_cuenta.label_tag }}
-        {{ form.numero_cuenta|add_class:"form-control" }}
-      </div>
+    </form>
+  </div>
+</div>
 
-      <div class="col-md-4">
-        {{ form.situacion.label_tag }}
-        {{ form.situacion|add_class:"form-control" }}
-      </div>
-      <div class="col-md-4">
-        {{ form.estado.label_tag }}
-        {{ form.estado|add_class:"form-control" }}
-      </div>
-      <div class="col-md-4">
-        {{ form.fecha_ingreso.label_tag }}
-        {{ form.fecha_ingreso|add_class:"form-control" }}
-      </div>
+<script>
+  (function () {
+    const selTipo = document.getElementById("id_tipo_titulo");   // del form
+    const selTitulo = document.getElementById("id_titulo");
+    const porcSpan = document.getElementById("porcValor");
 
-      <div class="col-md-6">
-        {{ form.area.label_tag }}
-        {{ form.area|add_class:"form-control" }}
-      </div>
-      <div class="col-md-6">
-        {{ form.categoria.label_tag }}
-        {{ form.categoria|add_class:"form-control" }}
-      </div>
+    // Mapa titulo_id -> porcentaje (lo armamos de las opciones actuales con title como fallback)
+    const porcentajes = {};
+    {% for t in form.fields.titulo.queryset %}
+      porcentajes["{{ t.pk }}"] = "{{ t.tipo.porcentaje|default:'0' }}";
+    {% endfor %}
 
-      <div class="col-md-6">
-        {{ form.oficina.label_tag }}
-        {{ form.oficina|add_class:"form-control" }}
-      </div>
-      <div class="col-md-6">
-        {{ form.nivel_basico.label_tag }}
-        {{ form.nivel_basico|add_class:"form-control" }}
-      </div>
+    function filtraTitulosPorTipo() {
+      const tipoId = selTipo ? selTipo.value : "";
+      let firstVisible = null;
 
-      <div class="col-md-6">
-        {{ form.titulo.label_tag }}
-        {{ form.titulo|add_class:"form-control" }}
-      </div>
-    </div>
+      [...selTitulo.options].forEach(opt => {
+        const ok = !tipoId || (opt.dataset.tipo === tipoId);
+        opt.hidden = !ok;
+        if (ok && !firstVisible) firstVisible = opt;
+      });
 
-    <button type="submit" class="btn btn-success me-2">
-      {% if object %}Guardar cambios{% else %}Crear Empleado{% endif %}
-    </button>
-    <a href="{% url 'presidencia_dashboard' %}" class="btn btn-secondary">
-      Cancelar
-    </a>
-  </form>
+      // si el seleccionado quedó oculto, cambiamos al primero visible
+      if (selTitulo.selectedOptions.length &&
+          selTitulo.selectedOptions[0].hidden &&
+          firstVisible) {
+        selTitulo.value = firstVisible.value;
+      }
+
+      actualizaBadge();
+    }
+
+    function actualizaBadge() {
+      const id = selTitulo.value;
+      const p = porcentajes[id] || "0";
+      porcSpan.textContent = p + " %";
+    }
+
+    if (selTipo) selTipo.addEventListener("change", filtraTitulosPorTipo);
+    if (selTitulo) selTitulo.addEventListener("change", actualizaBadge);
+
+    // inicio
+    filtraTitulosPorTipo();
+  })();
+</script>
 {% endblock %}
