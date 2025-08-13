@@ -130,12 +130,15 @@ form.mb-4.row {
     padding: 0.2rem;
   }
 }
-
 </style>
 
 <div class="card">
   <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
+    <div class="d-flex align-items-center gap-2">
+      <!-- Botón Volver -->
+      <a href="{% url 'presidencia_dashboard' %}" class="btn btn-outline-primary shadow-sm">
+        ← Volver
+      </a>
       <h1 class="mb-0">
         Preliquidaciones — Área:
         <form method="get" class="d-inline">
@@ -184,6 +187,12 @@ form.mb-4.row {
       <button type="submit" class="btn btn-outline-primary shadow-sm">
         Buscar
       </button>
+    </div>
+    <!-- Botón Limpiar -->
+    <div class="col-auto">
+      <a href="?area={{ area_sel }}&mes={{ mes_sel }}&año={{ año_sel }}" class="btn btn-outline-secondary shadow-sm">
+        Limpiar
+      </a>
     </div>
   </form>
 
@@ -236,9 +245,7 @@ form.mb-4.row {
             <td>{{ preliq.nivel }}</td>
             <td class="text-end">{{ preliq.basico|floatformat:2 }}</td>
             <td class="text-end">{{ preliq.calificacion|floatformat:0 }}</td>
-            <td class="text-end">
-                {{ preliq.antiguedad }}
-            </td>
+            <td class="text-end">{{ preliq.antiguedad }}</td>
             <td class="text-end">${{ preliq.importe_antiguedad|floatformat:2 }}</td>
             <td class="text-end">${{ preliq.importe_titulo|floatformat:2 }}</td>
             <td class="text-end">${{ preliq.basico_total|floatformat:2 }}</td>

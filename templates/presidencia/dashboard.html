@@ -19,6 +19,7 @@
   .main-content.shifted{margin-left:260px}
 
   .card{background:#fff;border-radius:10px;box-shadow:0 4px 15px rgba(0,0,0,.1);padding:20px;margin-bottom:30px;transition:transform .3s ease,box-shadow .3s ease}
+  .card.empleados-card{margin-top:40px} /* Added margin for employee list */
   .card:hover{transform:translateY(-5px);box-shadow:0 6px 20px rgba(0,0,0,.15)}
 
   .period-card{background:linear-gradient(135deg,#0055A4 0%,#003087 100%);color:#fff;border-radius:12px}
@@ -28,7 +29,6 @@
 
   .top-container{display:flex;gap:24px;justify-content:space-between;align-items:stretch;flex-wrap:wrap}
 
-  /* Indicadores → grid para evitar superposición */
   .stats-grid{
     display:grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -94,8 +94,6 @@
       <div class="card period-card flex-grow-1">
         <div class="card-body">
           <h5 class="card-title">Período</h5>
-
-          <!-- Un solo form GET: mes/año/area -->
           <form id="periodoForm" method="get" action="{% url 'presidencia_dashboard' %}">
             <div class="row g-3 align-items-end">
               <div class="col-auto">
@@ -115,23 +113,16 @@
                   <option value="12" {% if mes_sel == 12 %}selected{% endif %}>Diciembre</option>
                 </select>
               </div>
-
               <div class="col-auto">
                 <label for="anio" class="form-label">Año</label>
                 <input id="anio" name="año" type="number" class="form-control" value="{{ año_sel|default:2025 }}" readonly>
               </div>
-
               <input type="hidden" name="area" value="{{ area_sel }}"/>
-
               <div class="col-auto d-flex gap-2">
                 <button type="submit" class="btn btn-outline-primary">
                   Actualizar período
                 </button>
-
-                <!-- Mismo form, distinta acción -->
-                <button type="submit"
-                        class="btn btn-success btn-pulse"
-                        formaction="{% url 'generar_preliquidacion' %}">
+                <button type="submit" class="btn btn-success btn-pulse" formaction="{% url 'generar_preliquidacion' %}">
                   <i class="fas fa-file-invoice"></i> Generar preliquidación
                 </button>
               </div>
@@ -142,7 +133,6 @@
 
       <!-- Indicadores en GRID -->
       <div class="stats-grid">
-        <!-- Activos / Inactivos -->
         <div class="stats-card">
           <div class="chart-canvas"><canvas id="chartActivos" height="40"></canvas></div>
           <div class="counts-container">
@@ -160,8 +150,6 @@
             </div>
           </div>
         </div>
-
-        <!-- Permanentes / Contratados -->
         <div class="stats-card">
           <div class="chart-canvas"><canvas id="chartSituacion" height="40"></canvas></div>
           <div class="counts-container">
@@ -180,23 +168,19 @@
           </div>
         </div>
       </div>
-      <!-- /stats-grid -->
     </div>
 
     <!-- Empleados -->
-    <div class="card">
+    <div class="card empleados-card">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="card-title m-0">Empleados</h5>
         </div>
-
-        <!-- Buscador simple -->
         <form method="get" class="input-group mb-3" onsubmit="filterTable();return false;">
           <input type="text" id="search-input" name="q" value="{{ q }}" class="form-control"
-                 placeholder="Buscar nombre, apellido, CUIL u oficina…" oninput="filterTable()">
+                 placeholder="Buscar por nombre, apellido, CUIL u oficina…" oninput="filterTable()">
           <button class="btn btn-outline-secondary" type="submit"><i class="fas fa-search"></i> Buscar</button>
         </form>
-
         <table class="table table-striped" id="employee-table">
           <thead>
             <tr>
@@ -238,6 +222,15 @@
 </div>
 
 <script>
+  // Set default month to current month
+  document.addEventListener('DOMContentLoaded', () => {
+    const mesSelect = document.getElementById('mes');
+    if (!{{ mes_sel|default_if_none:'null' }}) { // Only set if no mes_sel is provided
+      const currentMonth = new Date().getMonth() + 1; // 1-12
+      mesSelect.value = currentMonth;
+    }
+  });
+
   // Sidebar
   document.addEventListener('DOMContentLoaded', () => {
     const sidebar = document.getElementById('sidebar');
@@ -331,7 +324,6 @@
 
   // Gráficos
   document.addEventListener('DOMContentLoaded', () => {
-    // Activos/Inactivos
     const total = initialData.total_empleados || 0;
     const act   = initialData.total_activos || 0;
     const ina   = initialData.total_inactivos || 0;
@@ -344,7 +336,6 @@
       options:{ plugins:{ legend:{position:'bottom'} } }
     });
 
-    // Permanentes/Contratados (desde lista)
     const empleados = initialData.empleados || [];
     const nPerm = empleados.filter(e => e.situacion === 'P').length;
     const nCont = empleados.filter(e => e.situacion === 'C').length;

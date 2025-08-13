@@ -76,17 +76,72 @@ def is_presidencia(user):
     return user.is_active and user.is_superuser
 
 
+from django.shortcuts import render, redirect
+from django.urls import reverse
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db.models import Q
+from datetime import date
+from .models import Preliquidacion, Empleado
+
+
+def _periodos_con_hoy_primero():
+    """
+    Devuelve una lista de tuplas (mes, nombre_mes, año) ordenada desc por año/mes.
+    Asegura que (mes_actual, año_actual) esté presente aunque no exista en BD.
+    """
+    hoy = date.today()
+    mes_hoy, año_hoy = hoy.month, hoy.year
+
+    qs = (Preliquidacion.objects
+          .values('año', 'mes')
+          .distinct()
+          .order_by('-año', '-mes'))
+
+    periodos = []
+    ya_tiene_hoy = False
+    for p in qs:
+        m, a = p['mes'], p['año']
+        periodos.append((m, MONTH_NAMES.get(m, str(m)), a))
+        if m == mes_hoy and a == año_hoy:
+            ya_tiene_hoy = True
+
+    # Inserta el período actual al inicio si no estaba
+    if not ya_tiene_hoy:
+        periodos.insert(0, (mes_hoy, MONTH_NAMES.get(mes_hoy, str(mes_hoy)), año_hoy))
+
+    return periodos
+
+
+def _leer_periodo(request, periodos):
+    """
+    Regla:
+      - Si vienen mes/año por GET y son válidos, usar esos.
+      - Si no vienen, usar HOY (siempre).
+    Además, valida rangos por seguridad.
+    """
+    hoy = date.today()
+    mes_default, año_default = hoy.month, hoy.year
+
+    try:
+        mes_sel = int(request.GET.get('mes', mes_default))
+        año_sel = int(request.GET.get('año', año_default))
+    except (TypeError, ValueError):
+        mes_sel, año_sel = mes_default, año_default
+
+    # Validaciones mínimas
+    if not (1 <= mes_sel <= 12):
+        mes_sel = mes_default
+    if año_sel < 2000 or año_sel > 2100:  # ajusta a tu rango permitido
+        año_sel = año_default
+
+    return mes_sel, año_sel
+
+
 @login_required(login_url='login')
 @user_passes_test(is_presidencia)
 def presidencia_dashboard(request):
-    # 1) Periodos disponibles
-    qs = Preliquidacion.objects.values('año', 'mes') \
-                               .distinct() \
-                               .order_by('-año', '-mes')
-    periodos = [
-        (p['mes'], MONTH_NAMES.get(p['mes'], str(p['mes'])), p['año'])
-        for p in qs
-    ]
+    # 1) Periodos para el selector (incluye HOY aunque no exista en BD)
+    periodos = _periodos_con_hoy_primero()
 
     # 2) Áreas fijas
     areas = [
@@ -96,21 +151,13 @@ def presidencia_dashboard(request):
         'SECRETARÍA TEC. SOCIAL',
     ]
 
-    # 3) Selección de mes/año
-    mes_get = request.GET.get('mes')
-    año_get = request.GET.get('año')
-    if mes_get and año_get:
-        mes_sel = int(mes_get)
-        año_sel = int(año_get)
-    elif periodos:
-        mes_sel, _, año_sel = periodos[0]
-    else:
-        mes_sel, año_sel = date.today().month, date.today().year
+    # 3) Selección de mes/año (por GET o por defecto HOY)
+    mes_sel, año_sel = _leer_periodo(request, periodos)
 
-    # 4) Área seleccionada (para los enlaces)
+    # 4) Área seleccionada
     area_sel = request.GET.get('area', areas[0])
 
-    # 5) Búsqueda genérica sobre empleados activos
+    # 5) Búsqueda de empleados activos
     q = request.GET.get('q', '').strip()
     empleados = Empleado.objects.filter(
         estado=1,
@@ -134,16 +181,11 @@ def presidencia_dashboard(request):
 
     # 6) Contadores
     total_empleados = Empleado.objects.count()
-    total_activos   = Empleado.objects.filter(
-        estado=1,
-        fecha_salida__isnull=True
-    ).count()
-    total_inactivos = Empleado.objects.filter(
-        Q(estado=0) | Q(fecha_salida__isnull=False)
-    ).count()
+    total_activos   = Empleado.objects.filter(estado=1, fecha_salida__isnull=True).count()
+    total_inactivos = Empleado.objects.filter(Q(estado=0) | Q(fecha_salida__isnull=False)).count()
 
     return render(request, 'presidencia/dashboard.html', {
-        'periodos':         periodos,
+        'periodos':         periodos,      # [(mes, nombre_mes, año), ...] (HOY incluido)
         'mes_sel':          mes_sel,
         'año_sel':          año_sel,
         'areas':            areas,
