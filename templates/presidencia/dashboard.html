@@ -1,361 +1,366 @@
 {% extends "base.html" %}
 {% block content %}
 <style>
-  /* Ocultar el link “Empleados” del HEADER (no afecta al sidebar) */
-  nav.navbar a[href$="/empleados/"] { display: none !important; }
-
-  body{background:linear-gradient(135deg,#ecf0f5 0%,#d9e2ec 100%);color:#333;font-family:'Poppins',sans-serif;font-size:14px;line-height:1.6}
-
-  .sidebar{width:260px;position:fixed;top:0;left:-260px;height:100%;background:linear-gradient(180deg,#0055A4 0%, #003087 100%);color:#fff;transition:left .3s ease;z-index:1030;padding-top:80px;box-shadow:3px 0 12px rgba(0,0,0,.2)}
-  .sidebar.active{left:0}
-  .sidebar-content{padding:20px}
-  .sidebar-toggle{position:fixed;left:15px;top:15px;z-index:1031;cursor:pointer;background:#003087;border:none;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;transition:all .3s ease;box-shadow:0 2px 5px rgba(0,0,0,.2)}
-  .sidebar-toggle:hover{background:#0041c2;transform:rotate(90deg)}
-  .nav-link{color:#fff;padding:12px 20px;display:flex;align-items:center;text-decoration:none;border-radius:6px;margin:8px 0;transition:all .3s ease;font-weight:500}
-  .nav-link:hover{background:rgba(255,255,255,.1);transform:translateX(5px)}
-  .nav-link.active{background:#fff;color:#0055A4}
-
-  .main-content{transition:margin-left .3s ease;margin-left:0;padding:30px;background:#fff;min-height:100vh;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.05)}
-  .main-content.shifted{margin-left:260px}
-
-  .card{background:#fff;border-radius:10px;box-shadow:0 4px 15px rgba(0,0,0,.1);padding:20px;margin-bottom:30px;transition:transform .3s ease,box-shadow .3s ease}
-  .card.empleados-card{margin-top:40px} /* Added margin for employee list */
-  .card:hover{transform:translateY(-5px);box-shadow:0 6px 20px rgba(0,0,0,.15)}
-
-  .period-card{background:linear-gradient(135deg,#0055A4 0%,#003087 100%);color:#fff;border-radius:12px}
-  .period-card .card-title{font-size:26px;font-weight:600;margin-bottom:18px}
-  .period-card .form-label{font-size:16px;font-weight:500}
-  .period-card .form-select,.period-card .form-control{font-size:16px;padding:10px;border-radius:8px;background:#fff;color:#333}
-
-  .top-container{display:flex;gap:24px;justify-content:space-between;align-items:stretch;flex-wrap:wrap}
-
-  .stats-grid{
-    display:grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap:18px;
-    width:100%;
+  :root {
+    --primary-color:#0055A4; --primary-dark:#003087;
+    --background-light:#ecf0f5; --background-medium:#d9e2ec;
+    --text-light:#fff; --text-dark:#343a40; --shadow-color:rgba(0,0,0,.1);
   }
-  .stats-card{
-    display:flex;
-    align-items:center;
-    background:#fff;
-    border-radius:10px;
-    box-shadow:0 4px 15px rgba(0,0,0,.08);
-    padding:16px;
-  }
-  .stats-card .chart-canvas{max-width:150px;margin-right:16px}
-  .counts-container{display:flex;flex-direction:column;gap:6px;font-size:14px}
-  .legend-bar{display:inline-block;width:36px;height:8px;border-radius:4px}
-  .bg-primary{background:#0d6efd}
-  .bg-danger{background:#dc3545}
-  .bg-success{background:#198754}
-  .bg-warning{background:#ffc107}
-  .status-active{color:#28a745;font-weight:bold}
-  .status-inactive{color:#dc3545;font-weight:bold}
+  body{ background:linear-gradient(135deg,var(--background-light) 0%,var(--background-medium) 100%);
+        color:var(--text-dark); font-family:'Poppins',sans-serif; font-size:13px; line-height:1.5; overflow-x:hidden; }
+  nav.navbar a[href$="/empleados/"]{ display:none!important; }
 
-  .table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;border-radius:8px;overflow:hidden}
-  .table th{background:#0055A4;color:#fff;padding:12px;text-align:left;font-weight:600;cursor:pointer;white-space:nowrap}
-  .table th:hover{background:#003087}
-  .table td{padding:12px;border-bottom:1px solid #e9ecef;color:#333}
+  /* Sidebar */
+  .sidebar{ width:220px; position:fixed; top:0; left:-220px; height:100%;
+    background:linear-gradient(180deg,var(--primary-color) 0%,var(--primary-dark) 100%);
+    color:var(--text-light); transition:left .3s cubic-bezier(.4,0,.2,1);
+    z-index:1030; display:flex; flex-direction:column; box-shadow:2px 0 10px var(--shadow-color); }
+  .sidebar.active{ left:0; }
+  .sidebar-toggle{ position:absolute; top:50%; left:100%; transform:translateY(-50%);
+    width:24px; height:60px; background:var(--primary-dark); color:var(--text-light); border:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; border-top-right-radius:8px; border-bottom-right-radius:8px;
+    box-shadow:2px 0 8px rgba(0,0,0,.15); transition:background-color .3s ease; font-size:16px; }
+  .sidebar-toggle:hover{ background:var(--primary-color); }
+  .sidebar-header{ padding:15px; text-align:center; border-bottom:1px solid rgba(255,255,255,.1); }
+  .sidebar-header h3{ margin:0; font-size:1.2rem; font-weight:600; }
+  .sidebar-nav{ padding:15px; flex-grow:1; overflow-y:auto; }
+  .nav-link{ color:var(--text-light); padding:8px 15px; display:flex; align-items:center; text-decoration:none;
+    border-radius:5px; margin-bottom:6px; transition:all .3s ease; font-weight:500; position:relative; font-size:.9rem; }
+  .nav-link:hover{ background:rgba(255,255,255,.1); transform:translateX(3px); }
+  .nav-link.active,.nav-link[aria-expanded="true"]{ background:#fff; color:var(--primary-color); font-weight:600; }
 
-  .btn-success{background:#198754;border-color:#198754;border-radius:8px;padding:10px 18px;font-weight:600}
-  .btn-success:hover{background:#146c43;border-color:#146c43;transform:translateY(-1px)}
-  .btn-outline-primary{border-radius:8px;padding:10px 18px;font-weight:600}
-  .btn-pulse:active{animation:pulse .35s}
-  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(25,135,84,.55)}100%{box-shadow:0 0 0 14px rgba(25,135,84,0)}}
+  /* Main */
+  .main-content{ transition:margin-left .3s cubic-bezier(.4,0,.2,1); margin-left:0; padding:20px; min-height:100vh; }
+  .main-content.shifted{ margin-left:220px; }
 
-  @media (max-width:768px){
-    .sidebar{width:200px;left:-200px}
-    .main-content.shifted{margin-left:200px}
-    .top-container{flex-direction:column}
-  }
+  /* Cards & table */
+  .card{ background:#fff; border:none; border-radius:8px; box-shadow:0 3px 15px var(--shadow-color);
+         padding:15px; margin-bottom:20px; transition:transform .3s ease, box-shadow .3s ease; }
+  .card:hover{ transform:translateY(-3px); box-shadow:0 5px 20px rgba(0,0,0,.1); }
+  .card-title{ font-weight:600; color:var(--primary-dark); font-size:1.1rem; }
+  .stats-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:16px; }
+  .stats-card{ display:flex; align-items:center; background:#fff; border-radius:8px; box-shadow:0 3px 10px rgba(0,0,0,.07); padding:15px; }
+  .stats-card .chart-canvas{ max-width:120px; margin-right:15px; }
+  .counts-container{ font-size:.85rem; }
+  .status-active{ color:#0055A4; font-weight:bold; }
+  .status-inactive{ color:#800080; font-weight:bold; }
+  .status-permanente{ color:#00CED1; font-weight:bold; }
+  .status-contratado{ color:#000; font-weight:bold; }
+
+  .table{ border-collapse:separate; border-spacing:0; }
+  .table thead th{ background:var(--primary-dark); color:#fff; padding:10px; text-align:left;
+                   font-weight:600; white-space:nowrap; border-bottom:none; font-size:.9rem; }
+  .table thead th:first-child{ border-top-left-radius:6px; }
+  .table thead th:last-child{ border-top-right-radius:6px; }
+  .table tbody tr{ transition:background-color .2s ease; }
+  .table tbody tr:hover{ background:#f8f9fa; }
+  .table td{ padding:10px; vertical-align:middle; border-bottom:1px solid #e9ecef; font-size:.85rem; }
+
+  /* Estado de período */
+  .pulse-button{ color:#fff; font-size:1.2rem; padding:8px 16px; border-radius:6px; display:inline-block; font-weight:600;
+                 letter-spacing:.5px; border:none; animation:pulse-glow 2s infinite ease-in-out; text-decoration:none; }
+  .pulse-static{ pointer-events:none; user-select:none; }
+  .pulse-button.status-abierta{ background:#007bff; --glow-color:#007bff; }
+  .pulse-button.status-cerrada{ background:#ffc107; --glow-color:#ffc107; color:var(--text-dark); }
+  .pulse-button.status-confirmada{ background:#198754; --glow-color:#198754; }
+  .pulse-button.status-sin_crear{ background:#6c757d; --glow-color:#6c757d; }
+  @keyframes pulse-glow{ 0%,100%{ box-shadow:0 0 4px var(--glow-color),0 0 8px var(--glow-color);} 50%{ box-shadow:0 0 15px var(--glow-color),0 0 30px var(--glow-color);} }
+
+  /* Novedades */
+  .badge-tipo{ font-weight:600; letter-spacing:.2px; }
+  .nov-tools .form-select,.nov-tools .form-control{ max-width:220px; }
+  .nov-counter{ font-size:.85rem; color:#6c757d; }
+  .nov-sticky{ position:sticky; top:0; z-index:1; background:#fff; }
+  @media (max-width:992px){ .main-content.shifted{ margin-left:0; } .pulse-button{ font-size:1rem; } }
 </style>
 
-<button class="btn btn-primary sidebar-toggle"><i class="fas fa-bars"></i></button>
-
 <div class="sidebar" id="sidebar">
-  <div class="sidebar-content">
-    <h3 class="text-center mb-4">Menú de Gestión</h3>
-    <ul class="nav flex-column">
-      <li class="nav-item"><a href="{% url 'empleados:empleado-list' %}" class="nav-link"><i class="fas fa-users me-2"></i> Empleados</a></li>
-      <li class="nav-item"><a href="{% url 'empleados:calificacion-list' %}" class="nav-link"><i class="fas fa-star me-2"></i> Calificaciones</a></li>
-      <li class="nav-item"><a href="{% url 'empleados:categoria-list' %}" class="nav-link"><i class="fas fa-layer-group me-2"></i> Categorías</a></li>
-      <li class="nav-item"><a href="{% url 'empleados:oficiojudicial-list' %}" class="nav-link"><i class="fas fa-file-alt me-2"></i> Oficios Judiciales</a></li>
-    </ul>
-  </div>
+  <button class="sidebar-toggle" id="sidebar-toggle"><i class="fas fa-chevron-right"></i></button>
+  <div class="sidebar-header"><h3>Menú de Gestión</h3></div>
+  <ul class="nav flex-column sidebar-nav">
+    <li class="nav-item"><a href="#" class="nav-link active"><i class="fas fa-tachometer-alt fa-fw me-2"></i> Administrador</a></li>
+    <li class="nav-item"><a href="{% url 'empleados:empleado-list' %}" class="nav-link"><i class="fas fa-users fa-fw me-2"></i> Empleados</a></li>
+    <li class="nav-item"><a href="{% url 'empleados:calificacion-list' %}" class="nav-link"><i class="fas fa-star fa-fw me-2"></i> Calificaciones</a></li>
+    <li class="nav-item"><a href="{% url 'empleados:categoria-list' %}" class="nav-link"><i class="fas fa-layer-group fa-fw me-2"></i> Categorías</a></li>
+    <li class="nav-item"><a href="{% url 'empleados:oficiojudicial-list' %}" class="nav-link"><i class="fas fa-gavel fa-fw me-2"></i> Oficios Judiciales</a></li>
+
+    {# NUEVO: enlace directo al listado de Novedades Mensuales #}
+    <li class="nav-item"><a href="{% url 'empleados:novedades_mensuales_list' %}" class="nav-link"><i class="fas fa-bell fa-fw me-2"></i> Novedades mensuales</a></li>
+
+    <li class="nav-item"><a href="{% url 'periodo_panel' %}" class="nav-link"><i class="fas fa-calendar-alt fa-fw me-2"></i> Período</a></li>
+  </ul>
 </div>
 
 <div class="main-content" id="main-content">
   <div class="container-fluid">
-    <h1 class="mb-4 text-primary">Administrador del IPVU</h1>
 
-    <div class="top-container">
-      <!-- Período -->
-      <div class="card period-card flex-grow-1">
-        <div class="card-body">
-          <h5 class="card-title">Período</h5>
-          <form id="periodoForm" method="get" action="{% url 'presidencia_dashboard' %}">
-            <div class="row g-3 align-items-end">
-              <div class="col-auto">
-                <label for="mes" class="form-label">Mes</label>
-                <select id="mes" name="mes" class="form-select">
-                  <option value="1"  {% if mes_sel == 1  %}selected{% endif %}>Enero</option>
-                  <option value="2"  {% if mes_sel == 2  %}selected{% endif %}>Febrero</option>
-                  <option value="3"  {% if mes_sel == 3  %}selected{% endif %}>Marzo</option>
-                  <option value="4"  {% if mes_sel == 4  %}selected{% endif %}>Abril</option>
-                  <option value="5"  {% if mes_sel == 5  %}selected{% endif %}>Mayo</option>
-                  <option value="6"  {% if mes_sel == 6  %}selected{% endif %}>Junio</option>
-                  <option value="7"  {% if mes_sel == 7  %}selected{% endif %}>Julio</option>
-                  <option value="8"  {% if mes_sel == 8  %}selected{% endif %}>Agosto</option>
-                  <option value="9"  {% if mes_sel == 9  %}selected{% endif %}>Septiembre</option>
-                  <option value="10" {% if mes_sel == 10 %}selected{% endif %}>Octubre</option>
-                  <option value="11" {% if mes_sel == 11 %}selected{% endif %}>Noviembre</option>
-                  <option value="12" {% if mes_sel == 12 %}selected{% endif %}>Diciembre</option>
-                </select>
-              </div>
-              <div class="col-auto">
-                <label for="anio" class="form-label">Año</label>
-                <input id="anio" name="año" type="number" class="form-control" value="{{ año_sel|default:2025 }}" readonly>
-              </div>
-              <input type="hidden" name="area" value="{{ area_sel }}"/>
-              <div class="col-auto d-flex gap-2">
-                <button type="submit" class="btn btn-outline-primary">
-                  Actualizar período
-                </button>
-                <button type="submit" class="btn btn-success btn-pulse" formaction="{% url 'generar_preliquidacion' %}">
-                  <i class="fas fa-file-invoice"></i> Generar preliquidación
-                </button>
-              </div>
-            </div>
-          </form>
+    <div class="mb-4 text-center">
+      <span class="pulse-button pulse-static
+        {% if estado == 'ABIERTA' %}status-abierta
+        {% elif estado == 'CERRADA' %}status-cerrada
+        {% elif estado == 'CONFIRMADA' %}status-confirmada
+        {% else %}status-sin_crear{% endif %}" aria-live="polite">
+        {{ PERIODO_MES_NOMBRE|upper }} DE {{ PERIODO_ANIO }} -
+        {% if estado == 'ABIERTA' %}ABIERTO
+        {% elif estado == 'CERRADA' %}CERRADO
+        {% elif estado == 'CONFIRMADA' %}CONFIRMADO
+        {% else %}SIN CREAR{% endif %}
+      </span>
+      {% if not PERIODO_ELEGIDO %}
+        <div class="text-muted mt-2 small">
+          Abrí <strong>Menú de Gestión → Panel del Período</strong> para seleccionar el período de trabajo.
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1 class="mb-0" style="color: var(--primary-dark); font-weight: 700; font-size: 1.5rem;">
+        ADMINISTRADOR IPVU
+      </h1>
+    </div>
+
+    <div class="stats-grid mb-4">
+      <div class="stats-card">
+        <div class="chart-canvas"><canvas id="chartActivos"></canvas></div>
+        <div class="counts-container">
+          <div class="small text-muted" id="txt-porc-activos">Activos: —, Inactivos: —</div>
+          <div>Total: <strong id="total-empleados">{{ total_empleados }}</strong></div>
+          <div class="status-active">Activos: <strong id="total-activos">{{ total_activos }}</strong></div>
+          <div class="status-inactive">Inactivos: <strong id="total-inactivos">{{ total_inactivos }}</strong></div>
         </div>
       </div>
-
-      <!-- Indicadores en GRID -->
-      <div class="stats-grid">
-        <div class="stats-card">
-          <div class="chart-canvas"><canvas id="chartActivos" height="40"></canvas></div>
-          <div class="counts-container">
-            <div class="small text-muted" id="txt-porc-activos">Activos: —, Inactivos: —</div>
-            <div>Total: <strong id="total-empleados">{{ total_empleados }}</strong></div>
-            <div class="status-active">Activos: <strong id="total-activos">{{ total_activos }}</strong></div>
-            <div class="status-inactive">Inactivos: <strong id="total-inactivos">{{ total_inactivos }}</strong></div>
-            <div class="legend mt-2">
-              <div class="d-flex align-items-center mb-1">
-                <span class="legend-bar bg-primary me-2"></span> Activos
-              </div>
-              <div class="d-flex align-items-center">
-                <span class="legend-bar bg-danger me-2"></span> Inactivos
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="stats-card">
-          <div class="chart-canvas"><canvas id="chartSituacion" height="40"></canvas></div>
-          <div class="counts-container">
-            <div class="small text-muted" id="txt-porc-sit">Permanentes: —, Contratados: —</div>
-            <div>Total: <strong id="total-sit">—</strong></div>
-            <div class="text-success">Permanentes: <strong id="n-perm">—</strong></div>
-            <div class="text-warning">Contratados: <strong id="n-cont">—</strong></div>
-            <div class="legend mt-2">
-              <div class="d-flex align-items-center mb-1">
-                <span class="legend-bar bg-success me-2"></span> Permanentes
-              </div>
-              <div class="d-flex align-items-center">
-                <span class="legend-bar bg-warning me-2"></span> Contratados
-              </div>
-            </div>
-          </div>
+      <div class="stats-card">
+        <div class="chart-canvas"><canvas id="chartSituacion"></canvas></div>
+        <div class="counts-container">
+          <div class="small text-muted" id="txt-porc-sit">Permanentes: —, Contratados: —</div>
+          <div>Total: <strong id="total-sit">—</strong></div>
+          <div class="status-permanente">Permanentes: <strong id="n-perm">—</strong></div>
+          <div class="status-contratado">Contratados: <strong id="n-cont">—</strong></div>
         </div>
       </div>
     </div>
 
-    <!-- Empleados -->
-    <div class="card empleados-card">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h5 class="card-title m-0">Empleados</h5>
+    {# ================= Novedades del período ================= #}
+    <div class="card">
+      <div class="d-flex flex-wrap justify-content-between align-items-center">
+        <h5 class="card-title mb-2 mb-lg-0"><i class="fas fa-bell me-2"></i>Novedades del período</h5>
+        <div class="d-flex flex-wrap gap-2 align-items-center nov-tools">
+          <span class="nov-counter"><span id="novCount">{{ novedades|length|default:0 }}</span> registro(s)</span>
+          <select id="fTipo" class="form-select form-select-sm">
+            <option value="">Todos los tipos</option>
+            {% if tipos_novedad %}
+              {% for t in tipos_novedad %}
+                <option value="{{ t|lower }}">{{ t }}</option>
+              {% endfor %}
+            {% endif %}
+          </select>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+            <input id="fBuscar" type="text" class="form-control" placeholder="Buscar por empleado o descripción…">
+          </div>
         </div>
-        <form method="get" class="input-group mb-3" onsubmit="filterTable();return false;">
-          <input type="text" id="search-input" name="q" value="{{ q }}" class="form-control"
-                 placeholder="Buscar por nombre, apellido, CUIL u oficina…" oninput="filterTable()">
-          <button class="btn btn-outline-secondary" type="submit"><i class="fas fa-search"></i> Buscar</button>
-        </form>
-        <table class="table table-striped" id="employee-table">
+      </div>
+
+      <div class="table-responsive mt-3">
+        <table class="table align-middle mb-0" id="tablaNovedades">
           <thead>
             <tr>
-              <th data-sort="apellido">Apellido <i class="fas fa-sort"></i></th>
-              <th data-sort="nombre">Nombre <i class="fas fa-sort"></i></th>
-              <th data-sort="cuil">CUIL <i class="fas fa-sort"></i></th>
-              <th data-sort="categoria">Categoría <i class="fas fa-sort"></i></th>
-              <th data-sort="oficina">Oficina <i class="fas fa-sort"></i></th>
-              <th data-sort="situacion">Situación <i class="fas fa-sort"></i></th>
-              <th>Acciones</th>
+              <th class="nov-sticky" data-sort="fecha">Fecha</th>
+              <th class="nov-sticky">Tipo</th>
+              <th class="nov-sticky">Empleado</th>
+              <th class="nov-sticky">Descripción</th>
+              <th class="nov-sticky text-end">Acciones</th>
             </tr>
           </thead>
-          <tbody id="employee-table-body">
-            {% for emp in empleados %}
-              <tr data-toggle="tooltip" title="ID: {{ emp.pk }}">
-                <td>{{ emp.apellido }}</td>
-                <td>{{ emp.nombre }}</td>
-                <td>{{ emp.cuil }}</td>
-                <td>{{ emp.categoria.nombre }}</td>
-                <td>{{ emp.oficina.nombre }}</td>
-                <td>{% if emp.situacion == 'P' %}PERMANENTE{% elif emp.situacion == 'C' %}CONTRATADO{% else %}—{% endif %}</td>
-                <td>
-                  <a class="btn btn-sm btn-secondary" href="{% url 'empleados:empleado-update' emp.pk %}">
-                    <i class="fas fa-edit"></i> Editar
-                  </a>
-                  <a class="btn btn-sm btn-danger" href="{% url 'empleados:empleado-delete' emp.pk %}">
-                    <i class="fas fa-trash"></i> Borrar
-                  </a>
-                </td>
-              </tr>
+          <tbody>
+            {% for n in novedades %}
+            <tr data-tipo="{{ n.tipo|lower }}"
+                data-q="{{ n.empleado|default:''|lower }} {{ n.descripcion|default:''|lower }}"
+                data-fecha="{{ n.fecha|date:'c' }}">
+              <td class="text-nowrap">{{ n.fecha|date:"d/m/Y H:i" }}</td>
+              <td>
+                {% with tl=n.tipo|lower %}
+                <span class="badge badge-tipo
+                  {% if 'licencia' in tl %} bg-warning text-dark
+                  {% elif 'calif' in tl %} bg-info text-dark
+                  {% elif 'oficio' in tl %} bg-primary
+                  {% elif 'preliq' in tl %} bg-secondary
+                  {% elif 'categor' in tl %} bg-success
+                  {% elif 'emplead' in tl %} bg-dark
+                  {% else %} bg-secondary {% endif %}">
+                  {{ n.tipo }}
+                </span>
+                {% endwith %}
+              </td>
+              <td>{{ n.empleado|default:"—" }}</td>
+              <td style="max-width: 520px; word-break: break-word;">{{ n.descripcion|default:"—" }}</td>
+              <td class="text-end">
+                {% if n.url %}
+                  <a class="btn btn-sm btn-outline-primary" href="{{ n.url }}"><i class="fas fa-external-link-alt"></i> Ver</a>
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+            </tr>
             {% empty %}
-              <tr><td colspan="7">No hay empleados.</td></tr>
+            <tr><td colspan="5" class="text-center py-4">No hay novedades registradas para este período.</td></tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
     </div>
+    {# ========================================================= #}
+
   </div>
 </div>
 
-<script>
-  // Set default month to current month
-  document.addEventListener('DOMContentLoaded', () => {
-    const mesSelect = document.getElementById('mes');
-    if (!{{ mes_sel|default_if_none:'null' }}) { // Only set if no mes_sel is provided
-      const currentMonth = new Date().getMonth() + 1; // 1-12
-      mesSelect.value = currentMonth;
-    }
-  });
-
-  // Sidebar
-  document.addEventListener('DOMContentLoaded', () => {
-    const sidebar = document.getElementById('sidebar');
-    const mainContent = document.getElementById('main-content');
-    document.querySelector('.sidebar-toggle')?.addEventListener('click', () => {
-      sidebar.classList.toggle('active'); mainContent.classList.toggle('shifted');
-    });
-  });
-
-  // Datos iniciales para filtro/orden
-  const initialData = {
-    empleados: [
-      {% for emp in empleados %}
-      {
-        apellido: "{{ emp.apellido|escapejs }}",
-        nombre: "{{ emp.nombre|escapejs }}",
-        cuil: "{{ emp.cuil|escapejs }}",
-        categoria: "{{ emp.categoria.nombre|escapejs }}",
-        oficina: "{{ emp.oficina.nombre|escapejs }}",
-        situacion: "{{ emp.situacion|escapejs }}",
-        editUrl: "{% url 'empleados:empleado-update' emp.pk %}",
-        deleteUrl: "{% url 'empleados:empleado-delete' emp.pk %}",
-        id: {{ emp.pk }}
-      },
-      {% endfor %}
-    ],
-    total_empleados: {{ total_empleados|default:0 }},
-    total_activos: {{ total_activos|default:0 }},
-    total_inactivos: {{ total_inactivos|default:0 }}
-  };
-
-  function etiquetaSituacion(s){
-    return s === 'P' ? 'PERMANENTE' : (s === 'C' ? 'CONTRATADO' : '—');
-  }
-
-  // Filtro + render
-  function filterTable(){
-    const q = (document.getElementById('search-input').value||'').toLowerCase();
-    const tb = document.getElementById('employee-table-body');
-    tb.innerHTML = '';
-    const rows = initialData.empleados.filter(e =>
-      (e.apellido||'').toLowerCase().includes(q) ||
-      (e.nombre||'').toLowerCase().includes(q) ||
-      (e.cuil||'').toLowerCase().includes(q) ||
-      (e.categoria||'').toLowerCase().includes(q) ||
-      (e.oficina||'').toLowerCase().includes(q)
-    );
-    if(!rows.length){
-      tb.innerHTML = '<tr><td colspan="7">No hay empleados.</td></tr>';
-      return;
-    }
-    rows.forEach(e=>{
-      const tr = document.createElement('tr');
-      tr.setAttribute('data-toggle','tooltip');
-      tr.setAttribute('title',`ID: ${e.id||''}`);
-      tr.innerHTML = `
-        <td>${e.apellido||''}</td>
-        <td>${e.nombre||''}</td>
-        <td>${e.cuil||''}</td>
-        <td>${e.categoria||''}</td>
-        <td>${e.oficina||''}</td>
-        <td>${etiquetaSituacion(e.situacion)}</td>
-        <td>
-          <a class="btn btn-sm btn-secondary" href="${e.editUrl}"><i class="fas fa-edit"></i> Editar</a>
-          <a class="btn btn-sm btn-danger" href="${e.deleteUrl}"><i class="fas fa-trash"></i> Borrar</a>
-        </td>`;
-      tb.appendChild(tr);
-    });
-    $('[data-toggle="tooltip"]').tooltip();
-  }
-
-  // Orden por columna
-  document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('#employee-table th[data-sort]').forEach(th=>{
-      th.addEventListener('click', ()=>{
-        const key = th.getAttribute('data-sort');
-        const dir = th.classList.contains('sort-asc') ? 'desc' : 'asc';
-        document.querySelectorAll('#employee-table th').forEach(h=>h.classList.remove('sort-asc','sort-desc'));
-        th.classList.add(`sort-${dir}`);
-        initialData.empleados.sort((a,b)=>{
-          const A = (a[key]||'').toString().toLowerCase();
-          const B = (b[key]||'').toString().toLowerCase();
-          return dir==='asc' ? A.localeCompare(B) : B.localeCompare(A);
-        });
-        filterTable();
-      });
-    });
-    $('[data-toggle="tooltip"]').tooltip();
-    filterTable();
-  });
-
-  // Gráficos
-  document.addEventListener('DOMContentLoaded', () => {
-    const total = initialData.total_empleados || 0;
-    const act   = initialData.total_activos || 0;
-    const ina   = initialData.total_inactivos || 0;
-    const pAct = total ? ((act/total)*100).toFixed(1) : 0;
-    const pIna = total ? ((ina/total)*100).toFixed(1) : 0;
-    document.getElementById('txt-porc-activos').textContent = `Activos: ${pAct}%, Inactivos: ${pIna}%`;
-    new Chart(document.getElementById('chartActivos').getContext('2d'), {
-      type:'pie',
-      data:{ labels:['Activos','Inactivos'], datasets:[{ data:[act,ina], backgroundColor:['#0d6efd','#dc3545'] }] },
-      options:{ plugins:{ legend:{position:'bottom'} } }
-    });
-
-    const empleados = initialData.empleados || [];
-    const nPerm = empleados.filter(e => e.situacion === 'P').length;
-    const nCont = empleados.filter(e => e.situacion === 'C').length;
-    const totSit = (nPerm + nCont) || empleados.length || 1;
-    const pPerm = ((nPerm/totSit)*100).toFixed(1);
-    const pCont = ((nCont/totSit)*100).toFixed(1);
-    document.getElementById('total-sit').textContent = totSit;
-    document.getElementById('n-perm').textContent   = nPerm;
-    document.getElementById('n-cont').textContent   = nCont;
-    document.getElementById('txt-porc-sit').textContent = `Permanentes: ${pPerm}%, Contratados: ${pCont}%`;
-    new Chart(document.getElementById('chartSituacion').getContext('2d'), {
-      type:'pie',
-      data:{ labels:['Permanentes','Contratados'], datasets:[{ data:[nPerm,nCont], backgroundColor:['#198754','#ffc107'] }] },
-      options:{ plugins:{ legend:{position:'bottom'} } }
-    });
-  });
-</script>
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // Sidebar
+  const sidebar = document.getElementById('sidebar');
+  const mainContent = document.getElementById('main-content');
+  const sidebarToggle = document.getElementById('sidebar-toggle');
+  const toggleIcon = sidebarToggle?.querySelector('i');
+  sidebarToggle?.addEventListener('click', () => {
+    sidebar.classList.toggle('active');
+    if (sidebar.classList.contains('active')) { toggleIcon?.classList.replace('fa-chevron-right','fa-chevron-left'); }
+    else { toggleIcon?.classList.replace('fa-chevron-left','fa-chevron-right'); }
+    if (window.innerWidth > 992) mainContent.classList.toggle('shifted');
+  });
+  mainContent.addEventListener('click', () => {
+    if (window.innerWidth <= 992 && sidebar.classList.contains('active')) {
+      sidebar.classList.remove('active');
+      toggleIcon?.classList.replace('fa-chevron-left','fa-chevron-right');
+    }
+  });
+
+  // Utilidad: crea un doughnut "vacío" (sin porciones, sin números, sin leyenda ni tooltips)
+  function renderEmptyDoughnut(ctx) {
+    new Chart(ctx, {
+      type: 'doughnut',
+      data: { labels: [], datasets: [{ data: [] }] }, // sin datos
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        cutout: '70%',
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        animation: false
+      }
+    });
+  }
+
+  // ===== Gráfico Activos/Inactivos =====
+  const total = {{ total_empleados|default:0 }};
+  const act   = {{ total_activos|default:0 }};
+  const ina   = {{ total_inactivos|default:0 }};
+
+  const $txtAct = document.getElementById('txt-porc-activos');
+  const $totEmp = document.getElementById('total-empleados');
+  const $totAct = document.getElementById('total-activos');
+  const $totIna = document.getElementById('total-inactivos');
+
+  const ctxAct = document.getElementById('chartActivos').getContext('2d');
+
+  if (total === 0) {
+    // Mostrar sin números
+    $txtAct.textContent = 'Sin datos para este período';
+    if ($totEmp) $totEmp.textContent = '—';
+    if ($totAct) $totAct.textContent = '—';
+    if ($totIna) $totIna.textContent = '—';
+    renderEmptyDoughnut(ctxAct);
+  } else {
+    const pAct = ((act / total) * 100).toFixed(1);
+    const pIna = ((ina / total) * 100).toFixed(1);
+    $txtAct.textContent = `Activos: ${pAct}%, Inactivos: ${pIna}%`;
+    if ($totEmp) $totEmp.textContent = total;
+    if ($totAct) $totAct.textContent = act;
+    if ($totIna) $totIna.textContent = ina;
+
+    new Chart(ctxAct, {
+      type:'doughnut',
+      data:{
+        labels:['Activos','Inactivos'],
+        datasets:[{ data:[act, ina], backgroundColor:['#0055A4','#800080'], borderWidth:0 }]
+      },
+      options:{ responsive:true, cutout:'70%', plugins:{ legend:{ display:false } } }
+    });
+  }
+
+  // ===== Gráfico Situación (Permanentes/Contratados) =====
+  // Tomamos las métricas ya calculadas en el servidor
+  const nPerm  = {{ permanentes|default:0 }};
+  const nCont  = {{ contratados|default:0 }};
+  const totSit = nPerm + nCont;
+
+  const $txtSit = document.getElementById('txt-porc-sit');
+  const $totSit = document.getElementById('total-sit');
+  const $nPerm  = document.getElementById('n-perm');
+  const $nCont  = document.getElementById('n-cont');
+
+  const ctxSit = document.getElementById('chartSituacion').getContext('2d');
+
+  if (totSit === 0) {
+    // Mostrar sin números
+    $txtSit.textContent = 'Sin datos para este período';
+    if ($totSit) $totSit.textContent = '—';
+    if ($nPerm)  $nPerm.textContent  = '—';
+    if ($nCont)  $nCont.textContent  = '—';
+    renderEmptyDoughnut(ctxSit);
+  } else {
+    const pPerm = ((nPerm / totSit) * 100).toFixed(1);
+    const pCont = ((nCont / totSit) * 100).toFixed(1);
+    $txtSit.textContent = `Permanentes: ${pPerm}%, Contratados: ${pCont}%`;
+    if ($totSit) $totSit.textContent = totSit;
+    if ($nPerm)  $nPerm.textContent  = nPerm;
+    if ($nCont)  $nCont.textContent  = nCont;
+
+    new Chart(ctxSit, {
+      type:'doughnut',
+      data:{
+        labels:['Permanentes','Contratados'],
+        datasets:[{ data:[nPerm, nCont], backgroundColor:['#00CED1','#000000'], borderWidth:0 }]
+      },
+      options:{ responsive:true, cutout:'70%', plugins:{ legend:{ display:false } } }
+    });
+  }
+
+  // ===== Filtros/orden para Novedades =====
+  const fTipo   = document.getElementById('fTipo');
+  const fBuscar = document.getElementById('fBuscar');
+  const tbody   = document.querySelector('#tablaNovedades tbody');
+  const rows    = Array.from(tbody?.querySelectorAll('tr') || []);
+  const novCount = document.getElementById('novCount');
+
+  if (fTipo && fTipo.options.length <= 1) {
+    const tipos = Array.from(new Set(rows.map(r => r.dataset.tipo).filter(Boolean))).sort();
+    tipos.forEach(t => { const opt = document.createElement('option'); opt.value=t; opt.textContent=t.charAt(0).toUpperCase()+t.slice(1); fTipo.appendChild(opt); });
+  }
+
+  function applyFilters(){
+    const t = (fTipo?.value || '').toLowerCase();
+    const q = (fBuscar?.value || '').toLowerCase();
+    let count = 0;
+    rows.forEach(r => {
+      const okT = !t || r.dataset.tipo === t;
+      const okQ = !q || (r.dataset.q || '').includes(q);
+      const show = okT && okQ;
+      r.style.display = show ? '' : 'none';
+      if (show) count++;
+    });
+    if (novCount) novCount.textContent = count;
+  }
+  fTipo?.addEventListener('change', applyFilters);
+  fBuscar?.addEventListener('input', applyFilters);
+
+  rows.sort((a,b) => new Date(b.dataset.fecha) - new Date(a.dataset.fecha))
+      .forEach(r => tbody?.appendChild(r));
+  applyFilters();
+});
+</script>
+
 {% endblock %}
+

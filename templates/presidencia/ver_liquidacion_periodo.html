@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<div class="container py-3">
+  {% if messages %}
+    <div class="mb-3">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} mb-2">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Liquidaciones confirmadas — {{ PERIODO_ACTUAL }}</h2>
+    <a class="btn btn-outline-primary" href="{% url 'periodo_panel' %}">Volver al panel</a>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-sm table-striped">
+          <thead>
+            <tr>
+              <th>Empleado</th>
+              <th>Categoría</th>
+              <th>Oficina</th>
+              <th>Bruto</th>
+              <th>Jubilación</th>
+              <th>Obra Social</th>
+              <th>Oficio Judicial</th>
+              <th>Liquido</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for liq in planillas %}
+              <tr>
+                <td>{{ liq.empleado }}</td>
+                <td>{{ liq.categoria_nombre }}</td>
+                <td>{{ liq.oficina_nombre }}</td>
+                <td>{{ liq.bruto }}</td>
+                <td>{{ liq.jubilacion }}</td>
+                <td>{{ liq.obra_social }}</td>
+                <td>{{ liq.oficio_judicial }}</td>
+                <td><strong>{{ liq.liquido }}</strong></td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="8" class="text-center text-muted">Sin planillas.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="text-muted small mt-2">Total planillas: {{ total_planillas }}</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,181 +1,766 @@
 {% extends "base.html" %}
+{% load static %}
+
 {% block content %}
-
-<!-- Volver (chico, a la izquierda) -->
-<div class="mb-2">
-  <a href="{% url 'presidencia_dashboard' %}" class="btn btn-sm btn-outline-secondary">
-    ← Volver
-  </a>
-</div>
-
-<h1 class="mb-3 text-primary fw-bold">Empleados</h1>
-
-<!-- Filtros -->
-<form method="get" class="row g-2 align-items-end mb-3">
-  <div class="col-12 col-lg-4">
-    <label class="form-label text-primary fw-semibold">Buscar</label>
-    <input type="text" name="q" value="{{ q }}" class="form-control"
-           placeholder="Nombre, Apellido, DNI o CUIL">
-  </div>
-
-  <div class="col-6 col-lg-3">
-    <label class="form-label text-primary fw-semibold">Área</label>
-    <select name="area" class="form-select">
-      {% for a in areas %}
-        <option value="{{ a }}" {% if a == area_sel %}selected{% endif %}>{{ a }}</option>
-      {% endfor %}
-    </select>
-  </div>
-
-  <div class="col-6 col-lg-2">
-    <label class="form-label text-primary fw-semibold">Situación</label>
-    <select name="situacion" class="form-select">
-      {% for s in situaciones %}
-        <option value="{{ s }}" {% if s == sit_sel %}selected{% endif %}>
-          {% if s == "P" %}Permanente{% elif s == "C" %}Contratado{% else %}Todas{% endif %}
-        </option>
-      {% endfor %}
-    </select>
-  </div>
-
-  <div class="col-6 col-lg-2">
-    <label class="form-label text-primary fw-semibold">Estado</label>
-    <select name="estado" class="form-select">
-      {% for val, label in estados %}
-        <option value="{{ val }}" {% if val == estado_sel %}selected{% endif %}>{{ label }}</option>
-      {% endfor %}
-    </select>
-  </div>
-
-  <!-- Filtrar / Limpiar alineados -->
-  <div class="col-6 col-lg-1 d-grid">
-    <button type="submit" class="btn btn-outline-primary">Filtrar</button>
-  </div>
-  <div class="col-6 col-lg-1 d-grid">
-    <a href="{% url 'empleados:empleado-list' %}" class="btn btn-outline-secondary">Limpiar</a>
-  </div>
-</form>
-
-<!-- Total + Acciones a la derecha -->
-<div class="d-flex justify-content-between align-items-center mb-2">
-  <div>
-    <strong>Total:</strong>
-    {% if is_paginated %}{{ page_obj.paginator.count }}{% else %}{{ empleados|length }}{% endif %}
-  </div>
-
-  <div class="d-flex gap-2">
-    <!-- ACTUALIZAR ANTIGÜEDAD: color diferenciado -->
-    <a href="{% url 'antiguedad-actualizar' %}" class="btn btn-warning">
-      <i class="fas fa-clock me-1"></i> Actualizar antigüedad
-    </a>
-    <!-- Nuevo empleado (opcional) -->
-    <a class="btn btn-success" href="{% url 'empleados:empleado-create' %}">
-      <i class="fas fa-plus me-1"></i> Nuevo empleado
-    </a>
-  </div>
-</div>
-
-<!-- Tabla compacta -->
-<div class="table-responsive">
-  <table class="table table-striped table-hover table-sm align-middle">
-    <thead class="table-light">
-      <tr>
-        <th>Apellido</th>
-        <th>Nombre</th>
-        <th>DNI</th>
-        <th>CUIL</th>
-        <th>Antigüedad</th>
-        <th>Categoría</th>
-        <th>Oficina</th>
-        <th>Situación</th>
-        <th>Estado</th>
-        <th style="width: 200px;">Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for emp in empleados %}
-        <tr>
-          <td>{{ emp.apellido }}</td>
-          <td>{{ emp.nombre }}</td>
-          <td class="text-nowrap">{{ emp.dni }}</td>
-          <td class="text-nowrap">{{ emp.cuil }}</td>
-          <!-- SOLO número -->
-          <td class="text-center">{{ emp.antiguedad|default:"0" }}</td>
-          <td>{{ emp.categoria.nombre }}</td>
-          <td>{{ emp.oficina.nombre }}</td>
-
-          <!-- Situación SIN color -->
-          <td>
-            {% if emp.situacion == 'P' %}PERMANENTE
-            {% elif emp.situacion == 'C' %}CONTRATADO
-            {% else %}—{% endif %}
-          </td>
-
-          <!-- Estado (badge ok) -->
-          <td>
-            {% if emp.estado %}
-              <span class="badge bg-success">ACTIVO</span>
-            {% else %}
-              <span class="badge bg-secondary">INACTIVO</span>
-            {% endif %}
-          </td>
-
-          <td>
-            <div class="d-flex gap-2">
-              <a class="btn btn-sm btn-secondary"
-                 href="{% url 'empleados:empleado-update' emp.pk %}">
-                <i class="fas fa-edit"></i> Editar
-              </a>
-              <a class="btn btn-sm btn-danger"
-                 href="{% url 'empleados:empleado-delete' emp.pk %}">
-                <i class="fas fa-trash"></i> Borrar
-              </a>
-            </div>
-          </td>
-        </tr>
-      {% empty %}
-        <tr><td colspan="10" class="text-center py-4">No hay empleados.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-
-<!-- Paginación -->
-{% if is_paginated %}
-  <nav aria-label="Paginación">
-    <ul class="pagination justify-content-center mt-3">
-      {% if page_obj.has_previous %}
-        <li class="page-item">
-          <a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ qs_params }}">«</a>
-        </li>
-      {% else %}
-        <li class="page-item disabled"><span class="page-link">«</span></li>
-      {% endif %}
-
-      {% for num in paginator.page_range %}
-        {% if num == page_obj.number %}
-          <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-          <li class="page-item"><a class="page-link" href="?page={{ num }}&{{ qs_params }}">{{ num }}</a></li>
-        {% endif %}
-      {% endfor %}
-
-      {% if page_obj.has_next %}
-        <li class="page-item">
-          <a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ qs_params }}">»</a>
-        </li>
-      {% else %}
-        <li class="page-item disabled"><span class="page-link">»</span></li>
-      {% endif %}
-    </ul>
-  </nav>
-{% endif %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 
 <style>
-  .form-label { font-size:.95rem; }
-  .table tbody tr { transition: box-shadow .15s ease, transform .08s ease; }
-  .table tbody tr:hover { box-shadow: 0 2px 10px rgba(0,0,0,.06); transform: translateY(-1px); }
+  :root {
+    --primary-color: #0055A4;
+    --primary-dark: #003087;
+    --background-light: #ecf0f5;
+    --background-medium: #d9e2ec;
+    --text-light: #fff;
+    --text-dark: #343a40;
+    --shadow-color: rgba(0,0,0,.1);
+  }
+  
+  body {
+    background: linear-gradient(135deg, var(--background-light) 0%, var(--background-medium) 100%);
+    color: var(--text-dark);
+    font-family: 'Poppins', sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+  
+  nav.navbar a[href$="/empleados/"] {
+    display: none !important;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 220px;
+    position: fixed;
+    top: 0;
+    left: -220px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: var(--text-light);
+    transition: left 0.3s cubic-bezier(.4,0,.2,1);
+    z-index: 1030;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 2px 0 10px var(--shadow-color);
+  }
+  
+  .sidebar.active {
+    left: 0;
+  }
+  
+  .sidebar-toggle {
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 60px;
+    background: var(--primary-dark);
+    color: var(--text-light);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+    box-shadow: 2px 0 8px rgba(0,0,0,.15);
+    transition: background-color 0.3s ease;
+    font-size: 16px;
+  }
+  
+  .sidebar-toggle:hover {
+    background: var(--primary-color);
+  }
+  
+  .sidebar-header {
+    padding: 15px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,.1);
+  }
+  
+  .sidebar-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+  }
+  
+  .sidebar-nav {
+    padding: 15px;
+    flex-grow: 1;
+    overflow-y: auto;
+  }
+  
+  .nav-link {
+    color: var(--text-light);
+    padding: 8px 15px;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    border-radius: 5px;
+    margin-bottom: 6px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    position: relative;
+    font-size: .9rem;
+  }
+  
+  .nav-link:hover {
+    background: rgba(255,255,255,.1);
+    transform: translateX(3px);
+  }
+  
+  .nav-link.active, .nav-link[aria-expanded="true"] {
+    background: #fff;
+    color: var(--primary-color);
+    font-weight: 600;
+  }
+
+  /* Main Content */
+  .main-content {
+    transition: margin-left 0.3s cubic-bezier(.4,0,.2,1);
+    margin-left: 0;
+    padding: 20px;
+    min-height: 100vh;
+  }
+  
+  .main-content.shifted {
+    margin-left: 220px;
+  }
+
+  /* Cards & table */
+  .card {
+    background: #fff;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 3px 15px var(--shadow-color);
+    padding: 15px;
+    margin-bottom: 20px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 20px rgba(0,0,0,.1);
+  }
+  
+  .card-title {
+    font-weight: 600;
+    color: var(--primary-dark);
+    font-size: 1.1rem;
+  }
+  
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+  }
+  
+  .stats-card {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 3px 10px rgba(0,0,0,.07);
+    padding: 15px;
+  }
+  
+  .stats-card .chart-canvas {
+    max-width: 120px;
+    margin-right: 15px;
+  }
+  
+  .counts-container {
+    font-size: .85rem;
+  }
+  
+  .status-active { color: #0055A4; font-weight: bold; }
+  .status-inactive { color: #800080; font-weight: bold; }
+  .status-permanente { color: #00CED1; font-weight: bold; }
+  .status-contratado { color: #000; font-weight: bold; }
+
+  .table {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  
+  .table thead th {
+    background: var(--primary-dark);
+    color: #fff;
+    padding: 10px;
+    text-align: left;
+    font-weight: 600;
+    white-space: nowrap;
+    border-bottom: none;
+    font-size: .9rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  
+  .table thead th:first-child {
+    border-top-left-radius: 6px;
+  }
+  
+  .table thead th:last-child {
+    border-top-right-radius: 6px;
+  }
+  
+  .table tbody tr {
+    transition: background-color 0.2s ease;
+  }
+  
+  .table tbody tr:hover {
+    background: #f8f9fa;
+  }
+  
+  .table td {
+    padding: 10px;
+    vertical-align: middle;
+    border-bottom: 1px solid #e9ecef;
+    font-size: .85rem;
+  }
+
+  /* Estado de período */
+  .pulse-button {
+    color: #fff;
+    font-size: 1.2rem;
+    padding: 8px 16px;
+    border-radius: 6px;
+    display: inline-block;
+    font-weight: 600;
+    letter-spacing: .5px;
+    border: none;
+    animation: pulse-glow 2s infinite ease-in-out;
+    text-decoration: none;
+  }
+  
+  .pulse-static {
+    pointer-events: none;
+    user-select: none;
+  }
+  
+  .pulse-button.status-abierto {
+    background: #007bff;
+    --glow-color: #007bff;
+  }
+  
+  .pulse-button.status-cerrado {
+    background: #ffc107;
+    --glow-color: #ffc107;
+    color: var(--text-dark);
+  }
+  
+  .pulse-button.status-confirmado {
+    background: #198754;
+    --glow-color: #198754;
+  }
+  
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 4px var(--glow-color), 0 0 8px var(--glow-color); }
+    50% { box-shadow: 0 0 15px var(--glow-color), 0 0 30px var(--glow-color); }
+  }
+
+  /* Novedades */
+  .badge-tipo {
+    font-weight: 600;
+    letter-spacing: .2px;
+  }
+  
+  .nov-tools .form-select, .nov-tools .form-control {
+    max-width: 220px;
+  }
+  
+  .nov-counter {
+    font-size: .85rem;
+    color: #6c757d;
+  }
+  
+  .nov-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #fff;
+  }
+  
+  @media (max-width: 992px) {
+    .main-content.shifted { margin-left: 0; }
+    .pulse-button { font-size: 1rem; }
+  }
+
+  /* Estilos específicos para esta plantilla */
+  .content-container {
+    animation: fadeInUp 0.5s ease-out forwards;
+  }
+
+  .page-header {
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 1rem;
+  }
+  
+  .back-link {
+    display: inline-block;
+    margin-bottom: 0.25rem;
+    text-decoration: none;
+    font-weight: 500;
+    color: #6c757d;
+    transition: color 0.3s;
+  }
+  
+  .back-link:hover {
+    color: #0d6efd;
+  }
+
+  .page-title {
+    color: #343a40;
+    font-weight: 700;
+    margin-top: 0;
+  }
+  
+  .filter-card, .card {
+    border: none;
+    border-radius: 0.75rem;
+  }
+  
+  #empTable thead {
+    z-index: 5;
+  }
+  
+  #empTable tbody tr {
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+  }
+
+  #empTable tbody tr:hover {
+    box-shadow: 0 5px 15px rgba(0,0,0,.08);
+    transform: translateY(-2px);
+    cursor: pointer;
+  }
+
+  th.sortable {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    padding-right: 25px !important;
+  }
+  
+  .sort-icon {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #adb5bd;
+    transition: transform 0.3s ease, color 0.3s ease;
+  }
+  
+  th.sort-asc .sort-icon, th.sort-desc .sort-icon {
+    color: #0d6efd;
+  }
+  
+  th.sort-asc .sort-icon {
+    transform: translateY(-50%) rotate(180deg);
+  }
+
+  .copyable {
+    cursor: copy;
+    border-bottom: 1px dotted #6c757d;
+    position: relative;
+  }
+
+  .animated-btn {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .animated-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .animated-btn:active {
+    transform: translateY(-1px);
+  }
+
+  .form-check-input:checked {
+    background-color: #198754;
+    border-color: #198754;
+  }
+  
+  .estado-label {
+    font-weight: bold;
+    font-size: 0.8rem;
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes toast-in-out {
+    0% { transform: translateY(10px); opacity: 0; }
+    20% { transform: translateY(0); opacity: 1; }
+    80% { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(10px); opacity: 0; }
+  }
+
+  .copy-toast {
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #212529;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    animation: toast-in-out 2s ease forwards;
+    z-index: 10;
+    pointer-events: none;
+  }
+  
+  .fade-in-row {
+    animation: fadeInRow 0.5s ease-out forwards;
+  }
+  
+  @keyframes fadeInRow {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* Contenedor de tabla con encabezado fijo */
+  .table-container-fixed {
+    max-height: 70vh;
+    overflow-y: auto;
+    position: relative;
+  }
+  
+  .table-container-fixed thead th {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
 </style>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<div class="sidebar" id="sidebar">
+  <button class="sidebar-toggle" id="sidebar-toggle"><i class="fas fa-chevron-right"></i></button>
+  <div class="sidebar-header"><h3>Menú de Gestión</h3></div>
+  <ul class="nav flex-column sidebar-nav">
+    <li class="nav-item"><a href="{% url 'presidencia_dashboard' %}" class="nav-link"><i class="fas fa-tachometer-alt fa-fw me-2"></i> Administrador</a></li>
+    <li class="nav-item"><a href="{% url 'empleados:empleado-list' %}" class="nav-link active"><i class="fas fa-users fa-fw me-2"></i> Empleados</a></li>
+    <li class="nav-item"><a href="{% url 'empleados:calificacion-list' %}" class="nav-link"><i class="fas fa-star fa-fw me-2"></i> Calificaciones</a></li>
+    <li class="nav-item"><a href="{% url 'empleados:categoria-list' %}" class="nav-link"><i class="fas fa-layer-group fa-fw me-2"></i> Categorías</a></li>
+    <li class="nav-item"><a href="{% url 'empleados:oficiojudicial-list' %}" class="nav-link"><i class="fas fa-gavel fa-fw me-2"></i> Oficios Judiciales</a></li>
+    
+    {# NUEVO: Enlace a Novedades Mensuales agregado aquí #}
+    <li class="nav-item"><a href="{% url 'empleados:novedades_mensuales_list' %}" class="nav-link"><i class="fas fa-bell fa-fw me-2"></i> Novedades mensuales</a></li>
+    
+    <li class="nav-item"><a href="{% url 'periodo_panel' %}" class="nav-link"><i class="fas fa-calendar-alt fa-fw me-2"></i> Período</a></li>
+  </ul>
+</div>
+
+<div class="main-content" id="main-content">
+  <div class="container-fluid content-container">
+
+    <div class="page-header mb-4">
+      <h1 class="page-title">Gestión de Empleados</h1>
+    </div>
+
+    <div class="card shadow-sm mb-4 filter-card">
+      <div class="card-body">
+        <form method="get" class="row g-3 align-items-end" id="filterForm">
+          <div class="col-12 col-lg-4">
+            <label for="searchInput" class="form-label">Buscar</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-search"></i></span>
+              <input id="searchInput" type="text" name="q" value="{{ q }}" class="form-control" placeholder="Nombre, Apellido, DNI o CUIL">
+            </div>
+          </div>
+
+          <div class="col-6 col-lg-2">
+            <label for="areaSelect" class="form-label">Área</label>
+            <select id="areaSelect" name="area" class="form-select">
+              {% for a in areas %}
+                <option value="{{ a }}" {% if a == area_sel %}selected{% endif %}>{{ a }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-6 col-lg-2">
+            <label for="situacionSelect" class="form-label">Situación</label>
+            <select id="situacionSelect" name="situacion" class="form-select">
+              {% for s in situaciones %}
+                <option value="{{ s }}" {% if s == sit_sel %}selected{% endif %}>
+                  {% if s == "P" %}Permanente{% elif s == "C" %}Contratado{% else %}Todas{% endif %}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-6 col-lg-2">
+            <label for="estadoSelect" class="form-label">Estado</label>
+            <select id="estadoSelect" name="estado" class="form-select">
+              {% for val, label in estados %}
+                <option value="{{ val }}" {% if val == estado_sel %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-6 col-lg-2 d-grid">
+            <button type="submit" class="btn btn-primary animated-btn"><i class="fas fa-filter me-2"></i>Filtrar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+      <div class="fw-bold text-muted">
+        Total de empleados:
+        <span class="badge bg-dark rounded-pill fs-6">
+          {% if is_paginated %}{{ page_obj.paginator.count }}{% else %}{{ empleados|length }}{% endif %}
+        </span>
+      </div>
+      <div class="d-flex gap-2">
+        <a class="btn btn-sm btn-outline-warning animated-btn" href="{% url 'antiguedad-actualizar' %}">
+          <i class="fas fa-clock me-1"></i> Actualizar antigüedad
+        </a>
+        <a class="btn btn-sm btn-success animated-btn" href="{% url 'empleados:empleado-create' %}">
+          <i class="fas fa-plus me-1"></i> Nuevo empleado
+        </a>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="table-container-fixed"> <!-- Cambiado a table-container-fixed -->
+        <table class="table table-striped table-hover align-middle mb-0" id="empTable">
+          <thead class="table-light">
+            <tr>
+              <th class="sortable" data-key="apellido">Apellido <i class="sort-icon fas fa-sort"></i></th>
+              <th class="sortable" data-key="nombre">Nombre <i class="sort-icon fas fa-sort"></i></th>
+              <th class="sortable" data-key="dni" data-type="num">DNI <i class="sort-icon fas fa-sort"></i></th>
+              <th class="sortable" data-key="cuil" data-type="num">CUIL <i class="sort-icon fas fa-sort"></i></th>
+              <th class="sortable" data-key="categoria">Categoría <i class="sort-icon fas fa-sort"></i></th>
+              <th class="sortable" data-key="oficina">Oficina <i class="sort-icon fas fa-sort"></i></th>
+              <th class="sortable" data-key="antiguedad" data-type="num">Antigüedad <i class="sort-icon fas fa-sort"></i></th>
+              <th class="sortable" data-key="situacion">Situación <i class="sort-icon fas fa-sort"></i></th>
+              <th class="sortable" data-key="estado">Estado <i class="sort-icon fas fa-sort"></i></th>
+              <th style="width: 150px;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for emp in empleados %}
+            <tr class="fade-in-row"
+                data-apellido="{{ emp.apellido|lower }}"
+                data-nombre="{{ emp.nombre|lower }}"
+                data-dni="{{ emp.dni }}"
+                data-cuil="{{ emp.cuil }}"
+                data-categoria="{{ emp.categoria.nombre|lower }}"
+                data-oficina="{{ emp.oficina.nombre|lower }}"
+                data-antiguedad="{{ emp.antiguedad_ipvu_actual|default:'-1' }}"
+                data-situacion="{% if emp.situacion == 'P' %}PERMANENTE{% elif emp.situacion == 'C' %}CONTRATADO{% else %}—{% endif %}"
+                data-estado="{% if emp.estado == 1 and not emp.fecha_salida %}ACTIVO{% else %}INACTIVO{% endif %}">
+              <td>{{ emp.apellido }}</td>
+              <td>{{ emp.nombre }}</td>
+              <td class="text-nowrap"><span class="copyable" title="Copiar DNI">{{ emp.dni }}</span></td>
+              <td class="text-nowrap"><span class="copyable" title="Copiar CUIL">{{ emp.cuil }}</span></td>
+              <td>{{ emp.categoria.nombre }}</td>
+              <td>{{ emp.oficina.nombre }}</td>
+              <td class="text-center">{{ emp.antiguedad_ipvu_actual }}</td>
+              <td>
+                {% if emp.situacion == 'P' %}
+                  <span class="badge rounded-pill bg-primary">PERMANENTE</span>
+                {% elif emp.situacion == 'C' %}
+                  <span class="badge rounded-pill bg-info text-dark">CONTRATADO</span>
+                {% else %}
+                  <span class="badge rounded-pill bg-secondary">—</span>
+                {% endif %}
+              </td>
+              <td>
+                <div class="form-check form-switch d-flex align-items-center justify-content-center gap-2">
+                  <input class="form-check-input estado-switch" type="checkbox" role="switch" id="switch-{{ emp.pk }}"
+                         data-url="{% url 'empleados:empleado-toggle-estado' emp.pk %}"
+                         {% if emp.estado == 1 and not emp.fecha_salida %}checked{% endif %}>
+                  <label class="form-check-label estado-label {% if emp.estado == 1 and not emp.fecha_salida %}text-success{% else %}text-secondary{% endif %}" for="switch-{{ emp.pk }}">
+                    {% if emp.estado == 1 and not emp.fecha_salida %}ACTIVO{% else %}INACTIVO{% endif %}
+                  </label>
+                </div>
+              </td>
+              <td>
+                <div class="d-flex gap-1">
+                  <a class="btn btn-sm btn-outline-primary animated-btn" title="Editar" href="{% url 'empleados:empleado-update' emp.pk %}"><i class="fas fa-edit"></i></a>
+                  <a class="btn btn-sm btn-outline-danger animated-btn" title="Borrar" href="{% url 'empleados:empleado-delete' emp.pk %}"><i class="fas fa-trash"></i></a>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+              <tr><td colspan="10" class="text-center py-5">No se encontraron empleados que coincidan con los filtros.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {# ---------- Paginación SEGURA (corregida) ---------- #}
+    {% if is_paginated %}
+    <nav aria-label="Paginación" class="mt-4">
+      <ul class="pagination justify-content-center">
+
+        {# Ir a la primera y a la anterior #}
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page=1&{{ qs_params }}"><i class="fas fa-angle-double-left"></i></a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ qs_params }}">
+              <i class="fas fa-angle-left"></i>
+            </a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link"><i class="fas fa-angle-double-left"></i></span></li>
+          <li class="page-item disabled"><span class="page-link"><i class="fas fa-angle-left"></i></span></li>
+        {% endif %}
+
+        {# Números de página cercanos #}
+        {% for num in paginator.page_range %}
+          {% if num == page_obj.number %}
+            <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
+          {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <li class="page-item"><a class="page-link" href="?page={{ num }}&{{ qs_params }}">{{ num }}</a></li>
+          {% endif %}
+        {% endfor %}
+
+        {# Ir a la siguiente y a la última #}
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ qs_params }}">
+              <i class="fas fa-angle-right"></i>
+            </a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ paginator.num_pages }}&{{ qs_params }}">
+              <i class="fas fa-angle-double-right"></i>
+            </a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link"><i class="fas fa-angle-right"></i></span></li>
+          <li class="page-item disabled"><span class="page-link"><i class="fas fa-angle-double-right"></i></span></li>
+        {% endif %}
+
+      </ul>
+    </nav>
+    {% endif %}
+
+  </div> {# Fin de .content-container #}
+</div> {# Fin de .main-content #}
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // --- FUNCIONALIDAD DEL SIDEBAR ---
+  const sidebar = document.getElementById('sidebar');
+  const sidebarToggle = document.getElementById('sidebar-toggle');
+  const mainContent = document.getElementById('main-content');
+
+  sidebarToggle.addEventListener('click', () => {
+    sidebar.classList.toggle('active');
+    mainContent.classList.toggle('shifted');
+    
+    // Cambiar ícono según estado
+    const icon = sidebarToggle.querySelector('i');
+    if (sidebar.classList.contains('active')) {
+      icon.classList.remove('fa-chevron-right');
+      icon.classList.add('fa-chevron-left');
+    } else {
+      icon.classList.remove('fa-chevron-left');
+      icon.classList.add('fa-chevron-right');
+    }
+  });
+
+  // --- FUNCIÓN PARA EL SWITCH DE ESTADO (ACTIVO/INACTIVO) ---
+  const getCookie = (name) => {
+    const m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+    return m ? m.pop() : '';
+  };
+
+  const toggleEstado = async (switchElement) => {
+    const url = switchElement.dataset.url;
+    const label = switchElement.parentElement.querySelector('.estado-label');
+    const row = switchElement.closest('tr');
+    const wasChecked = switchElement.checked;
+    switchElement.disabled = true;
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCookie('csrftoken') }
+      });
+
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      
+      const data = await response.json();
+      const esActivo = data.estado === 1 || data.estado === true;
+      
+      // Actualizar UI
+      label.textContent = esActivo ? 'ACTIVO' : 'INACTIVO';
+      label.classList.toggle('text-success', esActivo);
+      label.classList.toggle('text-secondary', !esActivo);
+      row.dataset.estado = esActivo ? 'ACTIVO' : 'INACTIVO';
+      switchElement.checked = esActivo;
+
+    } catch (error) {
+      console.error("Error al cambiar el estado:", error);
+      switchElement.checked = !wasChecked; // Revertir en caso de error
+    } finally {
+      switchElement.disabled = false;
+    }
+  };
+
+  document.querySelectorAll('.estado-switch').forEach(sw => {
+    sw.addEventListener('change', () => toggleEstado(sw));
+  });
+
+  // --- ORDENAR TABLA (CLIENT-SIDE) ---
+  const table = document.getElementById('empTable');
+  const headers = table.querySelectorAll('th.sortable');
+  const tbody = table.querySelector('tbody');
+
+  headers.forEach(header => {
+    header.addEventListener('click', () => {
+      const key = header.dataset.key;
+      const type = header.dataset.type;
+      const currentlySortedAsc = header.classList.contains('sort-asc');
+      const sortOrder = currentlySortedAsc ? 'desc' : 'asc';
+      
+      headers.forEach(h => h.classList.remove('sort-asc','sort-desc'));
+      header.classList.add(sortOrder === 'asc' ? 'sort-asc' : 'sort-desc');
+
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      rows.sort((a, b) => {
+        let valA = a.dataset[key];
+        let valB = b.dataset[key];
+        if (type === 'num') { valA = parseFloat(valA); valB = parseFloat(valB); }
+        if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+        if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+        return 0;
+      });
+
+      tbody.innerHTML = '';
+      rows.forEach(row => tbody.appendChild(row));
+    });
+  });
+
+  // --- COPIAR DNI/CUIL ---
+  document.querySelectorAll('.copyable').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const textToCopy = el.textContent;
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        const toast = document.createElement('div');
+        toast.textContent = '¡Copiado!';
+        toast.className = 'copy-toast';
+        el.appendChild(toast);
+        setTimeout(() => toast.remove(), 2000);
+      }).catch(err => console.error('Error al copiar:', err));
+    });
+  });
+
+});
+</script>
+
 {% endblock %}

@@ -1,0 +1,449 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
+<style>
+  :root {
+    --primary-color: #0055A4;
+    --primary-dark: #003087;
+    --background-light: #ecf0f5;
+    --background-medium: #d9e2ec;
+    --text-light: #fff;
+    --text-dark: #343a40;
+    --shadow-color: rgba(0,0,0,.1);
+    --calificacion-color: #FFA500;
+    --oficio-color: #17A2B8;
+    --empleado-color: #28a745;
+    --baja-color: #dc3545;
+    --otro-color: #6c757d;
+  }
+  
+  body {
+    background: linear-gradient(135deg, var(--background-light) 0%, var(--background-medium) 100%);
+    color: var(--text-dark);
+    font-family: 'Poppins', sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+  
+  /* Sidebar */
+  .sidebar {
+    width: 220px;
+    position: fixed;
+    top: 0;
+    left: -220px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: var(--text-light);
+    transition: left 0.3s cubic-bezier(.4,0,.2,1);
+    z-index: 1030;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 2px 0 10px var(--shadow-color);
+  }
+  
+  .sidebar.active {
+    left: 0;
+  }
+  
+  .sidebar-toggle {
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 60px;
+    background: var(--primary-dark);
+    color: var(--text-light);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+    box-shadow: 2px 0 8px rgba(0,0,0,.15);
+    transition: background-color 0.3s ease;
+    font-size: 16px;
+  }
+  
+  .sidebar-toggle:hover {
+    background: var(--primary-color);
+  }
+  
+  .sidebar-header {
+    padding: 15px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,.1);
+  }
+  
+  .sidebar-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+  }
+  
+  .sidebar-nav {
+    padding: 15px;
+    flex-grow: 1;
+    overflow-y: auto;
+  }
+  
+  .sidebar .nav-link {
+    color: var(--text-light);
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    border-radius: 5px;
+    margin-bottom: 6px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    position: relative;
+    font-size: .9rem;
+  }
+  
+  .sidebar .nav-link:hover {
+    background: rgba(255,255,255,.1);
+    transform: translateX(3px);
+  }
+  
+  .sidebar .nav-link.active, .sidebar .nav-link[aria-expanded="true"] {
+    background: #fff;
+    color: var(--primary-color);
+    font-weight: 600;
+  }
+
+  .sidebar .nav-link i {
+    width: 20px;
+    margin-right: 10px;
+    text-align: center;
+  }
+
+  /* Main Content */
+  .main-content {
+    transition: margin-left 0.3s cubic-bezier(.4,0,.2,1);
+    margin-left: 0;
+    padding: 20px;
+    min-height: 100vh;
+  }
+  
+  .main-content.shifted {
+    margin-left: 220px;
+  }
+
+  /* Cards & table */
+  .card {
+    background: #fff;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 3px 15px var(--shadow-color);
+    margin-bottom: 20px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 20px rgba(0,0,0,.1);
+  }
+  
+  .table {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  
+  .table thead th {
+    background: var(--primary-dark);
+    color: #fff;
+    padding: 10px 15px;
+    text-align: left;
+    font-weight: 600;
+    white-space: nowrap;
+    border-bottom: none;
+    font-size: .9rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  
+  .table thead th:first-child {
+    border-top-left-radius: 6px;
+  }
+  
+  .table thead th:last-child {
+    border-top-right-radius: 6px;
+  }
+  
+  .table tbody tr:hover {
+    background: #f8f9fa;
+  }
+  
+  .table td {
+    padding: 10px 15px;
+    vertical-align: middle;
+    border-bottom: 1px solid #e9ecef;
+    font-size: .85rem;
+  }
+
+  /* Badges con colores específicos */
+  .badge-tipo {
+    padding: 5px 10px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: white;
+  }
+  
+  .badge-calificacion { background-color: var(--calificacion-color); }
+  .badge-oficio { background-color: var(--oficio-color); }
+  .badge-empleado-alta { background-color: var(--empleado-color); }
+  .badge-empleado-baja { background-color: var(--baja-color); }
+  .badge-cambio-categ { background-color: #ffc107; color: #000; }
+  .badge-otro { background-color: var(--otro-color); }
+
+  /* Estilos específicos para esta plantilla */
+  .content-container {
+    animation: fadeInUp 0.5s ease-out forwards;
+  }
+
+  .page-header {
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 1rem;
+  }
+  
+  .page-title {
+    color: #343a40;
+    font-weight: 700;
+    margin-top: 0;
+  }
+  
+  .page-subtitle {
+    font-size: 1.25rem;
+    color: #5a646e;
+    margin-bottom: 0;
+  }
+  
+  .filter-card, .card {
+    border: none;
+    border-radius: 0.75rem;
+  }
+  
+  .animated-btn {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .animated-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  }
+
+  .table-container-fixed {
+    max-height: 70vh;
+    overflow-y: auto;
+    position: relative;
+  }
+  
+  .table-container-fixed thead th {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+
+<div class="sidebar" id="sidebar">
+  <button class="sidebar-toggle" id="sidebar-toggle"><i class="fas fa-chevron-right"></i></button>
+  <div class="sidebar-header">
+    <h3>Menú de Gestión</h3>
+  </div>
+  
+  <ul class="nav flex-column sidebar-nav">
+    <li class="nav-item">
+      <a href="{% url 'presidencia_dashboard' %}" class="nav-link">
+        <i class="fas fa-tachometer-alt fa-fw"></i> Administrador
+      </a>
+    </li>
+    
+    <li class="nav-item">
+      <a href="{% url 'empleados:empleado-list' %}" class="nav-link">
+        <i class="fas fa-users fa-fw"></i> Empleados
+      </a>
+    </li>
+    
+    <li class="nav-item">
+      <a href="{% url 'empleados:calificacion-list' %}" class="nav-link">
+        <i class="fas fa-star fa-fw"></i> Calificaciones
+      </a>
+    </li>
+    
+    <li class="nav-item">
+      <a href="{% url 'empleados:categoria-list' %}" class="nav-link">
+        <i class="fas fa-layer-group fa-fw"></i> Categorías
+      </a>
+    </li>
+    
+    <li class="nav-item">
+      <a href="{% url 'empleados:oficiojudicial-list' %}" class="nav-link">
+        <i class="fas fa-gavel fa-fw"></i> Oficios Judiciales
+      </a>
+    </li>
+    
+    <li class="nav-item">
+      <a href="{% url 'empleados:novedades_mensuales_list' %}" class="nav-link active">
+        <i class="fas fa-newspaper fa-fw"></i> Novedades mensuales
+      </a>
+    </li>
+    
+    <li class="nav-item">
+      <a href="{% url 'periodo_panel' %}" class="nav-link">
+        <i class="fas fa-calendar-alt fa-fw"></i> Período
+      </a>
+    </li>
+  </ul>
+</div>
+
+<div class="main-content" id="main-content">
+  <div class="container-fluid content-container">
+
+    <div class="page-header mb-4">
+      <h1 class="page-title">Novedades Mensuales</h1>
+      <p class="page-subtitle">{{ PERIODO_MES_NOMBRE|capfirst }} de {{ PERIODO_ANIO }}</p>
+      
+      {% if periodo_confirmado %}
+        <div class="alert alert-info mt-2" role="alert">
+            <i class="fas fa-info-circle me-2"></i> Este período está <strong>CONFIRMADO</strong> y no se puede modificar.
+        </div>
+      {% elif not periodo_abierto %}
+        <div class="alert alert-warning mt-2" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i> Este período está <strong>CERRADO</strong>, no se pueden registrar novedades.
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="card shadow-sm mb-4 filter-card">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end" id="filterForm">
+                <div class="col-12 col-md-4 col-lg-3">
+                    <label for="tipo" class="form-label fw-bold">Filtrar por Tipo</label>
+                    <select name="tipo" id="tipo" class="form-select">
+                        <option value="">Todos los tipos</option>
+                        <option value="CAMBIO_CALIF" {% if f_tipo == 'CAMBIO_CALIF' %}selected{% endif %}>Calificaciones</option>
+                        <option value="OFICIO_CREADO" {% if f_tipo == 'OFICIO_CREADO' %}selected{% endif %}>Oficios Judiciales</option>
+                        <option value="EMPLEADO_ALTA" {% if f_tipo == 'EMPLEADO_ALTA' %}selected{% endif %}>Altas de Empleados</option>
+                        <option value="EMPLEADO_BAJA" {% if f_tipo == 'EMPLEADO_BAJA' %}selected{% endif %}>Bajas de Empleados</option>
+                        <option value="CAMBIO_CATEG" {% if f_tipo == 'CAMBIO_CATEG' %}selected{% endif %}>Cambios de Categoría</option>
+                        <option value="OTRO" {% if f_tipo == 'OTRO' %}selected{% endif %}>Otros Cambios</option>
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-5 col-lg-6">
+                    <label for="searchInput" class="form-label fw-bold">Buscar en Descripción</label>
+                    <div class="input-group">
+                        <input id="searchInput" type="text" name="q" class="form-control" placeholder="Texto a buscar..." value="{{ f_q }}">
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-3 col-lg-3 d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary animated-btn me-2"><i class="fas fa-search me-1"></i> Filtrar</button>
+                    {% if f_q or f_tipo %}
+                        <a href="?" class="btn btn-outline-secondary animated-btn"><i class="fas fa-eraser me-1"></i>Limpiar</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="mb-3 text-muted fw-bold">
+      Mostrando <b>{{ novedades.count }}</b> novedad(es).
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="table-container-fixed">
+        <table class="table table-hover align-middle mb-0" id="novedadesTable">
+          <thead class="table-light">
+            <tr>
+              <th scope="col">Fecha</th>
+              <th scope="col">Tipo</th>
+              <th scope="col">Área</th>
+              <th scope="col">Descripción</th>
+              <th scope="col">Empleado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for n in novedades %}
+            <tr>
+              <td class="text-nowrap">{{ n.fecha|date:"d/m/Y H:i" }}</td>
+              <td>
+                {% if n.tipo == 'CAMBIO_CALIF' %}
+                    <span class="badge-tipo badge-calificacion">{{ n.get_tipo_display|default:"Calificación" }}</span>
+                {% elif n.tipo == 'OFICIO_CREADO' %}
+                    <span class="badge-tipo badge-oficio">{{ n.get_tipo_display|default:"Oficio Judicial" }}</span>
+                {% elif n.tipo == 'EMPLEADO_ALTA' %}
+                    <span class="badge-tipo badge-empleado-alta">{{ n.get_tipo_display|default:"Alta Empleado" }}</span>
+                {% elif n.tipo == 'EMPLEADO_BAJA' %}
+                    <span class="badge-tipo badge-empleado-baja">{{ n.get_tipo_display|default:"Baja Empleado" }}</span>
+                {% elif n.tipo == 'CAMBIO_CATEG' %}
+                    <span class="badge-tipo badge-cambio-categ">{{ n.get_tipo_display|default:"Cambio Categoría" }}</span>
+                {% else %}
+                    <span class="badge-tipo badge-otro">{{ n.get_tipo_display|default:n.tipo }}</span>
+                {% endif %}
+              </td>
+              <td>{{ n.area|default:"—" }}</td>
+              <td style="max-width:450px; word-break: break-word;">{{ n.descripcion }}</td>
+              <td>{% if n.empleado %}#{{ n.empleado_id }} {{ n.empleado }}{% else %}—{% endif %}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="text-center py-5">
+                <h4>No se encontraron novedades</h4>
+                <p class="text-muted">No hay novedades registradas para este período o que coincidan con los filtros aplicados.</p>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // --- FUNCIONALIDAD DEL SIDEBAR ---
+  const sidebar = document.getElementById('sidebar');
+  const sidebarToggle = document.getElementById('sidebar-toggle');
+  const mainContent = document.getElementById('main-content');
+
+  if (sidebarToggle) {
+    sidebarToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('active');
+      mainContent.classList.toggle('shifted');
+      
+      const icon = sidebarToggle.querySelector('i');
+      if (sidebar.classList.contains('active')) {
+        icon.classList.remove('fa-chevron-right');
+        icon.classList.add('fa-chevron-left');
+      } else {
+        icon.classList.remove('fa-chevron-left');
+        icon.classList.add('fa-chevron-right');
+      }
+    });
+  }
+
+  // --- INICIALIZAR TOOLTIPS DE BOOTSTRAP ---
+  if (window.bootstrap) {
+    [...document.querySelectorAll('[data-bs-toggle="tooltip"]')].forEach(
+      el => new bootstrap.Tooltip(el)
+    );
+  }
+});
+</script>
+{% endblock %}

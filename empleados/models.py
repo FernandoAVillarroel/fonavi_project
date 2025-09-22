@@ -128,36 +128,125 @@ AREAS = [
     ('SECRETARÍA TEC. SOCIAL', 'Secretaría Tec. Social'),
 ]
 
+from datetime import date
+from django.db import models
+
+# Asegurate de que estas clases estén definidas encima o importadas:
+# from .models import Categoria, Oficina, Titulo, NivelBasico
+
+# Helper histórico (lo podés dejar si lo usan otros lados, pero NO se usa para mostrar)
+def antiguedad_al_31_diciembre(fecha_ingreso, hoy=None) -> int:
+    """Antigüedad medida al 31 de diciembre del año anterior (compatible con IPVU)."""
+    if not fecha_ingreso:
+        return 0
+    hoy = hoy or date.today()
+    corte = date(hoy.year - 1, 12, 31)
+    años = corte.year - fecha_ingreso.year - (
+        (corte.month, corte.day) < (fecha_ingreso.month, fecha_ingreso.day)
+    )
+    return max(años, 0)
+
+# Helper IPVU por PERÍODO (enero/julio). Ya lo tenés en utils.
+try:
+    from .utils import calcular_antiguedad_ipvu
+except Exception:
+    calcular_antiguedad_ipvu = None
+
+
+# empleados/models.py
+from datetime import date
+from django.db import models
+
+# Antigüedad IPVU (enero/julio) — si no existe el helper, dejamos un fallback
+try:
+    from .utils import calcular_antiguedad_ipvu
+except Exception:
+    calcular_antiguedad_ipvu = None
+
+
 class Empleado(models.Model):
     id_empleado = models.AutoField(primary_key=True)
+
     nombre = models.CharField(max_length=100)
     apellido = models.CharField(max_length=100)
-    dni = models.CharField(max_length=15)
-    cuil = models.CharField(max_length=20)
-    numero_cuenta = models.CharField(max_length=20)
-    situacion = models.CharField(max_length=1)
-    estado = models.CharField(max_length=1)
-    fecha_ingreso = models.DateField()
-    antiguedad = models.PositiveSmallIntegerField(null=True, blank=True)
-    area = models.CharField(max_length=40, choices=AREAS, default='PRESIDENCIA')
+
+    dni = models.CharField(max_length=15, blank=True, default="")
+    cuil = models.CharField(max_length=20, blank=True, default="")
+    numero_cuenta = models.CharField(max_length=20, blank=True, default="")
+
+    SITUACIONES = (("P", "PERMANENTE"), ("C", "CONTRATADO"))
+    situacion = models.CharField(max_length=1, choices=SITUACIONES, default="P")
+
+    # Usan estado=1 en las queries → numérico
+    estado = models.PositiveSmallIntegerField(
+        default=1, help_text="1=Activo / 0=Inactivo", db_index=True
+    )
+
+    # Permitimos null/blank para poder cargarla luego si hoy está vacía
+    fecha_ingreso = models.DateField(null=True, blank=True)
+
+    # Se mantiene para reportes/export; NO se recalcula automáticamente en save()
+    antiguedad = models.PositiveSmallIntegerField(default=0, null=True, blank=True)
+
+    # Debe existir Categoria.AREAS en tu modelo Categoria
+    area = models.CharField(max_length=40, choices=Categoria.AREAS, default="PRESIDENCIA")
+
     fecha_salida = models.DateField(null=True, blank=True)
 
-    categoria = models.ForeignKey(Categoria, on_delete=models.SET_NULL, null=True, db_column='id_categoria')
-    oficina = models.ForeignKey(Oficina, on_delete=models.SET_NULL, null=True, db_column='id_oficina')
-    titulo = models.ForeignKey(Titulo, on_delete=models.SET_NULL, null=True, db_column='id_titulo')
-    nivel_basico = models.ForeignKey(NivelBasico, on_delete=models.SET_NULL, null=True, db_column='id_nivel')
-
-    def __str__(self):
-        return f"{self.nombre} {self.apellido}"
+    categoria = models.ForeignKey(
+        Categoria, on_delete=models.SET_NULL, null=True,
+        db_column="id_categoria", related_name="empleados"
+    )
+    oficina = models.ForeignKey(
+        Oficina, on_delete=models.SET_NULL, null=True,
+        db_column="id_oficina", related_name="empleados"
+    )
+    titulo = models.ForeignKey(
+        Titulo, on_delete=models.SET_NULL, null=True,
+        db_column="id_titulo", related_name="empleados"
+    )
+    nivel_basico = models.ForeignKey(
+        NivelBasico, on_delete=models.SET_NULL, null=True,
+        db_column="id_nivel", related_name="empleados"
+    )
 
     class Meta:
-        db_table = 'empleados'
+        db_table = "empleados"
+        ordering = ("apellido", "nombre")
+        indexes = [
+            models.Index(fields=["estado", "fecha_salida"]),
+            models.Index(fields=["cuil"]),
+            models.Index(fields=["dni"]),
+        ]
+
+    def __str__(self):
+        return f"{self.apellido}, {self.nombre}"
+
+    @property
+    def nombre_completo(self):
+        return f"{self.apellido}, {self.nombre}"
+
+    # Antigüedad IPVU “en vivo” para mostrar en listados (no persiste en DB)
+    @property
+    def antiguedad_ipvu_actual(self) -> int:
+        """
+        Antigüedad según IPVU para el PERÍODO ACTUAL (hoy).
+        Útil para mostrar; para persistir usá tu vista 'antiguedad_actualizar'.
+        """
+        if not self.fecha_ingreso:
+            return 0
+        hoy = date.today()
+        if calcular_antiguedad_ipvu:
+            return calcular_antiguedad_ipvu(self.fecha_ingreso, hoy.year, hoy.month)
+        # Fallback simple si faltara el helper
+        base = hoy.year - self.fecha_ingreso.year
+        if hoy.month >= 7:
+            base += 1
+        return max(base, 0)
 
 
 
-
-
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from datetime import date
 from django.db import models
 from django.apps import apps
@@ -221,7 +310,7 @@ class Preliquidacion(models.Model):
     antiguedad = models.PositiveSmallIntegerField(
         null=True,
         blank=True,
-        help_text="Años de servicio"
+        help_text="Años de servicio (calculado por período con regla IPVU)"
     )
 
     supl1 = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
@@ -251,7 +340,7 @@ class Preliquidacion(models.Model):
             self.situacion = self.empleado.situacion
 
         # --- BUSCA AUTOMÁTICAMENTE LA CALIFICACIÓN DEL MES ---
-        from empleados.models import Calificacion  # Import para evitar problemas circulares
+        from empleados.models import Calificacion  # evitar import circular
         try:
             self.calificacion = Calificacion.objects.get(
                 empleado=self.empleado, año=self.año, mes=self.mes
@@ -259,79 +348,84 @@ class Preliquidacion(models.Model):
         except Calificacion.DoesNotExist:
             self.calificacion = Decimal('100')  # Valor por defecto
 
-        # 1) Básico calificado
-        bq = (self.basico * (self.calificacion / Decimal('100'))).quantize(Decimal('0.01'))
+        # 1) Básico calificado (bq)
+        bq = (self.basico * (self.calificacion / Decimal('100'))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
-        # 2) Antigüedad: años enteros de servicio
-        ingreso = getattr(self.empleado, 'fecha_ingreso', None)
-        if ingreso:
-            años_servicio = (date.today() - ingreso).days // 365
-        else:
-            años_servicio = 0
-        self.antiguedad = años_servicio
+        # 2) Antigüedad por PERÍODO (regla IPVU: enero y julio)
+        try:
+            from empleados.utils import calcular_antiguedad_ipvu
+            self.antiguedad = calcular_antiguedad_ipvu(
+                getattr(self.empleado, 'fecha_ingreso', None),
+                self.año, self.mes
+            )
+        except Exception:
+            # Fallback defensivo si hubiera algún problema con la utilidad
+            self.antiguedad = 0
 
         # 3) Bonificación por título (lee porcentaje desde FK)
         porcentaje = Decimal('0')
-        if self.titulo and self.titulo.tipo and self.titulo.tipo.porcentaje:
+        if self.titulo and getattr(self.titulo, 'tipo', None) and getattr(self.titulo.tipo, 'porcentaje', None):
             porcentaje = Decimal(self.titulo.tipo.porcentaje) / Decimal('100')
-        bonif = (bq * porcentaje).quantize(Decimal('0.01'))
+        bonif = (bq * porcentaje).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
-        # 4) Importe antigüedad
-        ant_importe = (bq * Decimal('0.02') * años_servicio).quantize(Decimal('0.01')) if años_servicio else Decimal('0.00')
+        # 4) Importe de antigüedad
+        ant_importe = (bq * Decimal('0.02') * Decimal(self.antiguedad or 0)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
         # 5) Subtotal (Total Básico)
-        subtotal = (bq + ant_importe + bonif).quantize(Decimal('0.01'))
+        subtotal = (bq + ant_importe + bonif).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
-        # 6) Suplementos
+        # 6) Suplementos (si la categoría trae %)
         sup = self.categoria
-        p1 = (sup.sup1 or Decimal('0')) / Decimal('100')
-        p2 = (sup.sup2 or Decimal('0')) / Decimal('100')
-        p3 = (sup.sup3 or Decimal('0')) / Decimal('100')
-        p4 = (sup.sup4 or Decimal('0')) / Decimal('100')
-        p6 = (sup.sup6 or Decimal('0')) / Decimal('100')
-        p8 = (sup.sup8 or Decimal('0')) / Decimal('100')
-        p12 = (sup.sup12 or Decimal('0')) / Decimal('100')
+        p1 = (getattr(sup, 'sup1', None) or Decimal('0')) / Decimal('100')
+        p2 = (getattr(sup, 'sup2', None) or Decimal('0')) / Decimal('100')
+        p3 = (getattr(sup, 'sup3', None) or Decimal('0')) / Decimal('100')
+        p4 = (getattr(sup, 'sup4', None) or Decimal('0')) / Decimal('100')
+        p6 = (getattr(sup, 'sup6', None) or Decimal('0')) / Decimal('100')
+        p8 = (getattr(sup, 'sup8', None) or Decimal('0')) / Decimal('100')
+        p12 = (getattr(sup, 'sup12', None) or Decimal('0')) / Decimal('100')
 
-        self.supl1 = (subtotal * p1).quantize(Decimal('0.01'))
-        self.supl2 = (subtotal * p2).quantize(Decimal('0.01'))
-        self.supl3 = (subtotal * p3).quantize(Decimal('0.01'))
-        self.supl4 = (subtotal * p4).quantize(Decimal('0.01'))
-        self.supl6 = (subtotal * p6).quantize(Decimal('0.01'))
-        self.supl8 = (subtotal * p8).quantize(Decimal('0.01'))
-        self.supl12 = (subtotal * p12).quantize(Decimal('0.01'))
+        self.supl1 = (subtotal * p1).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        self.supl2 = (subtotal * p2).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        self.supl3 = (subtotal * p3).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        self.supl4 = (subtotal * p4).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        self.supl6 = (subtotal * p6).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        self.supl8 = (subtotal * p8).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        self.supl12 = (subtotal * p12).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
         total_supl = sum(filter(None, [
             self.supl1, self.supl2, self.supl3,
             self.supl4, self.supl6, self.supl8,
             self.supl12
         ]))
-        self.bruto = (subtotal + total_supl).quantize(Decimal('0.01'))
 
-        self.jubilacion = (self.bruto * Decimal('0.11')).quantize(Decimal('0.01'))
-        self.obra_social = (self.bruto * Decimal('0.05')).quantize(Decimal('0.01'))
+        self.bruto = (subtotal + total_supl).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
-        neto = (self.bruto - self.jubilacion - self.obra_social).quantize(Decimal('0.01'))
+        # Descuentos ley
+        self.jubilacion = (self.bruto * Decimal('0.11')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        self.obra_social = (self.bruto * Decimal('0.05')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
-        # 7) Oficio Judicial y líquido
+        neto = (self.bruto - self.jubilacion - self.obra_social).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+        # 7) Oficios Judiciales (múltiples oficios en el período)
         OficioJudicial = apps.get_model('empleados', 'OficioJudicial')
-        try:
-            oj = OficioJudicial.objects.get(
-                anio=self.año,
-                mes=self.mes,
-                empleado=self.empleado
-            )
-        except OficioJudicial.DoesNotExist:
-            descuento = Decimal('0.00')
-        else:
-            if oj.tipo == OficioJudicial.TIPO_MONTO:
-                descuento = oj.monto_descontar or Decimal('0.00')
-            else:
+        oficios = OficioJudicial.objects.filter(
+            anio=self.año,
+            mes=self.mes,
+            empleado=self.empleado
+        )
+
+        descuento = Decimal('0.00')
+        for oj in oficios:
+            if getattr(oj, 'tipo', 1) == 1:  # Monto fijo
+                descuento += (oj.monto_descontar or Decimal('0.00'))
+            else:  # Porcentaje
                 pct = (oj.porcentaje_descontar or Decimal('0.00')) / Decimal('100')
-                descuento = (neto * pct).quantize(Decimal('0.01'))
+                descuento += (neto * pct).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
-        self.oficio_judicial = descuento
-        self.liquido = (neto - descuento).quantize(Decimal('0.01'))
+        self.oficio_judicial = descuento.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        self.liquido = (neto - self.oficio_judicial).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
+        # Copias “denormalizadas” para reportes
         self.categoria_nombre = self.categoria.nombre if self.categoria else None
         self.oficina_nombre = self.oficina.nombre if self.oficina else None
         self.titulo_completo = self.titulo.titulo_completo if self.titulo else None
@@ -340,24 +434,24 @@ class Preliquidacion(models.Model):
 
     @property
     def importe_titulo(self):
-        bq = (self.basico * (self.calificacion / Decimal('100'))).quantize(Decimal('0.01'))
+        bq = (self.basico * (self.calificacion / Decimal('100'))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         porcentaje = Decimal('0')
-        if self.titulo and self.titulo.tipo and self.titulo.tipo.porcentaje:
+        if self.titulo and getattr(self.titulo, 'tipo', None) and getattr(self.titulo.tipo, 'porcentaje', None):
             porcentaje = Decimal(self.titulo.tipo.porcentaje) / Decimal('100')
-        return (bq * porcentaje).quantize(Decimal('0.01'))
+        return (bq * porcentaje).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
     @property
     def importe_antiguedad(self):
-        bq = (self.basico * (self.calificacion / Decimal('100'))).quantize(Decimal('0.01'))
-        años = self.antiguedad or 0
-        return (bq * Decimal('0.02') * años).quantize(Decimal('0.01')) if años else Decimal('0.00')
+        bq = (self.basico * (self.calificacion / Decimal('100'))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        años = Decimal(self.antiguedad or 0)
+        return (bq * Decimal('0.02') * años).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP) if años else Decimal('0.00')
 
     @property
     def basico_total(self):
-        bq = (self.basico * (self.calificacion / Decimal('100'))).quantize(Decimal('0.01'))
+        bq = (self.basico * (self.calificacion / Decimal('100'))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         ant = self.importe_antiguedad
         bonif = self.importe_titulo
-        return (bq + ant + bonif).quantize(Decimal('0.01'))
+        return (bq + ant + bonif).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
     @property
     def total_suplementos(self):
@@ -562,7 +656,8 @@ class OficioJudicial(models.Model):
     empleado = models.ForeignKey(
         'Empleado',
         on_delete=models.CASCADE,
-        db_column='id_empleado'
+        db_column='id_empleado',
+        related_name='oficios_judiciales',
     )
 
     # Si tipo = MONTO -> usar este campo (en $)
@@ -578,26 +673,27 @@ class OficioJudicial(models.Model):
         verbose_name="Porcentaje a descontar"
     )
 
-    # >>> Alineado con TU BD: 1=Monto, 2=Porcentaje <<<
+    # 1=Monto, 2=Porcentaje
     TIPO_MONTO       = 1
     TIPO_PORCENTAJE  = 2
     TIPO_CHOICES = (
         (TIPO_MONTO,      'Monto fijo'),
         (TIPO_PORCENTAJE, 'Porcentaje'),
     )
-
     tipo = models.PositiveSmallIntegerField(
         choices=TIPO_CHOICES,
-        default=TIPO_MONTO,         # opcional; si preferís no generar migración, dejá el valor que tenías
+        default=TIPO_MONTO,
         verbose_name="Tipo de descuento"
     )
 
     class Meta:
-        db_table = 'oficio_judicial'
-        unique_together = (('anio', 'mes', 'empleado'),)
+        db_table  = 'oficio_judicial'
+        # ❌ Quitamos la unicidad para permitir varios oficios en el mismo período
+        # unique_together = (('anio', 'mes', 'empleado'),)
         indexes = [
-            models.Index(fields=['anio', 'mes', 'empleado']),
+            models.Index(fields=['empleado', 'anio', 'mes']),
         ]
+        ordering = ['-id']  # más recientes primero
 
     def __str__(self):
         return f"{self.empleado} – {self.mes}/{self.anio}"
@@ -606,10 +702,8 @@ class OficioJudicial(models.Model):
     def clean(self):
         from django.core.exceptions import ValidationError
         if self.tipo == self.TIPO_MONTO:
-            if not self.monto_descontar and not self.porcentaje_descontar:
-                # permitimos 0 pero no None
-                self.monto_descontar = Decimal('0.00')
-            # inutilizar el otro campo para evitar confusiones
+            if self.monto_descontar is None and self.porcentaje_descontar in (None, 0, Decimal('0')):
+                self.monto_descontar = Decimal('0.00')  # permitimos 0 pero no None
             self.porcentaje_descontar = None
         elif self.tipo == self.TIPO_PORCENTAJE:
             if self.porcentaje_descontar is None:
@@ -626,7 +720,6 @@ class OficioJudicial(models.Model):
         """
         if self.tipo == self.TIPO_MONTO:
             return _q2(self.monto_descontar or 0)
-        # porcentaje
         pct = (Decimal(self.porcentaje_descontar or 0) / Decimal('100'))
         return _q2(Decimal(importe_base or 0) * pct)
 
@@ -659,3 +752,87 @@ class Calificacion(models.Model):
 
     def __str__(self):
         return f"{self.empleado} – {self.año}/{self.mes}: {self.calificacion}"
+
+
+# empleados/models.py
+from django.db import models
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+class LiquidacionPeriodo(models.Model):
+    ESTADO_ABIERTA     = "ABIERTA"
+    ESTADO_CERRADA     = "CERRADA"
+    ESTADO_CONFIRMADA  = "CONFIRMADA"
+    ESTADOS = [
+        (ESTADO_ABIERTA,    "Abierta"),
+        (ESTADO_CERRADA,    "Cerrada"),
+        (ESTADO_CONFIRMADA, "Confirmada"),
+    ]
+
+    periodo = models.CharField(max_length=7, unique=True, db_index=True)  # "YYYY-MM"
+    estado  = models.CharField(max_length=12, choices=ESTADOS, default=ESTADO_ABIERTA)
+
+    fecha_creada     = models.DateTimeField(auto_now_add=True)
+    fecha_cerrada    = models.DateTimeField(null=True, blank=True)
+    fecha_confirmada = models.DateTimeField(null=True, blank=True)
+
+    abierta_por    = models.ForeignKey(User, null=True, blank=True, related_name="liqs_abiertas",   on_delete=models.SET_NULL)
+    cerrada_por    = models.ForeignKey(User, null=True, blank=True, related_name="liqs_cerradas",   on_delete=models.SET_NULL)
+    confirmada_por = models.ForeignKey(User, null=True, blank=True, related_name="liqs_confirmadas", on_delete=models.SET_NULL)
+
+    class Meta:
+        verbose_name = "Liquidación por período"
+        verbose_name_plural = "Liquidaciones por período"
+        ordering = ["-periodo"]
+        db_table = "empleados_liquidacion_periodo"  # evita colisión con tu tabla existente
+
+    def __str__(self):
+        return f"{self.periodo} - {self.get_estado_display()}"
+
+    @property
+    def editable(self):     return self.estado == self.ESTADO_ABIERTA
+    @property
+    def solo_lectura(self): return self.estado == self.ESTADO_CONFIRMADA
+
+
+
+# empleados/models.py  (o app donde ya tengas LiquidacionPeriodo)
+from django.conf import settings
+from django.db import models
+
+def periodo_yyyymm(dt=None):
+    from datetime import date
+    d = dt or date.today()
+    return f"{d.year:04d}-{d.month:02d}"
+
+# empleados/models.py
+class NovedadMensual(models.Model):
+    class Tipo(models.TextChoices):
+        EMPLEADO_ALTA   = "EMPLEADO_ALTA", "Alta de empleado"
+        EMPLEADO_BAJA   = "EMPLEADO_BAJA", "Baja de empleado"
+        CAMBIO_CATEG    = "CAMBIO_CATEG", "Cambio de categoría"
+        CAMBIO_CALIF    = "CAMBIO_CALIF", "Cambio de calificación"
+        OFICIO_CREADO   = "OFICIO_CREADO", "Oficio judicial creado"
+        PRELIQ_GENERADA = "PRELIQ_GENERADA", "Preliquidación generada"
+        OTRO            = "OTRO", "Otro"
+
+    periodo     = models.CharField(max_length=7, db_index=True)  # "YYYY-MM"
+    fecha       = models.DateTimeField(auto_now_add=True, db_index=True)
+    tipo        = models.CharField(max_length=32, choices=Tipo.choices)
+    descripcion = models.TextField(blank=True)
+    empleado    = models.ForeignKey("empleados.Empleado", null=True, blank=True,
+                                    on_delete=models.SET_NULL, related_name="novedades")
+    url         = models.URLField(blank=True)
+    actor       = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                    on_delete=models.SET_NULL, related_name="novedades_realizadas")
+    area        = models.CharField(max_length=120, blank=True)
+    extra       = models.JSONField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'empleados_novedadmensual'  # ✅ Esto es importante
+        ordering = ["-fecha", "-id"]
+
+    def __str__(self):
+        emp = f" - {self.empleado}" if self.empleado_id else ""
+        return f"[{self.periodo}] {self.get_tipo_display()}{emp}"

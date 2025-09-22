@@ -1,0 +1,57 @@
+{% load money %}
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-size: 11px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #999; padding: 4px; }
+    th { background: #eee; }
+    .right { text-align: right; }
+    .bold { font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h3>Liquidaciones confirmadas — {{ PERIODO_ACTUAL }} ({{ title }})</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Empleado</th>
+        <th>Categoría</th>
+        <th>Oficina</th>
+        <th class="right">Bruto</th>
+        <th class="right">Jubilación</th>
+        <th class="right">Obra Social</th>
+        <th class="right">Oficio Judicial</th>
+        <th class="right">Líquido</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for liq in planillas %}
+      <tr>
+        <td>{{ liq.empleado }}</td>
+        <td>{{ liq.categoria_nombre }}</td>
+        <td>{{ liq.oficina_nombre }}</td>
+        <td class="right">{{ liq.bruto|ars_auto }}</td>
+        <td class="right">{{ liq.jubilacion|ars_auto }}</td>
+        <td class="right">{{ liq.obra_social|ars_auto }}</td>
+        <td class="right">{{ liq.oficio_judicial|ars_auto }}</td>
+        <td class="right bold">{{ liq.liquido|ars_auto }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="3" class="right bold">TOTALES →</td>
+        <td class="right bold">{{ totales.bruto|ars_auto }}</td>
+        <td class="right bold">{{ totales.jubilacion|ars_auto }}</td>
+        <td class="right bold">{{ totales.obra_social|ars_auto }}</td>
+        <td class="right bold">{{ totales.oficio_judicial|ars_auto }}</td>
+        <td class="right bold">{{ totales.liquido|ars_auto }}</td>
+      </tr>
+    </tfoot>
+  </table>
+  <p>Cantidad de planillas: {{ total_planillas }}</p>
+</body>
+</html>

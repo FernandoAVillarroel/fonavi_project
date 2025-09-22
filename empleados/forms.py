@@ -62,66 +62,123 @@ class CalificacionForm(forms.ModelForm):
 from django import forms
 from .models import Empleado, Titulo, TipoTitulo, Categoria
 
+
+class HTML5DateInput(forms.DateInput):
+    """Widget que asegura el formateo ISO para <input type='date'>."""
+    input_type = "date"
+    format = "%Y-%m-%d"
+
+
+# empleados/forms.py
+from django import forms
+from .models import Empleado, Titulo, TipoTitulo
+
+
+class HTML5DateInput(forms.DateInput):
+    input_type = "date"
+
+    def __init__(self, **kwargs):
+        kwargs.setdefault("format", "%Y-%m-%d")
+        super().__init__(**kwargs)
+
+
 class EmpleadoForm(forms.ModelForm):
-    # Campo auxiliar para filtrar los títulos por tipo (NO se guarda en BD)
+    # Campo auxiliar (NO es de BD): sirve para filtrar los títulos
     tipo_titulo = forms.ModelChoiceField(
-        queryset=TipoTitulo.objects.all().order_by('descripcion'),
+        queryset=TipoTitulo.objects.all().order_by("descripcion"),
         required=False,
-        label="Tipo de título"
+        label="Tipo de título",
     )
 
     class Meta:
         model = Empleado
+        # ¡OJO!: NO incluir 'tipo_titulo' acá (no es campo del modelo)
         fields = [
-            'nombre', 'apellido', 'dni', 'cuil', 'numero_cuenta',
-            'situacion', 'estado', 'fecha_ingreso',
-            'area', 'categoria', 'oficina',
-            # 'nivel_basico',  # <-- lo quitamos (depende de la categoría)
-            'titulo',        # se guarda normalmente
+            "nombre", "apellido", "dni", "cuil", "numero_cuenta",
+            "situacion", "estado",
+            "fecha_ingreso", "fecha_salida",
+            "area", "categoria", "oficina",
+            "titulo",
         ]
         labels = {
-            'area': 'Área',
-            'categoria': 'Categoría',
-            'oficina': 'Oficina',
-            'titulo': 'Título',
+            "area": "Área",
+            "categoria": "Categoría",
+            "oficina": "Oficina",
+            "titulo": "Título",
+            "fecha_ingreso": "Fecha de ingreso",
+            "fecha_salida": "Fecha de salida",
         }
         widgets = {
-            'fecha_ingreso': forms.DateInput(attrs={'type': 'date'}),
+            "fecha_ingreso": HTML5DateInput(format="%Y-%m-%d"),
+            "fecha_salida": HTML5DateInput(format="%Y-%m-%d"),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # si edita, “preseleccionamos” el tipo del título existente
-        if self.instance and self.instance.pk and self.instance.titulo:
-            self.fields['tipo_titulo'].initial = self.instance.titulo.tipo
+        # Aceptar formato ISO del input y dd/mm/aaaa si lo escriben a mano
+        self.fields["fecha_ingreso"].input_formats = ["%Y-%m-%d", "%d/%m/%Y"]
+        self.fields["fecha_salida"].input_formats  = ["%Y-%m-%d", "%d/%m/%Y"]
 
-            # limitar la lista de títulos al tipo elegido del empleado
-            self.fields['titulo'].queryset = (
-                Titulo.objects.filter(tipo=self.instance.titulo.tipo)
-                .order_by('titulo_completo')
+        # Etiquetas más claras
+        self.fields["situacion"].label = "Situación (P=Perm., C=Contr.)"
+        self.fields["estado"].label    = "Estado (1=Activo, 0=Inactivo)"
+        self.fields["numero_cuenta"].label = "N° de cuenta"
+
+        # --- Filtro de títulos según tipo elegido ---
+        tipo = None
+
+        # Si viene en POST el tipo de título, usamos eso para filtrar
+        if self.data.get("tipo_titulo"):
+            try:
+                tipo = TipoTitulo.objects.get(pk=int(self.data["tipo_titulo"]))
+            except (ValueError, TypeError, TipoTitulo.DoesNotExist):
+                tipo = None
+
+        # Si estamos editando y no viene en POST, usamos el tipo del título actual
+        if not tipo and self.instance and getattr(self.instance, "titulo", None):
+            tipo = self.instance.titulo.tipo
+            self.fields["tipo_titulo"].initial = tipo
+
+        if tipo:
+            self.fields["titulo"].queryset = (
+                Titulo.objects.filter(tipo=tipo).order_by("titulo_completo")
             )
         else:
-            # por defecto, mostrar todos los títulos (los filtramos en el front)
-            self.fields['titulo'].queryset = Titulo.objects.all().order_by('titulo_completo')
-
-        # UX: textos claros
-        self.fields['situacion'].label = "Situación (P=Perm., C=Contr.)"
-        self.fields['estado'].label = "Estado (1=Activo, 0=Inactivo)"
-        self.fields['numero_cuenta'].label = "N° de cuenta"
+            self.fields["titulo"].queryset = Titulo.objects.all().order_by("titulo_completo")
 
     def clean(self):
-        data = super().clean()
+        cleaned = super().clean()
 
-        # Recordatorio: nivel básico NO se elige; saldrá de la categoría en la preliquidación.
-        if not data.get('categoria'):
-            self.add_error('categoria', 'Elegí la categoría (de allí saldrá el nivel básico).')
+        estado        = cleaned.get("estado")
+        fecha_ingreso = cleaned.get("fecha_ingreso")
+        fecha_salida  = cleaned.get("fecha_salida")
+
+        # Normalizamos estado a 0/1
+        try:
+            estado_val = int(estado)
+        except Exception:
+            estado_val = 1 if str(estado).lower() in ("1", "true", "t", "activo") else 0
+
+        # Si INACTIVO: fecha_salida obligatoria y coherente
+        if estado_val == 0:
+            if not fecha_salida:
+                self.add_error("fecha_salida", "Si el empleado está INACTIVO, la fecha de salida es obligatoria.")
+            elif fecha_ingreso and fecha_salida < fecha_ingreso:
+                self.add_error("fecha_salida", "La fecha de salida no puede ser anterior a la fecha de ingreso.")
+        else:
+            # Si ACTIVO, limpiamos fecha_salida para evitar inconsistencias
+            cleaned["fecha_salida"] = None
+
+        # Recordatorio: el nivel básico depende de la categoría
+        if not cleaned.get("categoria"):
+            self.add_error("categoria", "Elegí la categoría (de allí saldrá el nivel básico).")
 
         # Si eligieron tipo_titulo pero no título
-        if data.get('tipo_titulo') and not data.get('titulo'):
-            self.add_error('titulo', 'Elegí el título específico para el tipo seleccionado.')
+        if cleaned.get("tipo_titulo") and not cleaned.get("titulo"):
+            self.add_error("titulo", "Elegí el título específico para el tipo seleccionado.")
 
-        return data
+        return cleaned
 
 
 

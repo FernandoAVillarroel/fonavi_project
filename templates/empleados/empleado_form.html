@@ -68,6 +68,14 @@
           {{ form.fecha_ingreso.errors }}
         </div>
 
+        <!-- NUEVO: Fecha de salida (se oculta si Estado = 1) -->
+        <div class="col-md-4" id="wrap_fecha_salida">
+          <label class="form-label">Fecha de salida</label>
+          {{ form.fecha_salida|add_class:"form-control" }}
+          <div class="form-text">Obligatoria si el empleado está INACTIVO (estado = 0).</div>
+          {{ form.fecha_salida.errors }}
+        </div>
+
         <div class="col-md-4">
           <label class="form-label">Área</label>
           {{ form.area|add_class:"form-select" }}
@@ -94,16 +102,8 @@
         </div>
         <div class="col-md-5">
           <label class="form-label">Título</label>
-          <!-- a cada <option> le agregamos data-tipo para filtrar en el front -->
-          <select name="{{ form.titulo.name }}" id="id_titulo" class="form-select">
-            {% for t in form.fields.titulo.queryset %}
-              <option value="{{ t.pk }}"
-                      data-tipo="{{ t.tipo_id }}"
-                      {% if form.instance.titulo and t.pk == form.instance.titulo.pk %}selected{% endif %}>
-                {{ t.titulo_completo }}
-              </option>
-            {% endfor %}
-          </select>
+          <!-- Mostramos el select tal cual lo trae el form (ya viene filtrado en __init__) -->
+          {{ form.titulo|add_class:"form-select" }}
           {{ form.titulo.errors }}
         </div>
         <div class="col-md-3 d-flex align-items-end">
@@ -127,47 +127,33 @@
 
 <script>
   (function () {
-    const selTipo = document.getElementById("id_tipo_titulo");   // del form
-    const selTitulo = document.getElementById("id_titulo");
-    const porcSpan = document.getElementById("porcValor");
+    const selEstado = document.getElementById("id_estado");
+    const wrapSalida = document.getElementById("wrap_fecha_salida");
+    const inputSalida = document.getElementById("id_fecha_salida");
 
-    // Mapa titulo_id -> porcentaje (lo armamos de las opciones actuales con title como fallback)
+    function toggleSalida() {
+      const esActivo = String(selEstado.value) === "1";
+      wrapSalida.style.display = esActivo ? "none" : "";
+      if (esActivo && inputSalida) {
+        inputSalida.value = "";     // si está activo, limpiamos la fecha (el clean() igual la pone en None)
+      }
+    }
+
+    // Inicializar
+    if (selEstado) {
+      selEstado.addEventListener("change", toggleSalida);
+      toggleSalida();
+    }
+
+    // Badge porcentaje (si querés mantenerlo dinámico):
+    const selTitulo = document.getElementById("id_titulo");
+    const porcSpan  = document.getElementById("porcValor");
     const porcentajes = {};
     {% for t in form.fields.titulo.queryset %}
       porcentajes["{{ t.pk }}"] = "{{ t.tipo.porcentaje|default:'0' }}";
     {% endfor %}
-
-    function filtraTitulosPorTipo() {
-      const tipoId = selTipo ? selTipo.value : "";
-      let firstVisible = null;
-
-      [...selTitulo.options].forEach(opt => {
-        const ok = !tipoId || (opt.dataset.tipo === tipoId);
-        opt.hidden = !ok;
-        if (ok && !firstVisible) firstVisible = opt;
-      });
-
-      // si el seleccionado quedó oculto, cambiamos al primero visible
-      if (selTitulo.selectedOptions.length &&
-          selTitulo.selectedOptions[0].hidden &&
-          firstVisible) {
-        selTitulo.value = firstVisible.value;
-      }
-
-      actualizaBadge();
-    }
-
-    function actualizaBadge() {
-      const id = selTitulo.value;
-      const p = porcentajes[id] || "0";
-      porcSpan.textContent = p + " %";
-    }
-
-    if (selTipo) selTipo.addEventListener("change", filtraTitulosPorTipo);
-    if (selTitulo) selTitulo.addEventListener("change", actualizaBadge);
-
-    // inicio
-    filtraTitulosPorTipo();
+    function actualizaBadge(){ if (porcSpan && selTitulo) { porcSpan.textContent = (porcentajes[selTitulo.value] || "0") + " %"; } }
+    if (selTitulo){ selTitulo.addEventListener("change", actualizaBadge); actualizaBadge(); }
   })();
 </script>
 {% endblock %}

@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container my-4">
+    <h2 class="mb-3">
+        Novedades mensuales —
+        <span class="badge bg-info text-dark">{{ PERIODO_MES_NOMBRE }} de {{ PERIODO_ANIO }}</span>
+    </h2>
+
+    <form class="row g-2 mb-3 align-items-center" method="get">
+        <div class="col-auto">
+            <label for="tipoSelect" class="visually-hidden">Tipo</label>
+            <select name="tipo" id="tipoSelect" class="form-select form-select-sm">
+                <option value="">Todos los tipos</option>
+                <option value="CALIFICACION" {% if tipo_sel == 'CALIFICACION' %}selected{% endif %}>Calificaciones</option>
+                <option value="OFICIO_JUDICIAL" {% if tipo_sel == 'OFICIO_JUDICIAL' %}selected{% endif %}>Oficios Judiciales</option>
+            </select>
+        </div>
+        <div class="col-auto">
+            <label for="searchQuery" class="visually-hidden">Buscar</label>
+            <input type="text" name="q" id="searchQuery" class="form-control form-control-sm" placeholder="Buscar…" value="{{ request.GET.q }}">
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-sm btn-primary">Filtrar</button>
+            <a class="btn btn-sm btn-outline-secondary" href="?">Quitar filtros</a>
+        </div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th scope="col">Fecha</th>
+                    <th scope="col">Tipo</th>
+                    <th scope="col">Empleado</th>
+                    <th scope="col">Descripción</th>
+                    <th scope="col" class="text-end">Gestión</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for n in novedades %}
+                <tr>
+                    <td class="text-nowrap">{{ n.fecha|date:"d/m/Y H:i" }}</td>
+                    <td><span class="badge bg-secondary">{{ n.get_tipo_display }}</span></td>
+                    <td>{{ n.empleado|default:"—" }}</td>
+                    <td style="max-width: 550px; word-break: break-word;">{{ n.descripcion|default:"—" }}</td>
+                    <td class="text-end">
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenuButton{{ n.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                Gestión
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton{{ n.id }}">
+                                {% if n.url %}
+                                    <li><a class="dropdown-item" href="{{ n.url }}">Ver Detalle</a></li>
+                                {% endif %}
+                                <li><a class="dropdown-item" href="#">Otra Acción</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="#">Eliminar</a></li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-4">
+                        No hay novedades registradas para este período o que coincidan con los filtros aplicados.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

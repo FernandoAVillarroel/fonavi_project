@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
+<style>
+  :root {
+    --primary-color: #0055A4;
+    --secondary-color: #6c757d;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --light-gray: #f8f9fa;
+    --shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    --transition-speed: 0.3s;
+  }
+
+  .content-container {
+    padding: 20px;
+    background: var(--light-gray);
+    min-height: 100vh;
+  }
+
+  .page-header {
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+  }
+
+  .back-link {
+    color: var(--secondary-color);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color var(--transition-speed);
+  }
+
+  .back-link:hover {
+    color: var(--primary-color);
+  }
+
+  .page-title {
+    color: var(--primary-color);
+    font-weight: 700;
+    margin: 0;
+    font-size: 1.75rem;
+  }
+
+  .page-subtitle {
+    color: var(--secondary-color);
+    font-size: 1.1rem;
+    margin: 5px 0 0;
+  }
+
+  .alert-info {
+    background-color: #cce5ff;
+    border-color: #b8daff;
+    color: #004085;
+    border-radius: 5px;
+  }
+
+  .card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    transition: transform var(--transition-speed) ease;
+  }
+
+  .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .table {
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .table thead {
+    background: var(--primary-color);
+    color: #fff;
+  }
+
+  .table thead th {
+    border: none;
+    font-weight: 600;
+    padding: 12px;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+  }
+
+  .table tbody tr {
+    transition: background-color var(--transition-speed);
+  }
+
+  .table tbody tr:hover {
+    background: #f1f1f1;
+  }
+
+  .table td {
+    padding: 12px;
+    vertical-align: middle;
+    border-bottom: 1px solid #dee2e6;
+  }
+
+  .badge {
+    font-size: 0.85rem;
+    padding: 6px 10px;
+    border-radius: 12px;
+  }
+
+  .btn-outline-secondary, .btn-outline-danger {
+    border-width: 2px;
+    transition: all var(--transition-speed) ease;
+  }
+
+  .btn-outline-secondary:hover {
+    background: var(--primary-color);
+    color: #fff;
+    border-color: var(--primary-color);
+  }
+
+  .btn-outline-danger:hover {
+    background: var(--danger-color);
+    color: #fff;
+    border-color: var(--danger-color);
+  }
+
+  .text-center.py-5 {
+    color: var(--secondary-color);
+    font-style: italic;
+  }
+</style>
+
+<div class="container-fluid content-container">
+
+  <div class="page-header mb-4">
+    <a class="back-link" href="{% url 'empleados:oficiojudicial-list' %}?anio={{ anio_actual }}&mes={{ mes_actual }}">
+      <i class="fas fa-arrow-left me-1"></i> Volver al listado
+    </a>
+    <h1 class="page-title">Oficios — {{ empleado.apellido }}, {{ empleado.nombre }}</h1>
+    <p class="page-subtitle">{{ month_name }} de {{ anio_actual }}</p>
+
+    {% if is_future %}
+      <div class="alert alert-info mt-2" role="alert">
+        <i class="fas fa-info-circle me-2"></i>
+        No se cargaron datos para oficios futuros.
+      </div>
+    {% elif periodo_confirmado %}
+      <div class="alert alert-info mt-2" role="alert">
+        <i class="fas fa-info-circle me-2"></i>
+        Este período está <strong>CONFIRMADO</strong>. Solo lectura.
+      </div>
+    {% elif not es_periodo_actual %}
+      <div class="alert alert-info mt-2" role="alert">
+        <i class="fas fa-info-circle me-2"></i>
+        Este período no es el actual. Solo lectura.
+      </div>
+    {% endif %}
+  </div>
+
+  {% if not is_future %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <div class="text-muted small">
+        CUIL: {{ empleado.cuil }} — DNI: {{ empleado.dni }} — Área: {{ empleado.area }}
+      </div>
+    </div>
+    {# Botón "Agregar oficio" eliminado #}
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-striped table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>ID</th>
+            <th>Tipo</th>
+            <th class="text-end">Monto ($)</th>
+            <th class="text-center">%</th>
+            <th style="width: 200px;" class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for oj in oficios %}
+          <tr>
+            <td>{{ oj.id }}</td>
+            <td>
+              {% if oj.tipo == 1 %}
+                <span class="badge bg-primary">Monto Fijo</span>
+              {% elif oj.tipo == 2 %}
+                <span class="badge bg-info text-dark">Porcentaje</span>
+              {% else %}
+                —
+              {% endif %}
+            </td>
+            <td class="text-end">
+              {% if oj.tipo == 1 %}$ {{ oj.monto_descontar|floatformat:2|intcomma }}{% else %}—{% endif %}
+            </td>
+            <td class="text-center">
+              {% if oj.tipo == 2 %}{{ oj.porcentaje_descontar|floatformat:2 }}%{% else %}—{% endif %}
+            </td>
+            <td class="text-center">
+              {% if allow_edit %}
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'empleados:oficiojudicial-update' oj.id %}">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <form method="post" action="{% url 'empleados:oficiojudicial-delete' oj.id %}"
+                      onsubmit="return confirm('¿Eliminar este oficio?');" class="d-inline">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-outline-danger">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </form>
+              {% else %}
+                <span class="text-muted small">Solo lectura</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5" class="text-center py-5">
+                Este empleado no tiene oficios en {{ month_name }} de {{ anio_actual }}.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
