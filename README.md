@@ -5,6 +5,11 @@ Este proyecto Django **Fonavi** te permite gestionar preliquidaciones y liquidac
 ![image alt](https://github.com/FernandoAVillarroel/fonavi_project/blob/rama-admin-fernando/Screenshot_659.png?raw=true)
 
 
+Gestion de empleados
+
+
+![image alt](https://github.com/FernandoAVillarroel/fonavi_project/blob/rama-admin-fernando/Screenshot_660.png?raw=true)
+
 
 
 ### Tecnologías
