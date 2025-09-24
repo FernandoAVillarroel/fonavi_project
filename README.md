@@ -91,7 +91,7 @@ Despliegue (base)
 
 Configuraciones por entorno (DEBUG vs. PROD).
 
-Variables de entorno para credenciales de BD (recomendado).
+Variables de entorno para credenciales de BD.
 
 Archivos estáticos servidos por collectstatic en producción.
 
