@@ -1,6 +1,11 @@
 ## Proyecto Fonavi
 
-Este proyecto Django **Fonavi** te permite gestionar preliquidaciones y liquidaciones de empleados, así como aplicar descuentos por oficios judiciales.
+Este proyecto Django **Fonavi** te permite gestionar preliquidaciones y liquidaciones de empleados.
+
+![image alt]([image_url](https://github.com/FernandoAVillarroel/fonavi_project/blob/rama-admin-fernando/Screenshot_659.png?raw=true)
+
+
+
 
 ### Tecnologías
 
