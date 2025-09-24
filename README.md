@@ -12,11 +12,84 @@ Gestion de empleados
 
 
 
-### Tecnologías
+Tecnologías utilizadas
+Backend
 
-* Python 3.13
-* Django 5.2.3
-* MySQL (o MariaDB)
+Python 3.13 – Lenguaje principal del proyecto.
+
+Django 5.2.x – Framework web (MVC/MVT), auth, sesiones, mensajes, ORM.
+
+Django ORM (QuerySets avanzados con Q, Subquery, OuterRef, Coalesce, Value, DecimalField, IntegerField).
+
+Sistema de autenticación de Django (LoginRequiredMixin, contrib.auth, permisos y grupos según panel).
+
+Mensajería de Django (django.contrib.messages) para alertas/feedback en UI.
+
+Gestión de sesión para selección y persistencia de Periodo de trabajo.
+
+Base de datos
+
+MySQL 8.x – Motor de BD en producción/desarrollo.
+
+Conector: mysqlclient (driver recomendado para Django + MySQL).
+
+MySQL Workbench – Administración, inspección de datos y scripts SQL.
+
+Vistas/consultas en BD para reportes (p.ej., vistas de categorías y displays).
+
+Frontend
+
+Django Templates + staticfiles – Render del lado servidor.
+
+Bootstrap 5.2.2 (CDN) – Maquetado responsive y componentes.
+
+Font Awesome 6.4.2 (CDN) – Íconos en paneles/menús.
+
+Google Fonts (Lato) – Tipografía principal.
+
+Componentes propios: Panel “Presidencia”, panel de Periodo con estados (Abierto/ Cerrado/ Sin crear) y esquema de colores (verde/rojo/gris).
+
+Arquitectura y módulos del dominio
+
+Apps Django separadas (ej.: empleados, autenticacion, etc.).
+
+Modelos clave: Empleado, Categoria, Oficina, OficioJudicial, estructuras de Liquidación/Preliquidación, Calificación, Nivel Básico, etc.
+
+Casos de uso: ABM de empleados y oficinas, gestión de categorías/suplementos, periodos de trabajo, listados filtrados por Periodo y Área, oficios judiciales y descuentos.
+
+Herramientas de desarrollo
+
+Git & GitHub – Control de versiones y ramas (rama-admin-fernando, manuel-front, etc.).
+
+Visual Studio Code – Editor principal (con Python/Django extensions).
+
+Entorno virtual: .venv para aislar dependencias.
+
+Logging/Debug – Prints y logs en vistas (e.g., intentos de login y redirecciones).
+
+Calidad, diagramas y documentación
+
+draw.io / diagrams.net – ERD del modelo de datos.
+
+PlantUML – Diagramas (PERT, de flujo/actividad) para Gestión de Proyectos.
+
+Buenas prácticas Django: CBV (ListView/DetailView), separación de responsabilidades, validación de formularios, mensajes de usuario, patrones de consulta eficientes.
+
+Seguridad y autenticación
+
+Sesiones seguras (Periodo en sesión).
+
+Login protegido con LoginRequiredMixin, vistas restringidas por rol.
+
+Mensajes de error/éxito controlados y redirecciones post-login.
+
+Despliegue (base)
+
+Configuraciones por entorno (DEBUG vs. PROD).
+
+Variables de entorno para credenciales de BD (recomendado).
+
+Archivos estáticos servidos por collectstatic en producción.
 
 ---
 
