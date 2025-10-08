@@ -16,6 +16,8 @@ Simulacion de liquidaciones confirmadas.
 
 ![image alt](https://github.com/FernandoAVillarroel/fonavi_project/blob/rama-admin-fernando/Screenshot_661.png?raw=true)
 
+![image alt](https://github.com/FernandoAVillarroel/fonavi_project/blob/5d6f43906d8aee8fcd161b9784105dd4052eea36/Screenshot_733.png)
+
 Tecnologías utilizadas
 Backend
 
