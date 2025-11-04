@@ -2,7 +2,6 @@
 {% load humanize %}
 
 {% block content %}
-{# Carga de Font Awesome para los íconos. Si ya está en tu 'base.html', puedes quitar esta línea. #}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 
 <style>
@@ -29,159 +28,53 @@
     overflow-x: hidden;
   }
 
-  /* Sidebar */
-  .sidebar {
-    width: 220px;
-    position: fixed;
-    top: 0;
-    left: -220px;
-    height: 100%;
-    background: linear-gradient(180deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-    color: var(--text-light);
-    transition: left .3s cubic-bezier(.4,0,.2,1);
-    z-index: 1030;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 2px 0 10px var(--shadow-color);
-  }
-  .sidebar.active { left: 0; }
-  .sidebar-toggle {
-    position: absolute;
-    top: 50%;
-    left: 100%;
-    transform: translateY(-50%);
-    width: 24px;
-    height: 60px;
-    background: var(--primary-dark);
-    color: var(--text-light);
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-top-right-radius: 8px;
-    border-bottom-right-radius: 8px;
-    box-shadow: 2px 0 8px rgba(0,0,0,.15);
-    transition: background-color .3s ease;
-    font-size: 16px;
-  }
-  .sidebar-toggle:hover { background: var(--primary-color); }
-  .sidebar-header {
-    padding: 15px;
-    text-align: center;
-    border-bottom: 1px solid rgba(255,255,255,.1);
-  }
-  .sidebar-header h3 { margin: 0; font-size: 1.2rem; font-weight: 600; }
-  .sidebar-nav { padding: 15px; flex-grow: 1; overflow-y: auto; }
-  .nav-link {
-    color: var(--text-light);
-    padding: 8px 15px;
-    display: flex;
-    align-items: center;
-    text-decoration: none;
-    border-radius: 5px;
-    margin-bottom: 6px;
-    transition: all .3s ease;
-    font-weight: 500;
-    position: relative;
-    font-size: .9rem;
-  }
-  .nav-link:hover { background: rgba(255,255,255,.1); transform: translateX(3px); }
-  .nav-link.active, .nav-link[aria-expanded="true"] {
-    background: #fff;
-    color: var(--primary-color);
-    font-weight: 600;
-  }
+  .sidebar { width:220px; position:fixed; top:0; left:-220px; height:100%;
+    background:linear-gradient(180deg,var(--primary-color) 0%,var(--primary-dark) 100%);
+    color:var(--text-light); transition:left .3s cubic-bezier(.4,0,.2,1);
+    z-index:1030; display:flex; flex-direction:column; box-shadow:2px 0 10px var(--shadow-color); }
+  .sidebar.active{ left:0; }
+  .sidebar-toggle{ position:absolute; top:50%; left:100%; transform:translateY(-50%);
+    width:24px; height:60px; background:var(--primary-dark); color:var(--text-light); border:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; border-top-right-radius:8px; border-bottom-right-radius:8px;
+    box-shadow:2px 0 8px rgba(0,0,0,.15); transition:background-color .3s ease; font-size:16px; }
+  .sidebar-toggle:hover{ background:var(--primary-color); }
+  .sidebar-header{ padding:15px; text-align:center; border-bottom:1px solid rgba(255,255,255,.1); }
+  .sidebar-header h3{ margin:0; font-size:1.2rem; font-weight:600; }
+  .sidebar-nav{ padding:15px; flex-grow:1; overflow-y:auto; }
+  .nav-link{ color:var(--text-light); padding:8px 15px; display:flex; align-items:center; text-decoration:none;
+    border-radius:5px; margin-bottom:6px; transition:all .3s ease; font-weight:500; position:relative; font-size:.9rem; }
+  .nav-link:hover{ background:rgba(255,255,255,.1); transform:translateX(3px); }
+  .nav-link.active,.nav-link[aria-expanded="true"]{ background:#fff; color:var(--primary-color); font-weight:600; }
 
-  /* Main */
-  .main-content {
-    transition: margin-left .3s cubic-bezier(.4,0,.2,1);
-    margin-left: 0;
-    padding: 20px;
-    min-height: 100vh;
-  }
-  .main-content.shifted { margin-left: 220px; }
+  .main-content{ transition:margin-left .3s cubic-bezier(.4,0,.2,1); margin-left:0; padding:20px; min-height:100vh; }
+  .main-content.shifted{ margin-left:220px; }
 
-  /* Estilos específicos del contenido */
-  .content-container { animation: fadeInUp 0.5s ease-out forwards; }
+  .content-container{ animation: fadeInUp 0.5s ease-out forwards; }
+  .page-header{ border-bottom:1px solid #dee2e6; padding-bottom:1rem; }
+  .page-title{ color:#343a40; font-weight:700; margin-top:0; }
+  .card{ border:none; border-radius:0.75rem; background:#fff; box-shadow:var(--card-shadow); }
 
-  .page-header { border-bottom: 1px solid #dee2e6; padding-bottom: 1rem; }
-  
-  .page-title { color: #343a40; font-weight: 700; margin-top: 0; }
-  
-  .card { 
-    border: none; 
-    border-radius: 0.75rem; 
-    background: #fff;
-    box-shadow: var(--card-shadow);
-  }
+  .search-container{ position:relative; }
+  .search-icon{ position:absolute; left:15px; top:50%; transform:translateY(-50%); color:#6c757d; }
+  #searchInput{ padding-left:40px; }
 
-  /* Estilos para el buscador */
-  .search-container {
-    position: relative;
-  }
-  .search-icon {
-    position: absolute;
-    left: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #6c757d;
-  }
-  #searchInput {
-    padding-left: 40px;
-  }
+  #catTable thead{ z-index:5; }
+  #catTable tbody tr{ transition: box-shadow var(--animation-speed) ease, transform var(--animation-speed) ease; }
+  #catTable tbody tr:hover{ box-shadow:0 5px 15px rgba(0,0,0,.08); transform:translateY(-2px); }
 
-  #catTable thead { z-index: 5; }
-  #catTable tbody tr { transition: box-shadow var(--animation-speed) ease, transform var(--animation-speed) ease; }
-  #catTable tbody tr:hover {
-    box-shadow: 0 5px 15px rgba(0,0,0,.08);
-    transform: translateY(-2px);
-  }
+  th.sortable{ cursor:pointer; user-select:none; position:relative; padding-right:25px!important; }
+  .sort-icon{ position:absolute; right:8px; top:50%; transform:translateY(-50%); color:#adb5bd; transition:transform var(--animation-speed) ease, color var(--animation-speed) ease; }
+  th.sort-asc .sort-icon, th.sort-desc .sort-icon{ color:var(--content-primary); }
 
-  th.sortable {
-    cursor: pointer;
-    user-select: none;
-    position: relative;
-    padding-right: 25px !important;
-  }
-  
-  .sort-icon {
-    position: absolute;
-    right: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #adb5bd;
-    transition: transform var(--animation-speed) ease, color var(--animation-speed) ease;
-  }
-  
-  th.sort-asc .sort-icon, th.sort-desc .sort-icon { color: var(--content-primary); }
-  th.sort-asc .sort-icon { content: '\f0de'; }
-  th.sort-desc .sort-icon { content: '\f0dd'; }
+  .animated-btn{ transition: transform var(--animation-speed) ease, box-shadow var(--animation-speed) ease; }
+  .animated-btn:hover{ transform: translateY(-3px); box-shadow:0 4px 10px rgba(0,0,0,0.1); }
+  .animated-btn:active{ transform: translateY(-1px); }
 
-  .animated-btn { 
-    transition: transform var(--animation-speed) ease, box-shadow var(--animation-speed) ease; 
-  }
-  .animated-btn:hover { 
-    transform: translateY(-3px); 
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); 
-  }
-  .animated-btn:active { transform: translateY(-1px); }
+  @keyframes fadeInUp{ from{opacity:0; transform:translateY(20px);} to{opacity:1; transform:translateY(0);} }
+  .fade-in-row{ animation: fadeInRow 0.5s ease-out forwards; }
+  @keyframes fadeInRow{ from{opacity:0;} to{opacity:1;} }
 
-  @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .fade-in-row { animation: fadeInRow 0.5s ease-out forwards; }
-
-  @keyframes fadeInRow {
-      from { opacity: 0; }
-      to { opacity: 1; }
-  }
-
-  @media (max-width: 992px) {
-    .main-content.shifted { margin-left: 0; }
-  }
+  @media (max-width: 992px){ .main-content.shifted{ margin-left:0; } }
 </style>
 
 <div class="sidebar" id="sidebar">
@@ -193,10 +86,7 @@
     <li class="nav-item"><a href="{% url 'empleados:calificacion-list' %}" class="nav-link"><i class="fas fa-star fa-fw me-2"></i> Calificaciones</a></li>
     <li class="nav-item"><a href="{% url 'empleados:categoria-list' %}" class="nav-link active"><i class="fas fa-layer-group fa-fw me-2"></i> Categorías</a></li>
     <li class="nav-item"><a href="{% url 'empleados:oficiojudicial-list' %}" class="nav-link"><i class="fas fa-gavel fa-fw me-2"></i> Oficios Judiciales</a></li>
-    
-    {# NUEVO: Enlace a Novedades Mensuales agregado aquí #}
     <li class="nav-item"><a href="{% url 'empleados:novedades_mensuales_list' %}" class="nav-link"><i class="fas fa-bell fa-fw me-2"></i> Novedades mensuales</a></li>
-    
     <li class="nav-item"><a href="{% url 'periodo_panel' %}" class="nav-link"><i class="fas fa-calendar-alt fa-fw me-2"></i> Panel del Período</a></li>
   </ul>
 </div>
@@ -229,6 +119,8 @@
           <thead class="table-light sticky-top">
             <tr>
               <th class="sortable" data-key="nombre">Nombre <i class="sort-icon fas fa-sort"></i></th>
+              <th class="sortable" data-key="nivel" data-type="num">Nivel <i class="sort-icon fas fa-sort"></i></th>
+              <th class="sortable" data-key="basico" data-type="num">Básico <i class="sort-icon fas fa-sort"></i></th>
               <th class="sortable" data-key="sup1" data-type="num">Sup1 (%) <i class="sort-icon fas fa-sort"></i></th>
               <th class="sortable" data-key="sup2" data-type="num">Sup2 (%) <i class="sort-icon fas fa-sort"></i></th>
               <th class="sortable" data-key="sup3" data-type="num">Sup3 (%) <i class="sort-icon fas fa-sort"></i></th>
@@ -243,6 +135,8 @@
             {% for cat in categorias %}
             <tr class="fade-in-row"
                 data-nombre="{{ cat.nombre|lower }}"
+                data-nivel="{{ cat.nivel.id_nivel|default:0 }}"
+                data-basico="{{ cat.basico }}"
                 data-sup1="{{ cat.sup1|default:0 }}"
                 data-sup2="{{ cat.sup2|default:0 }}"
                 data-sup3="{{ cat.sup3|default:0 }}"
@@ -251,6 +145,11 @@
                 data-sup8="{{ cat.sup8|default:0 }}"
                 data-sup12="{{ cat.sup12|default:0 }}">
               <td class="fw-bold">{{ cat.nombre }}</td>
+              <td>{% if cat.nivel %}{{ cat.nivel.id_nivel }}{% else %}—{% endif %}</td>
+              <td>
+                <!-- CORREGIDO: Mostrar siempre la propiedad basico -->
+                ${{ cat.basico|floatformat:2|intcomma }}
+              </td>
               <td>{{ cat.sup1|floatformat:2 }}</td>
               <td>{{ cat.sup2|floatformat:2 }}</td>
               <td>{{ cat.sup3|floatformat:2 }}</td>
@@ -266,11 +165,11 @@
             </tr>
             {% endfor %}
             <tr id="noResultsRow" style="display: none;">
-              <td colspan="9" class="text-center py-5">No se encontraron categorías con ese nombre.</td>
+              <td colspan="11" class="text-center py-5">No se encontraron categorías con ese nombre.</td>
             </tr>
             {% if not categorias %}
             <tr>
-              <td colspan="9" class="text-center py-5">
+              <td colspan="11" class="text-center py-5">
                 No hay categorías registradas.
               </td>
             </tr>
@@ -285,7 +184,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  // Sidebar functionality
+  // Sidebar
   const sidebar = document.getElementById('sidebar');
   const mainContent = document.getElementById('main-content');
   const sidebarToggle = document.getElementById('sidebar-toggle');
@@ -308,7 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Table functionality
+  // Tabla
   const table = document.getElementById('catTable');
   const searchInput = document.getElementById('searchInput');
   const categoryCount = document.getElementById('categoryCount');
@@ -319,7 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const allRows = Array.from(tbody.querySelectorAll('tr[data-nombre]'));
     const noResultsRow = document.getElementById('noResultsRow');
 
-    // Search functionality
+    // Buscar por nombre
     if (searchInput) {
       searchInput.addEventListener('input', () => {
         const searchTerm = searchInput.value.toLowerCase();
@@ -329,24 +228,17 @@ document.addEventListener('DOMContentLoaded', () => {
           const name = row.dataset.nombre;
           const isVisible = name.includes(searchTerm);
           row.style.display = isVisible ? '' : 'none';
-          if (isVisible) {
-            visibleRows++;
-          }
+          if (isVisible) visibleRows++;
         });
 
-        // Show/hide "no results" message
         if (noResultsRow) {
           noResultsRow.style.display = (visibleRows === 0 && allRows.length > 0) ? '' : 'none';
         }
-
-        // Update counter
-        if (categoryCount) {
-          categoryCount.textContent = visibleRows;
-        }
+        if (categoryCount) categoryCount.textContent = visibleRows;
       });
     }
 
-    // Sorting functionality
+    // Ordenar
     headers.forEach(header => {
       header.addEventListener('click', () => {
         const key = header.dataset.key;
@@ -357,16 +249,16 @@ document.addEventListener('DOMContentLoaded', () => {
         headers.forEach(h => h.classList.remove('sort-asc', 'sort-desc'));
         header.classList.add(direction === 'asc' ? 'sort-asc' : 'sort-desc');
 
-        // Only sort visible rows
-        const rowsToSort = Array.from(tbody.querySelectorAll('tr[data-nombre]')).filter(row => row.style.display !== 'none');
+        const rowsToSort = Array.from(tbody.querySelectorAll('tr[data-nombre]'))
+          .filter(row => row.style.display !== 'none');
         
         rowsToSort.sort((a, b) => {
-          let valA = a.dataset[key];
-          let valB = b.dataset[key];
+          let valA = a.dataset[key] || '';
+          let valB = b.dataset[key] || '';
           
           if (type === 'num') {
-            valA = parseFloat(valA);
-            valB = parseFloat(valB);
+            valA = parseFloat(valA) || 0;
+            valB = parseFloat(valB) || 0;
           }
 
           if (valA < valB) return direction === 'asc' ? -1 : 1;
@@ -374,7 +266,6 @@ document.addEventListener('DOMContentLoaded', () => {
           return 0;
         });
 
-        // Re-insert sorted rows into tbody
         rowsToSort.forEach(row => tbody.appendChild(row));
       });
     });

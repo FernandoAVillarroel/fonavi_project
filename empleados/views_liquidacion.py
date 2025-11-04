@@ -93,7 +93,7 @@ def periodo_panel(request):
     es_actual = _es_periodo_actual(anio, mes)
 
     if not existe_liq:
-        # Mostrar “Abrir período”. La vista validar á que sea el actual.
+        # Mostrar “Abrir período”
         show_crear = True
     else:
         if estado == S_ABIERTA:
@@ -101,18 +101,24 @@ def periodo_panel(request):
             show_cerrar    = True
         elif estado == S_CERRADA:
             show_confirmar = True
-            show_reabrir   = es_actual  # solo actual
+            show_reabrir   = es_actual  # solo actual (cambiá a True si querés permitir reabrir cualquier mes)
             if not es_actual:
                 block_reason = "La reapertura solo está permitida para el período en curso."
         elif estado == S_CONFIRMADA:
             show_ver_liq = planillas_count > 0
-            show_reabrir = es_actual    # solo actual
+            show_reabrir = es_actual
             if not es_actual:
                 block_reason = "La reapertura solo está permitida para el período en curso."
 
+    # Nombre del mes
+    from calendar import month_name
+    PERIODO_MES_NOMBRE = month_name[mes].capitalize()
+
     ctx = {
         "PERIODO_ANIO": anio,
+        "PERIODO_MES": mes,                       # <- necesario para los href
         "PERIODO_MES_STR": PERIODO_MES_STR,
+        "PERIODO_MES_NOMBRE": PERIODO_MES_NOMBRE, # <- para encabezado
         "PERIODO_ACTUAL": periodo_str,
         "MESES": MESES,
 
@@ -124,7 +130,7 @@ def periodo_panel(request):
         "planillas_count": planillas_count,
 
         "show_crear": show_crear,
-        "show_reabrir": show_reabrir,   # SOLO true en período actual
+        "show_reabrir": show_reabrir,   # SOLO true en período actual (o cambialo)
         "show_cerrar": show_cerrar,
         "show_confirmar": show_confirmar,
         "show_regenerar": show_regenerar,
@@ -143,21 +149,40 @@ def crear_liquidacion(request):
         messages.error(request, "Solo se puede abrir el período actual.")
         return redirect("periodo_panel")
 
-    # Requiere algún dato de entrada
+    # Abrir SIEMPRE (sin exigir datos cargados)
+    obj, created = LiquidacionPeriodo.objects.get_or_create(
+        periodo=per,
+        defaults={
+            "estado": getattr(LiquidacionPeriodo, "ESTADO_ABIERTA", "ABIERTA"),
+            "abierta_por": request.user,
+            **({"fecha_creada": timezone.now()} if hasattr(LiquidacionPeriodo, "fecha_creada") else {}),
+        }
+    )
+
+    if not created and obj.estado != getattr(LiquidacionPeriodo, "ESTADO_ABIERTA", "ABIERTA"):
+        # Reabrir en caso de que existiera en otro estado
+        obj.estado = getattr(LiquidacionPeriodo, "ESTADO_ABIERTA", "ABIERTA")
+        if hasattr(obj, "fecha_cerrada"): obj.fecha_cerrada = None
+        if hasattr(obj, "fecha_confirmada"): obj.fecha_confirmada = None
+        if hasattr(obj, "cerrada_por"): obj.cerrada_por = None
+        if hasattr(obj, "confirmada_por"): obj.confirmada_por = None
+        obj.abierta_por = request.user
+        campos = ["estado", "abierta_por"]
+        for f in ("fecha_cerrada", "fecha_confirmada", "cerrada_por", "confirmada_por"):
+            if hasattr(obj, f):
+                campos.append(f)
+        obj.save(update_fields=campos)
+        messages.success(request, f"Período {per} abierto (reabierto).")
+    else:
+        messages.success(request, f"Período {per} abierto (ABIERTA).")
+
+    # Aviso informativo si aún no hay datos de entrada
     if not (Calificacion.objects.filter(año=anio, mes=mes).exists() or
             OficioJudicial.objects.filter(anio=anio, mes=mes).exists()):
-        messages.error(request, "No hay datos cargados (Calificaciones u Oficios Judiciales).")
-        return redirect("periodo_panel")
+        messages.info(request, "Período abierto. Cargá Calificaciones u Oficios antes de generar preliquidaciones.")
 
-    obj, created = LiquidacionPeriodo.objects.get_or_create(
-        periodo=f"{anio:04d}-{mes:02d}",
-        defaults={"abierta_por": request.user}
-    )
-    if created:
-        messages.success(request, "Período abierto (ABIERTA).")
-    else:
-        messages.info(request, f"El período ya existe en estado {obj.estado}.")
     return redirect("periodo_panel")
+
 
 # --------------------------------------------
 # Cerrar período (desde ABIERTA)
@@ -290,112 +315,95 @@ def filtro_activo_en_periodo(anio: int, mes: int, estricto: bool = False) -> Q:
 # Confirmar período (desde CERRADA)
 # --------------------------------------------
 from decimal import Decimal
+from datetime import date
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db import transaction
+from django.db.models import Sum
+from django.shortcuts import render
 from django.utils import timezone
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
-@login_required(login_url="login")
+from .models import Preliquidacion, Liquidacion, LiquidacionPeriodo
+from .utils import get_periodo_from_session
+
+# Permiso
+def is_presidencia(user):
+    return user.is_authenticated and user.is_staff
+
+@login_required(login_url='login')
 @user_passes_test(is_presidencia)
 def confirmar_liquidacion(request):
-    """
-    Copia SOLO preliquidaciones de empleados activos estrictos y confirma.
-    Marca 'conformada=True' si el campo existe. Nunca inserta basico NULL.
-    """
-    anio, mes, periodo_str = get_periodo_from_session(request)
+    """Confirma liquidaciones y redirige a la vista con paginación"""
+    mes  = int(request.GET.get('mes',  date.today().month))
+    año  = int(request.GET.get('año',  date.today().year))
+    area = request.GET.get('area', 'PRESIDENCIA')
+    tipo = request.GET.get('tipo', 'todos')
+    periodo_str = f"{año:04d}-{mes:02d}"
 
-    lp = LiquidacionPeriodo.objects.filter(periodo=periodo_str).first()
-    if not lp:
-        messages.error(request, "No existe ese período.")
-        return redirect("periodo_panel")
-
-    S_CERRADA    = getattr(LiquidacionPeriodo, "ESTADO_CERRADA", "CERRADA")
-    S_CONFIRMADA = getattr(LiquidacionPeriodo, "ESTADO_CONFIRMADA", "CONFIRMADA")
-
-    if lp.estado != S_CERRADA:
-        messages.warning(request, f"Para confirmar debe estar CERRADA (actual: {lp.estado}).")
-        return redirect("periodo_panel")
-
-    # Sanea preliqs con basico NULL por las dudas
-    Preliquidacion.objects.filter(año=anio, mes=mes, basico__isnull=True).update(basico=Decimal("0.00"))
-
-    base_qs = (Preliquidacion.objects
-               .filter(año=anio, mes=mes)
-               .select_related("empleado", "categoria", "oficina", "titulo", "nivel"))
-
-    qs_activos = base_qs.filter(filtro_activo_en_periodo(anio, mes, estricto=True))
-
-    total_pre   = base_qs.count()
-    a_confirmar = qs_activos.count()
-    omitidos    = total_pre - a_confirmar
-
-    # Limpiamos planillas previas del período
-    Liquidacion.objects.filter(año=anio, mes=mes).delete()
-
-    def D(x, fallback="0.00"):
-        try:
-            return Decimal(x if x is not None else fallback)
-        except Exception:
-            return Decimal(fallback)
-
-    # ¿existe el campo 'conformada'?
-    HAS_CONFORMADA = any(f.name == "conformada" for f in Liquidacion._meta.get_fields())
-
-    objs = []
-    for p in qs_activos:
-        data = {
-            "empleado": p.empleado,
-            "año": anio, "mes": mes,
-            "categoria": getattr(p, "categoria", None),
-            "oficina": getattr(p, "oficina", None),
-            "titulo": getattr(p, "titulo", None),
-            "nivel": getattr(p, "nivel", None),
-
-            "basico": D(p.basico),                       # <- nunca NULL
-            "basico_total": D(getattr(p, "basico_total", None)),
-            "antiguedad": (getattr(p, "antiguedad", 0) or 0),
-            "calificacion": D(getattr(p, "calificacion", None), "100"),
-
-            "supl1": D(getattr(p, "supl1", None)),
-            "supl2": D(getattr(p, "supl2", None)),
-            "supl3": D(getattr(p, "supl3", None)),
-            "supl4": D(getattr(p, "supl4", None)),
-            "supl6": D(getattr(p, "supl6", None)),
-            "supl8": D(getattr(p, "supl8", None)),
-            "supl12": D(getattr(p, "supl12", None)),
-
-            "bruto": D(getattr(p, "bruto", None)),
-            "jubilacion": D(getattr(p, "jubilacion", None)),
-            "obra_social": D(getattr(p, "obra_social", None)),
-            "oficio_judicial": D(getattr(p, "oficio_judicial", None)),
-            "liquido": D(getattr(p, "liquido", None)),
-
-            "situacion": getattr(p, "situacion", None),
-            "categoria_nombre": getattr(p, "categoria_nombre", None),
-            "oficina_nombre": getattr(p, "oficina_nombre", None),
-            "titulo_completo": getattr(p, "titulo_completo", None),
-        }
-        if HAS_CONFORMADA:
-            data["conformada"] = True  # 👈 grabamos 1/True en cada fila creada
-        objs.append(Liquidacion(**data))
+    preqs = Preliquidacion.objects.filter(
+        mes=mes, año=año,
+        empleado__estado=1,
+        empleado__fecha_salida__isnull=True
+    )
+    if area and area.upper() not in ('TODAS', 'PRESIDENCIA'):
+        preqs = preqs.filter(categoria_nombre=area)
 
     with transaction.atomic():
-        if objs:
-            Liquidacion.objects.bulk_create(objs, batch_size=500)
-            # por si tu backend mapea boolean raro, reforzamos el update
-            if HAS_CONFORMADA:
-                Liquidacion.objects.filter(año=anio, mes=mes).update(conformada=True)
+        for pre in preqs:
+            Liquidacion.objects.update_or_create(
+                empleado=pre.empleado, mes=mes, año=año,
+                defaults={
+                    'categoria': pre.categoria,
+                    'oficina': pre.oficina,
+                    'titulo': pre.titulo,
+                    'nivel': pre.nivel,
+                    'basico': pre.basico,
+                    'calificacion': pre.calificacion,
+                    'antiguedad': pre.antiguedad,
+                    'importe_antiguedad': pre.importe_antiguedad,
+                    'importe_titulo': pre.importe_titulo,
+                    'basico_total': pre.basico_total,
+                    'supl1': pre.supl1,
+                    'supl2': pre.supl2,
+                    'supl3': pre.supl3,
+                    'supl4': pre.supl4,
+                    'supl6': pre.supl6,
+                    'supl8': pre.supl8,
+                    'supl12': pre.supl12,
+                    'total_suplementos': pre.total_suplementos,
+                    'bruto': pre.bruto,
+                    'jubilacion': pre.jubilacion,
+                    'obra_social': pre.obra_social,
+                    'oficio_judicial': pre.oficio_judicial,
+                    'total_descuentos': pre.total_descuentos,
+                    'liquido': pre.liquido,
+                    'situacion': pre.situacion,
+                    'categoria_nombre': pre.categoria_nombre,
+                    'oficina_nombre': pre.oficina_nombre,
+                    'titulo_completo': pre.titulo_completo,
+                    'conformada': True,
+                }
+            )
 
-        lp.estado = S_CONFIRMADA
-        lp.confirmada_por = request.user
+        lp, _ = LiquidacionPeriodo.objects.get_or_create(
+            periodo=periodo_str,
+            defaults={
+                "estado": getattr(LiquidacionPeriodo, "ESTADO_ABIERTA", "ABIERTA"),
+                "fecha_creada": timezone.now(),
+            },
+        )
+        lp.estado = getattr(LiquidacionPeriodo, "ESTADO_CONFIRMADA", "CONFIRMADA")
         lp.fecha_confirmada = timezone.now()
-        lp.save(update_fields=["estado", "confirmada_por", "fecha_confirmada"])
+        lp.confirmada_por = request.user
+        lp.save(update_fields=["estado", "fecha_confirmada", "confirmada_por"])
 
-    messages.success(
-        request,
-        f"Período {periodo_str} confirmado. Creadas: {a_confirmar}. Omitidas por inactivos: {omitidos}."
-    )
-    return redirect("periodo_panel")
-
-
+    messages.success(request, f"✅ Liquidaciones confirmadas. Período {periodo_str} marcado como CONFIRMADO.")
+    
+    # REDIRECT a la vista que ya tiene paginación
+    from django.shortcuts import redirect
+    from django.urls import reverse
+    return redirect(f"{reverse('ver_liquidacion_periodo')}?mes={mes}&año={año}&tipo={tipo}")
 
 
 # ----------------------------------------------------------
@@ -407,13 +415,27 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import Q
 from django.shortcuts import render, redirect
-
+from decimal import Decimal
+from django.db.models import Sum
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 @login_required(login_url="login")
 @user_passes_test(is_presidencia)
 def ver_liquidacion_periodo(request):
-    """Vista SOLO LECTURA de planillas confirmadas del período en sesión."""
-    anio, mes, periodo_str = get_periodo_from_session(request)
+    """Vista SOLO LECTURA de planillas confirmadas del período con PAGINACIÓN."""
+    
+    # Leer mes y año: PRIMERO de GET, si no hay usar sesión
+    mes_get = request.GET.get('mes')
+    año_get = request.GET.get('año')
+    
+    if mes_get and año_get:
+        mes = int(mes_get)
+        anio = int(año_get)
+        periodo_str = f"{anio:04d}-{mes:02d}"
+    else:
+        anio, mes, periodo_str = get_periodo_from_session(request)
+    
+    tipo = request.GET.get('tipo', 'todos')
 
     # Verificamos que el período esté confirmado
     lp = LiquidacionPeriodo.objects.filter(periodo=periodo_str).first()
@@ -427,7 +449,7 @@ def ver_liquidacion_periodo(request):
                .select_related("empleado", "categoria", "oficina", "titulo")
                .order_by("empleado__apellido", "empleado__nombre"))
 
-    # Preferimos 'conformada=True' si existe y hay filas; si no, usamos la base
+    # Preferimos 'conformada=True' si existe y hay filas
     qs = qs_base
     try:
         Liquidacion._meta.get_field("conformada")
@@ -437,8 +459,17 @@ def ver_liquidacion_periodo(request):
     except Exception:
         pass
 
-    # Intentamos ocultar inactivos actuales (estado activo + sin fecha_salida).
-    # Si el filtro deja vacío mientras hay planillas, mostramos sin filtrar (fallback).
+    # Filtro por tipo de agente
+    if tipo == 'contratados':
+        qs = qs.filter(situacion='C')
+        title = 'Contratados'
+    elif tipo == 'permanentes':
+        qs = qs.filter(situacion='P')
+        title = 'Permanentes'
+    else:
+        title = 'Todos los Empleados'
+
+    # Intentamos ocultar inactivos actuales
     qs_filtrado = qs.filter(filtro_activo_en_periodo(anio, mes, estricto=True))
     if qs.exists() and not qs_filtrado.exists():
         messages.info(
@@ -450,8 +481,59 @@ def ver_liquidacion_periodo(request):
     else:
         qs_final = qs_filtrado
 
+    # Calcular totales ANTES de paginar
+    totales = qs_final.aggregate(
+        basico=Sum('basico'),
+        importe_antiguedad=Sum('importe_antiguedad'),
+        importe_titulo=Sum('importe_titulo'),
+        basico_total=Sum('basico_total'),
+        supl1=Sum('supl1'),
+        supl2=Sum('supl2'),
+        supl3=Sum('supl3'),
+        supl4=Sum('supl4'),
+        supl6=Sum('supl6'),
+        supl8=Sum('supl8'),
+        supl12=Sum('supl12'),
+        total_suplementos=Sum('total_suplementos'),
+        bruto=Sum('bruto'),
+        jubilacion=Sum('jubilacion'),
+        obra_social=Sum('obra_social'),
+        oficio_judicial=Sum('oficio_judicial'),
+        total_descuentos=Sum('total_descuentos'),
+        liquido=Sum('liquido'),
+    )
+    
+    # Convertir None a Decimal('0')
+    for k, v in totales.items():
+        if v is None:
+            totales[k] = Decimal('0')
+
+    # === PAGINACIÓN ===
+    paginator = Paginator(qs_final, 20)  # 20 registros por página
+    page_number = request.GET.get('page', 1)
+    
+    try:
+        planillas_paginadas = paginator.page(page_number)
+    except PageNotAnInteger:
+        planillas_paginadas = paginator.page(1)
+    except EmptyPage:
+        planillas_paginadas = paginator.page(paginator.num_pages)
+        
+    MONTH_NAMES = {
+        1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril", 5: "Mayo", 6: "Junio",
+        7: "Julio", 8: "Agosto", 9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"
+    }
+
     return render(request, "presidencia/ver_liquidacion_periodo.html", {
         "PERIODO_ACTUAL": periodo_str,
-        "planillas": qs_final,
+        "mes_sel": mes,
+        "año_sel": anio,
+        "tipo": tipo,
+        "title": title,
+        "planillas": planillas_paginadas,
         "total_planillas": qs_final.count(),
+        "totales": totales,
+        "paginator": paginator,
+        "page_obj": planillas_paginadas,
+        "month_name": MONTH_NAMES.get(mes, str(mes)),
     })

@@ -68,19 +68,13 @@
           {{ form.fecha_ingreso.errors }}
         </div>
 
-        <!-- NUEVO: Fecha de salida (se oculta si Estado = 1) -->
-        <div class="col-md-4" id="wrap_fecha_salida">
+        <div class="col-md-4">
           <label class="form-label">Fecha de salida</label>
           {{ form.fecha_salida|add_class:"form-control" }}
           <div class="form-text">Obligatoria si el empleado está INACTIVO (estado = 0).</div>
           {{ form.fecha_salida.errors }}
         </div>
 
-        <div class="col-md-4">
-          <label class="form-label">Área</label>
-          {{ form.area|add_class:"form-select" }}
-          {{ form.area.errors }}
-        </div>
         <div class="col-md-4">
           <label class="form-label">Categoría</label>
           {{ form.categoria|add_class:"form-select" }}
@@ -93,7 +87,6 @@
           {{ form.oficina.errors }}
         </div>
 
-        <!-- Filtro: Tipo de título -> Título -->
         <div class="col-md-4">
           <label class="form-label">Tipo de título</label>
           {{ form.tipo_titulo|add_class:"form-select" }}
@@ -102,7 +95,6 @@
         </div>
         <div class="col-md-5">
           <label class="form-label">Título</label>
-          <!-- Mostramos el select tal cual lo trae el form (ya viene filtrado en __init__) -->
           {{ form.titulo|add_class:"form-select" }}
           {{ form.titulo.errors }}
         </div>
@@ -135,17 +127,15 @@
       const esActivo = String(selEstado.value) === "1";
       wrapSalida.style.display = esActivo ? "none" : "";
       if (esActivo && inputSalida) {
-        inputSalida.value = "";     // si está activo, limpiamos la fecha (el clean() igual la pone en None)
+        inputSalida.value = "";
       }
     }
 
-    // Inicializar
     if (selEstado) {
       selEstado.addEventListener("change", toggleSalida);
       toggleSalida();
     }
 
-    // Badge porcentaje (si querés mantenerlo dinámico):
     const selTitulo = document.getElementById("id_titulo");
     const porcSpan  = document.getElementById("porcValor");
     const porcentajes = {};

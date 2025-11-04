@@ -16,12 +16,37 @@ from .models import (
 
 @admin.register(Categoria)
 class CategoriaAdmin(admin.ModelAdmin):
-    list_display = ('codigo', 'nombre')
+    list_display = ('codigo', 'nombre', 'nivel', 'basico_manual', 'basico_calculado')
     search_fields = ('id_categoria', 'nombre')
+    
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('nombre',)  # ← Sin área
+        }),
+        ('Básico', {
+            'fields': ('nivel', 'basico_manual'),
+            'description': 'Si selecciona un nivel, el básico se toma del nivel. Si no, use básico manual.'
+        }),
+        ('Suplementos', {
+            'fields': (
+                ('sup1', 'tipo_sup1'),
+                ('sup2', 'tipo_sup2'),
+                ('sup3', 'tipo_sup3'),
+                ('sup4', 'tipo_sup4'),
+                ('sup6', 'tipo_sup6'),
+                ('sup8', 'tipo_sup8'),
+                ('sup12', 'tipo_sup12'),
+            )
+        }),
+    )
 
     def codigo(self, obj):
         return f"CAT-{obj.id_categoria}"
     codigo.short_description = 'Código'
+    
+    def basico_calculado(self, obj):
+        return f"${obj.basico:,.2f}"
+    basico_calculado.short_description = 'Básico (calculado)'
 
     def get_search_results(self, request, queryset, search_term):
         qs = queryset
@@ -52,8 +77,8 @@ class TipoTituloAdmin(admin.ModelAdmin):
 
 @admin.register(NivelBasico)
 class NivelBasicoAdmin(admin.ModelAdmin):
-    list_display = ('id_nivel', 'nivel', 'descripcion')
-    list_display_links = ('id_nivel', 'nivel')
+    list_display = ('id_nivel', 'monto', 'descripcion')
+    list_display_links = ('id_nivel', 'monto')
 
 # -------------- Operacionales --------------
 
@@ -159,7 +184,11 @@ class LiquidacionAdmin(admin.ModelAdmin):
 
 @admin.register(OficioJudicial)
 class OficioJudicialAdmin(admin.ModelAdmin):
-    list_display = ('empleado','anio','mes','monto_descontar','porcentaje_descontar','tipo')
+    list_display = (
+        'empleado', 'mes', 'anio', 'tipo', 
+        'monto_descontar', 'porcentaje_descontar',
+        'codigo_mutual', 'numero_cuota', 'novedad'  # ← AGREGAR
+    )
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
@@ -210,7 +239,7 @@ class NovedadMensualAdmin(admin.ModelAdmin):
         'empleado__dni', 'actor__username', 'periodo'
     ]
     readonly_fields = ['fecha', 'periodo']
-    date_hierarchy = 'fecha'
+    # date_hierarchy = 'fecha'  # ← Comentar esta línea
     ordering = ['-fecha', '-id']
     list_per_page = 50
     
@@ -222,7 +251,7 @@ class NovedadMensualAdmin(admin.ModelAdmin):
     def tipo_badge(self, obj):
         colors = {
             'EMPLEADO_ALTA': '#28a745',
-            'EMPLEADO_BAJA': '#dc3545', 
+            'EMPLEADO_BAJA': "#da2a3b", 
             'CAMBIO_CATEG': '#ffc107',
             'CAMBIO_CALIF': '#17a2b8',
             'OFICIO_CREADO': '#6c757d',

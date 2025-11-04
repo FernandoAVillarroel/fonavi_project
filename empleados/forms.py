@@ -97,11 +97,11 @@ class EmpleadoForm(forms.ModelForm):
             "nombre", "apellido", "dni", "cuil", "numero_cuenta",
             "situacion", "estado",
             "fecha_ingreso", "fecha_salida",
-            "area", "categoria", "oficina",
+            "categoria", "oficina",
             "titulo",
         ]
         labels = {
-            "area": "Área",
+            
             "categoria": "Categoría",
             "oficina": "Oficina",
             "titulo": "Título",
@@ -180,18 +180,16 @@ class EmpleadoForm(forms.ModelForm):
 
         return cleaned
 
-
-
-
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from django import forms
-from .models import Categoria
+from .models import Categoria, NivelBasico
 
 class CategoriaForm(forms.ModelForm):
+    
     class Meta:
         model = Categoria
         fields = [
-            'nombre', 'area',
+            'nombre', 'nivel', 'basico_manual',
             'sup1', 'tipo_sup1',
             'sup2', 'tipo_sup2',
             'sup3', 'tipo_sup3',
@@ -202,7 +200,8 @@ class CategoriaForm(forms.ModelForm):
         ]
         labels = {
             'nombre': 'Nombre de la Categoría',
-            'area': 'Área',
+            'nivel':  'Nivel (opcional)',
+            'basico_manual': 'Básico (monto)',
         }
         widgets = {
             'sup1':  forms.NumberInput(attrs={'step': '0.01', 'inputmode': 'decimal'}),
@@ -212,11 +211,38 @@ class CategoriaForm(forms.ModelForm):
             'sup6':  forms.NumberInput(attrs={'step': '0.01', 'inputmode': 'decimal'}),
             'sup8':  forms.NumberInput(attrs={'step': '0.01', 'inputmode': 'decimal'}),
             'sup12': forms.NumberInput(attrs={'step': '0.01', 'inputmode': 'decimal'}),
+            'basico_manual': forms.NumberInput(attrs={'step': '0.01', 'inputmode': 'decimal'}),
         }
-        # No hace falta definir widgets para tipo_sup*: el modelo ya tiene choices.
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Cambiar help_text
+        self.fields['nivel'].help_text = "Opcional: seleccione un nivel predefinido (actualizará el básico automáticamente)."
+        self.fields['basico_manual'].help_text = "Monto básico de la categoría. Si selecciona un nivel, este campo se actualizará automáticamente."
 
     def clean(self):
         cleaned = super().clean()
+        
+        # Validar que haya al menos nivel O básico_manual
+        nivel = cleaned.get('nivel')
+        basico_manual = cleaned.get('basico_manual')
+        
+        # Convertir a Decimal si viene como string
+        if basico_manual and isinstance(basico_manual, str):
+            try:
+                basico_manual = Decimal(basico_manual.replace(',', '.'))
+                cleaned['basico_manual'] = basico_manual
+            except:
+                pass
+        
+        if not nivel and (not basico_manual or basico_manual == 0):
+            raise forms.ValidationError('Debe seleccionar un nivel O ingresar un monto básico.')
+        
+        # Si hay ambos, priorizar nivel y limpiar basico_manual
+        if nivel and basico_manual:
+            cleaned['basico_manual'] = None
+        
         # Aceptar coma como separador decimal en sup*
         for f in ['sup1', 'sup2', 'sup3', 'sup4', 'sup6', 'sup8', 'sup12']:
             v = cleaned.get(f)
@@ -225,29 +251,30 @@ class CategoriaForm(forms.ModelForm):
                 if v:
                     try:
                         cleaned[f] = Decimal(v.replace(',', '.'))
-                    except Exception:
+                    except (InvalidOperation, ValueError):
                         self.add_error(f, 'Ingrese un número válido (use punto o coma para decimales).')
+                        
         return cleaned
 
     def save(self, commit=True):
         obj = super().save(commit=False)
 
-        # tipo_sup*: 1 por defecto, excepto 6 y 12 que van en 2
+        # tipo_sup*: 1 por defecto; 6 y 12 suelen ser monto fijo (2)
         defaults_tipo = {1: 1, 2: 1, 3: 1, 4: 1, 6: 2, 8: 1, 12: 2}
         for i in [1, 2, 3, 4, 6, 8, 12]:
             if getattr(obj, f"tipo_sup{i}") is None:
                 setattr(obj, f"tipo_sup{i}", defaults_tipo[i])
 
-        # sup*: 0 por defecto para evitar NULL en columnas NOT NULL
+        # sup*: 0 por defecto para evitar NULL
         for f in ['sup1', 'sup2', 'sup3', 'sup4', 'sup6', 'sup8', 'sup12']:
             if getattr(obj, f) is None:
-                setattr(obj, f, 0)
+                setattr(obj, f, Decimal('0'))
 
         if commit:
             obj.save()
         return obj
-
-
+    
+    
 # forms.py
 from decimal import Decimal, InvalidOperation
 from django import forms
@@ -264,12 +291,31 @@ class OficioJudicialForm(forms.ModelForm):
 
     class Meta:
         model = OficioJudicial
-        fields = ['empleado', 'anio', 'mes', 'tipo', 'monto_descontar', 'porcentaje_descontar']
+        fields = [
+            'empleado', 'anio', 'mes', 'tipo', 
+            'monto_descontar', 'porcentaje_descontar',
+            'codigo_mutual', 'numero_cuota', 'novedad'  # ← NUEVOS CAMPOS
+        ]
         widgets = {
             'anio': forms.NumberInput(attrs={'min': 2000, 'max': 2100}),
             'mes':  forms.NumberInput(attrs={'min': 1, 'max': 12}),
             'monto_descontar': forms.NumberInput(attrs={'step': '0.01', 'inputmode': 'decimal'}),
             'porcentaje_descontar': forms.NumberInput(attrs={'step': '0.01', 'inputmode': 'decimal'}),
+            # Widgets para los campos nuevos
+            'codigo_mutual': forms.TextInput(attrs={
+                'maxlength': 3, 
+                'placeholder': '001',
+                'class': 'form-control'
+            }),
+            'numero_cuota': forms.NumberInput(attrs={
+                'min': 1, 
+                'max': 99,
+                'placeholder': '1',
+                'class': 'form-control'
+            }),
+            'novedad': forms.Select(attrs={
+                'class': 'form-control'
+            }),
         }
 
     def __init__(self, *args, **kwargs):

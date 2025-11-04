@@ -28,7 +28,6 @@
     display: none !important;
   }
 
-  /* Sidebar */
   .sidebar {
     width: 220px;
     position: fixed;
@@ -116,7 +115,6 @@
     font-weight: 600;
   }
 
-  /* Main Content */
   .main-content {
     transition: margin-left 0.3s cubic-bezier(.4,0,.2,1);
     margin-left: 0;
@@ -128,7 +126,6 @@
     margin-left: 220px;
   }
 
-  /* Cards & table */
   .card {
     background: #fff;
     border: none;
@@ -221,7 +218,25 @@
     font-size: .85rem;
   }
 
-  /* Estado de período */
+  /* Estilos para la columna de Situación */
+  .situacion-contratado {
+    background-color: #ffebee;
+    color: #d32f2f;
+    font-weight: bold;
+    text-align: center;
+    border-radius: 4px;
+    padding: 4px 8px;
+  }
+  
+  .situacion-permanente {
+    background-color: #e3f2fd;
+    color: #1976d2;
+    font-weight: bold;
+    text-align: center;
+    border-radius: 4px;
+    padding: 4px 8px;
+  }
+
   .pulse-button {
     color: #fff;
     font-size: 1.2rem;
@@ -261,7 +276,6 @@
     50% { box-shadow: 0 0 15px var(--glow-color), 0 0 30px var(--glow-color); }
   }
 
-  /* Novedades */
   .badge-tipo {
     font-weight: 600;
     letter-spacing: .2px;
@@ -288,7 +302,6 @@
     .pulse-button { font-size: 1rem; }
   }
 
-  /* Estilos específicos para esta plantilla */
   .content-container {
     animation: fadeInUp 0.5s ease-out forwards;
   }
@@ -425,7 +438,6 @@
     to { opacity: 1; }
   }
 
-  /* Contenedor de tabla con encabezado fijo */
   .table-container-fixed {
     max-height: 70vh;
     overflow-y: auto;
@@ -448,10 +460,7 @@
     <li class="nav-item"><a href="{% url 'empleados:calificacion-list' %}" class="nav-link"><i class="fas fa-star fa-fw me-2"></i> Calificaciones</a></li>
     <li class="nav-item"><a href="{% url 'empleados:categoria-list' %}" class="nav-link"><i class="fas fa-layer-group fa-fw me-2"></i> Categorías</a></li>
     <li class="nav-item"><a href="{% url 'empleados:oficiojudicial-list' %}" class="nav-link"><i class="fas fa-gavel fa-fw me-2"></i> Oficios Judiciales</a></li>
-    
-    {# NUEVO: Enlace a Novedades Mensuales agregado aquí #}
     <li class="nav-item"><a href="{% url 'empleados:novedades_mensuales_list' %}" class="nav-link"><i class="fas fa-bell fa-fw me-2"></i> Novedades mensuales</a></li>
-    
     <li class="nav-item"><a href="{% url 'periodo_panel' %}" class="nav-link"><i class="fas fa-calendar-alt fa-fw me-2"></i> Período</a></li>
   </ul>
 </div>
@@ -466,7 +475,7 @@
     <div class="card shadow-sm mb-4 filter-card">
       <div class="card-body">
         <form method="get" class="row g-3 align-items-end" id="filterForm">
-          <div class="col-12 col-lg-4">
+          <div class="col-12 col-lg-5">
             <label for="searchInput" class="form-label">Buscar</label>
             <div class="input-group">
               <span class="input-group-text"><i class="fas fa-search"></i></span>
@@ -474,16 +483,7 @@
             </div>
           </div>
 
-          <div class="col-6 col-lg-2">
-            <label for="areaSelect" class="form-label">Área</label>
-            <select id="areaSelect" name="area" class="form-select">
-              {% for a in areas %}
-                <option value="{{ a }}" {% if a == area_sel %}selected{% endif %}>{{ a }}</option>
-              {% endfor %}
-            </select>
-          </div>
-
-          <div class="col-6 col-lg-2">
+          <div class="col-6 col-lg-3">
             <label for="situacionSelect" class="form-label">Situación</label>
             <select id="situacionSelect" name="situacion" class="form-select">
               {% for s in situaciones %}
@@ -494,7 +494,7 @@
             </select>
           </div>
 
-          <div class="col-6 col-lg-2">
+          <div class="col-6 col-lg-3">
             <label for="estadoSelect" class="form-label">Estado</label>
             <select id="estadoSelect" name="estado" class="form-select">
               {% for val, label in estados %}
@@ -503,7 +503,7 @@
             </select>
           </div>
 
-          <div class="col-6 col-lg-2 d-grid">
+          <div class="col-12 col-lg-1 d-grid">
             <button type="submit" class="btn btn-primary animated-btn"><i class="fas fa-filter me-2"></i>Filtrar</button>
           </div>
         </form>
@@ -518,7 +518,7 @@
         </span>
       </div>
       <div class="d-flex gap-2">
-        <a class="btn btn-sm btn-outline-warning animated-btn" href="{% url 'antiguedad-actualizar' %}">
+        <a class="btn btn-sm btn-outline-warning animated-btn" href="{% url 'empleados:antiguedad-actualizar' %}">
           <i class="fas fa-clock me-1"></i> Actualizar antigüedad
         </a>
         <a class="btn btn-sm btn-success animated-btn" href="{% url 'empleados:empleado-create' %}">
@@ -528,7 +528,7 @@
     </div>
 
     <div class="card shadow-sm">
-      <div class="table-container-fixed"> <!-- Cambiado a table-container-fixed -->
+      <div class="table-container-fixed">
         <table class="table table-striped table-hover align-middle mb-0" id="empTable">
           <thead class="table-light">
             <tr>
@@ -555,7 +555,7 @@
                 data-oficina="{{ emp.oficina.nombre|lower }}"
                 data-antiguedad="{{ emp.antiguedad_ipvu_actual|default:'-1' }}"
                 data-situacion="{% if emp.situacion == 'P' %}PERMANENTE{% elif emp.situacion == 'C' %}CONTRATADO{% else %}—{% endif %}"
-                data-estado="{% if emp.estado == 1 and not emp.fecha_salida %}ACTIVO{% else %}INACTIVO{% endif %}">
+                data-estado="{% if emp.estado == 1 %}ACTIVO{% elif emp.estado == 2 %}RETENCIÓN{% else %}INACTIVO{% endif %}">
               <td>{{ emp.apellido }}</td>
               <td>{{ emp.nombre }}</td>
               <td class="text-nowrap"><span class="copyable" title="Copiar DNI">{{ emp.dni }}</span></td>
@@ -565,22 +565,21 @@
               <td class="text-center">{{ emp.antiguedad_ipvu_actual }}</td>
               <td>
                 {% if emp.situacion == 'P' %}
-                  <span class="badge rounded-pill bg-primary">PERMANENTE</span>
+                  <span class="situacion-permanente">P</span>
                 {% elif emp.situacion == 'C' %}
-                  <span class="badge rounded-pill bg-info text-dark">CONTRATADO</span>
+                  <span class="situacion-contratado">C</span>
                 {% else %}
                   <span class="badge rounded-pill bg-secondary">—</span>
                 {% endif %}
               </td>
               <td>
-                <div class="form-check form-switch d-flex align-items-center justify-content-center gap-2">
-                  <input class="form-check-input estado-switch" type="checkbox" role="switch" id="switch-{{ emp.pk }}"
-                         data-url="{% url 'empleados:empleado-toggle-estado' emp.pk %}"
-                         {% if emp.estado == 1 and not emp.fecha_salida %}checked{% endif %}>
-                  <label class="form-check-label estado-label {% if emp.estado == 1 and not emp.fecha_salida %}text-success{% else %}text-secondary{% endif %}" for="switch-{{ emp.pk }}">
-                    {% if emp.estado == 1 and not emp.fecha_salida %}ACTIVO{% else %}INACTIVO{% endif %}
-                  </label>
-                </div>
+                {% if emp.estado == 1 %}
+                  <span class="badge rounded-pill bg-success">ACTIVO</span>
+                {% elif emp.estado == 2 %}
+                  <span class="badge rounded-pill bg-warning text-dark">RETENCIÓN</span>
+                {% else %}
+                  <span class="badge rounded-pill bg-secondary">INACTIVO</span>
+                {% endif %}
               </td>
               <td>
                 <div class="d-flex gap-1">
@@ -597,12 +596,10 @@
       </div>
     </div>
 
-    {# ---------- Paginación SEGURA (corregida) ---------- #}
     {% if is_paginated %}
     <nav aria-label="Paginación" class="mt-4">
       <ul class="pagination justify-content-center">
 
-        {# Ir a la primera y a la anterior #}
         {% if page_obj.has_previous %}
           <li class="page-item">
             <a class="page-link" href="?page=1&{{ qs_params }}"><i class="fas fa-angle-double-left"></i></a>
@@ -617,7 +614,6 @@
           <li class="page-item disabled"><span class="page-link"><i class="fas fa-angle-left"></i></span></li>
         {% endif %}
 
-        {# Números de página cercanos #}
         {% for num in paginator.page_range %}
           {% if num == page_obj.number %}
             <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
@@ -626,7 +622,6 @@
           {% endif %}
         {% endfor %}
 
-        {# Ir a la siguiente y a la última #}
         {% if page_obj.has_next %}
           <li class="page-item">
             <a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ qs_params }}">
@@ -647,12 +642,11 @@
     </nav>
     {% endif %}
 
-  </div> {# Fin de .content-container #}
-</div> {# Fin de .main-content #}
+  </div>
+</div>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  // --- FUNCIONALIDAD DEL SIDEBAR ---
   const sidebar = document.getElementById('sidebar');
   const sidebarToggle = document.getElementById('sidebar-toggle');
   const mainContent = document.getElementById('main-content');
@@ -661,7 +655,6 @@ document.addEventListener('DOMContentLoaded', () => {
     sidebar.classList.toggle('active');
     mainContent.classList.toggle('shifted');
     
-    // Cambiar ícono según estado
     const icon = sidebarToggle.querySelector('i');
     if (sidebar.classList.contains('active')) {
       icon.classList.remove('fa-chevron-right');
@@ -672,50 +665,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // --- FUNCIÓN PARA EL SWITCH DE ESTADO (ACTIVO/INACTIVO) ---
-  const getCookie = (name) => {
-    const m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
-    return m ? m.pop() : '';
-  };
-
-  const toggleEstado = async (switchElement) => {
-    const url = switchElement.dataset.url;
-    const label = switchElement.parentElement.querySelector('.estado-label');
-    const row = switchElement.closest('tr');
-    const wasChecked = switchElement.checked;
-    switchElement.disabled = true;
-
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'X-CSRFToken': getCookie('csrftoken') }
-      });
-
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      
-      const data = await response.json();
-      const esActivo = data.estado === 1 || data.estado === true;
-      
-      // Actualizar UI
-      label.textContent = esActivo ? 'ACTIVO' : 'INACTIVO';
-      label.classList.toggle('text-success', esActivo);
-      label.classList.toggle('text-secondary', !esActivo);
-      row.dataset.estado = esActivo ? 'ACTIVO' : 'INACTIVO';
-      switchElement.checked = esActivo;
-
-    } catch (error) {
-      console.error("Error al cambiar el estado:", error);
-      switchElement.checked = !wasChecked; // Revertir en caso de error
-    } finally {
-      switchElement.disabled = false;
-    }
-  };
-
-  document.querySelectorAll('.estado-switch').forEach(sw => {
-    sw.addEventListener('change', () => toggleEstado(sw));
-  });
-
-  // --- ORDENAR TABLA (CLIENT-SIDE) ---
   const table = document.getElementById('empTable');
   const headers = table.querySelectorAll('th.sortable');
   const tbody = table.querySelector('tbody');
@@ -745,7 +694,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // --- COPIAR DNI/CUIL ---
   document.querySelectorAll('.copyable').forEach(el => {
     el.addEventListener('click', (e) => {
       e.stopPropagation();

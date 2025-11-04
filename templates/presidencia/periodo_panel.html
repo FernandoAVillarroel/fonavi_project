@@ -14,46 +14,19 @@
     --text-dark: #343a40;
     --shadow-color: rgba(0,0,0,.1);
   }
-
-  body {
-    background: linear-gradient(135deg, var(--background-light) 0%, var(--background-medium) 100%);
-    color: var(--text-dark);
-    font-family: 'Poppins', sans-serif;
-    font-size: 13px;
-    line-height: 1.5;
-    overflow-x: hidden;
-  }
-
-  nav.navbar a[href$="/oficios-judiciales/"] { display: none !important; }
-
-  .sidebar {
-    width: 220px; position: fixed; top: 0; left: -220px; height: 100%;
-    background: linear-gradient(180deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-    color: var(--text-light); transition: left 0.3s cubic-bezier(.4,0,.2,1);
-    z-index: 1030; display: flex; flex-direction: column; box-shadow: 2px 0 10px var(--shadow-color);
-  }
+  body { background: linear-gradient(135deg, var(--background-light) 0%, var(--background-medium) 100%); color: var(--text-dark); font-family: 'Poppins', sans-serif; font-size: 13px; line-height: 1.5; overflow-x: hidden; }
+  .sidebar { width: 220px; position: fixed; top: 0; left: -220px; height: 100%; background: linear-gradient(180deg, var(--primary-color) 0%, var(--primary-dark) 100%); color: var(--text-light); transition: left 0.3s cubic-bezier(.4,0,.2,1); z-index: 1030; display: flex; flex-direction: column; box-shadow: 2px 0 10px var(--shadow-color); }
   .sidebar.active { left: 0; }
-  .sidebar-toggle {
-    position: absolute; top: 50%; left: 100%; transform: translateY(-50%);
-    width: 24px; height: 60px; background: var(--primary-dark); color: var(--text-light);
-    border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
-    border-top-right-radius: 8px; border-bottom-right-radius: 8px; box-shadow: 2px 0 8px rgba(0,0,0,.15);
-    transition: background-color 0.3s ease; font-size: 16px;
-  }
+  .sidebar-toggle { position: absolute; top: 50%; left: 100%; transform: translateY(-50%); width: 24px; height: 60px; background: var(--primary-dark); color: var(--text-light); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; border-top-right-radius: 8px; border-bottom-right-radius: 8px; box-shadow: 2px 0 8px rgba(0,0,0,.15); transition: background-color 0.3s ease; font-size: 16px; }
   .sidebar-toggle:hover { background: var(--primary-color); }
   .sidebar-header { padding: 15px; text-align: center; border-bottom: 1px solid rgba(255,255,255,.1); }
   .sidebar-header h3 { margin: 0; font-size: 1.2rem; font-weight: 600; }
   .sidebar-nav { padding: 15px; flex-grow: 1; overflow-y: auto; }
-  .nav-link {
-    color: var(--text-light); padding: 8px 15px; display: flex; align-items: center; text-decoration: none;
-    border-radius: 5px; margin-bottom: 6px; transition: all 0.3s ease; font-weight: 500; position: relative; font-size: .9rem;
-  }
+  .nav-link { color: var(--text-light); padding: 8px 15px; display: flex; align-items: center; text-decoration: none; border-radius: 5px; margin-bottom: 6px; transition: all 0.3s ease; font-weight: 500; position: relative; font-size: .9rem; }
   .nav-link:hover { background: rgba(255,255,255,.1); transform: translateX(3px); }
   .nav-link.active, .nav-link[aria-expanded="true"] { background: #fff; color: var(--primary-color); font-weight: 600; }
-
   .main-content { transition: margin-left 0.3s cubic-bezier(.4,0,.2,1); margin-left: 0; padding: 20px; min-height: 100vh; }
   .main-content.shifted { margin-left: 220px; }
-
   :root { --primary-color-alt: #0d6efd; --secondary-color: #6c757d; --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); --animation-speed: 0.3s; }
   body { background-color: #f8f9fa; }
   .content-container { animation: fadeInUp 0.5s ease-out forwards; }
@@ -66,7 +39,6 @@
   .animated-btn:active { transform: translateY(-1px); }
   .periodo-indicator { font-size: 0.85rem; margin-top: 0.25rem; }
   .form-control:focus, .form-select:focus { border-color: var(--primary-color); box-shadow: 0 0 0 0.2rem rgba(0, 85, 164, 0.25); }
-
   @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 
@@ -79,11 +51,8 @@
     <li class="nav-item"><a href="{% url 'empleados:calificacion-list' %}" class="nav-link"><i class="fas fa-star fa-fw me-2"></i> Calificaciones</a></li>
     <li class="nav-item"><a href="{% url 'empleados:categoria-list' %}" class="nav-link"><i class="fas fa-layer-group fa-fw me-2"></i> Categorías</a></li>
     <li class="nav-item"><a href="{% url 'empleados:oficiojudicial-list' %}" class="nav-link"><i class="fas fa-gavel fa-fw me-2"></i> Oficios Judiciales</a></li>
-    
-    {# NUEVO: Enlace a Novedades Mensuales agregado aquí #}
     <li class="nav-item"><a href="{% url 'empleados:novedades_mensuales_list' %}" class="nav-link"><i class="fas fa-bell fa-fw me-2"></i> Novedades mensuales</a></li>
-    
-    <li class="nav-item"><a href="{% url 'periodo_panel' %}" class="nav-link active"><i class="fas fa-calendar-alt fa-fw me-2"></i> Período</a></li>
+    <li class="nav-item"><a href="{% url 'periodo_panel' %}" class="nav-link active"><i class="fas fa-calendar-alt fa-fw me-2"></i> Panel del Período</a></li>
   </ul>
 </div>
 
@@ -94,16 +63,23 @@
       <h1 class="page-title">Panel de Período</h1>
       <div class="d-flex align-items-baseline gap-3">
         <p class="display-4 text-primary fw-bold mb-0">
-          {{ PERIODO_MES_NOMBRE|capfirst }} de {{ PERIODO_ANIO }}
+          {% if PERIODO_MES_STR == "01" %}Enero
+          {% elif PERIODO_MES_STR == "02" %}Febrero
+          {% elif PERIODO_MES_STR == "03" %}Marzo
+          {% elif PERIODO_MES_STR == "04" %}Abril
+          {% elif PERIODO_MES_STR == "05" %}Mayo
+          {% elif PERIODO_MES_STR == "06" %}Junio
+          {% elif PERIODO_MES_STR == "07" %}Julio
+          {% elif PERIODO_MES_STR == "08" %}Agosto
+          {% elif PERIODO_MES_STR == "09" %}Septiembre
+          {% elif PERIODO_MES_STR == "10" %}Octubre
+          {% elif PERIODO_MES_STR == "11" %}Noviembre
+          {% else %}Diciembre{% endif %}
+          de {{ PERIODO_ANIO }}
         </p>
-        {% if PERIODO_ELEGIDO %}
-          <span class="badge bg-info">Período seleccionado</span>
-        {% else %}
-          <span class="badge bg-success">Período actual</span>
-        {% endif %}
       </div>
     </div>
-    
+
     {% if messages %}
       <div class="mb-4">
         {% for message in messages %}
@@ -123,18 +99,18 @@
           <div class="col-12 col-md-4 col-lg-3">
             <label for="mes" class="form-label">Mes</label>
             <select name="mes" id="mes" class="form-select" required>
-              <option value="1"  {% if PERIODO_MES == 1 %}selected{% endif %}>Enero</option>
-              <option value="2"  {% if PERIODO_MES == 2 %}selected{% endif %}>Febrero</option>
-              <option value="3"  {% if PERIODO_MES == 3 %}selected{% endif %}>Marzo</option>
-              <option value="4"  {% if PERIODO_MES == 4 %}selected{% endif %}>Abril</option>
-              <option value="5"  {% if PERIODO_MES == 5 %}selected{% endif %}>Mayo</option>
-              <option value="6"  {% if PERIODO_MES == 6 %}selected{% endif %}>Junio</option>
-              <option value="7"  {% if PERIODO_MES == 7 %}selected{% endif %}>Julio</option>
-              <option value="8"  {% if PERIODO_MES == 8 %}selected{% endif %}>Agosto</option>
-              <option value="9"  {% if PERIODO_MES == 9 %}selected{% endif %}>Septiembre</option>
-              <option value="10" {% if PERIODO_MES == 10 %}selected{% endif %}>Octubre</option>
-              <option value="11" {% if PERIODO_MES == 11 %}selected{% endif %}>Noviembre</option>
-              <option value="12" {% if PERIODO_MES == 12 %}selected{% endif %}>Diciembre</option>
+              <option value="1"  {% if PERIODO_MES_STR == "01" %}selected{% endif %}>Enero</option>
+              <option value="2"  {% if PERIODO_MES_STR == "02" %}selected{% endif %}>Febrero</option>
+              <option value="3"  {% if PERIODO_MES_STR == "03" %}selected{% endif %}>Marzo</option>
+              <option value="4"  {% if PERIODO_MES_STR == "04" %}selected{% endif %}>Abril</option>
+              <option value="5"  {% if PERIODO_MES_STR == "05" %}selected{% endif %}>Mayo</option>
+              <option value="6"  {% if PERIODO_MES_STR == "06" %}selected{% endif %}>Junio</option>
+              <option value="7"  {% if PERIODO_MES_STR == "07" %}selected{% endif %}>Julio</option>
+              <option value="8"  {% if PERIODO_MES_STR == "08" %}selected{% endif %}>Agosto</option>
+              <option value="9"  {% if PERIODO_MES_STR == "09" %}selected{% endif %}>Septiembre</option>
+              <option value="10" {% if PERIODO_MES_STR == "10" %}selected{% endif %}>Octubre</option>
+              <option value="11" {% if PERIODO_MES_STR == "11" %}selected{% endif %}>Noviembre</option>
+              <option value="12" {% if PERIODO_MES_STR == "12" %}selected{% endif %}>Diciembre</option>
             </select>
           </div>
           <div class="col-12 col-md-4 col-lg-3">
@@ -172,32 +148,47 @@
         </div>
 
         <div class="d-flex flex-wrap gap-2">
-          {% if show_crear %}
-            <a class="btn btn-primary animated-btn" href="{% url 'crear_liquidacion' %}"><i class="fas fa-play me-2"></i>Abrir Período</a>
-          {% endif %}
-          {% if show_reabrir %}
-            <a class="btn btn-outline-primary animated-btn" href="{% url 'reabrir_liquidacion' %}"><i class="fas fa-folder-open me-2"></i>Reabrir</a>
-          {% endif %}
-          {% if show_cerrar %}
-            <a class="btn btn-warning animated-btn" href="{% url 'cerrar_liquidacion' %}"><i class="fas fa-lock me-2"></i>Cerrar</a>
-          {% endif %}
-          {% if show_confirmar %}
-            <a class="btn btn-success animated-btn" href="{% url 'confirmar_liquidacion' %}"><i class="fas fa-check-circle me-2"></i>Confirmar</a>
-          {% endif %}
-          {% if show_regenerar %}
-            <a class="btn btn-info animated-btn text-dark" href="{% url 'generar_preliquidacion' %}?mes={{ PERIODO_MES }}&año={{ PERIODO_ANIO }}">
-              <i class="fas fa-cogs me-2"></i>Generar Preliquidación
+          {% if estado == 'SIN CREAR' %}
+            <a class="btn btn-primary animated-btn" href="{% url 'crear_liquidacion' %}">
+              <i class="fas fa-play me-2"></i>Abrir Período
             </a>
           {% endif %}
-          {% if show_ver_liq %}
-            <a class="btn btn-outline-secondary animated-btn" href="{% url 'ver_liquidacion_periodo' %}"><i class="fas fa-eye me-2"></i>Ver Liquidación</a>
+
+          {% if estado == 'ABIERTA' %}
+            <a class="btn btn-info animated-btn text-white"
+               href="{% url 'empleados:generar_preliquidacion' %}?mes={{ PERIODO_MES_STR }}&año={{ PERIODO_ANIO }}">
+              <i class="fas fa-cogs me-2"></i>Generar Preliquidación
+            </a>
+            <a class="btn btn-warning animated-btn" href="{% url 'cerrar_liquidacion' %}">
+              <i class="fas fa-lock me-2"></i>Cerrar
+            </a>
+          {% endif %}
+
+          {% if estado == 'CERRADA' %}
+            <a class="btn btn-success animated-btn" href="{% url 'empleados:confirmar_liquidacion' %}">
+              <i class="fas fa-check-circle me-2"></i>Confirmar
+            </a>
+            <a class="btn btn-outline-primary animated-btn" href="{% url 'reabrir_liquidacion' %}">
+              <i class="fas fa-folder-open me-2"></i>Reabrir
+            </a>
+          {% endif %}
+
+          {% if estado == 'CONFIRMADA' %}
+            <a class="btn btn-outline-secondary animated-btn" href="{% url 'ver_liquidacion_periodo' %}?mes={{ PERIODO_MES }}&año={{ PERIODO_ANIO }}">
+              <i class="fas fa-eye me-2"></i>Ver Liquidación
+            </a>
+            <a class="btn btn-outline-primary animated-btn" href="{% url 'reabrir_liquidacion' %}">
+              <i class="fas fa-folder-open me-2"></i>Reabrir
+            </a>
           {% endif %}
         </div>
       </div>
 
       {% if block_reason %}
         <div class="card-footer bg-light border-0">
-          <div class="alert alert-info mb-0 d-flex align-items-center"><i class="fas fa-info-circle me-2"></i>{{ block_reason }}</div>
+          <div class="alert alert-info mb-0 d-flex align-items-center">
+            <i class="fas fa-info-circle me-2"></i>{{ block_reason }}
+          </div>
         </div>
       {% endif %}
     </div>
@@ -224,6 +215,7 @@
         </div>
       </div>
     </div>
+
   </div>
 </div>
 
@@ -263,5 +255,4 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 </script>
-
 {% endblock %}

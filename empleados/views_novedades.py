@@ -2,13 +2,15 @@
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import render
 from django.db.models import Q
+from datetime import date
 
 from .models import NovedadMensual
 from .utils import get_periodo_from_session, MONTH_NAMES
 
-# Si ya tenés este helper en otro lado, podés borrar esta función y reusar la tuya
+
 def is_presidencia(user):
     return user.is_superuser or user.is_staff or user.groups.filter(name__iexact='PRESIDENCIA').exists()
+
 
 @login_required(login_url="login")
 @user_passes_test(is_presidencia)
@@ -18,6 +20,23 @@ def novedades_mensuales_list(request):
     Permite filtrar por 'tipo' (?tipo=...) y por texto (?q=...).
     """
     anio, mes, periodo_str = get_periodo_from_session(request)  # 'YYYY-MM'
+    
+    # Verificar estado del período
+    hoy = date.today()
+    es_periodo_actual = (anio == hoy.year and mes == hoy.month)
+    
+    # Obtener estado de la base de datos
+    try:
+        from .models import LiquidacionPeriodo
+        lp = LiquidacionPeriodo.objects.filter(periodo=periodo_str).first()
+        estado_bd = lp.estado if lp else 'SIN CREAR'
+    except:
+        estado_bd = 'SIN CREAR'
+    
+    # Lógica para mostrar alertas
+    periodo_confirmado = (estado_bd == 'CONFIRMADA')
+    periodo_abierto = (estado_bd == 'ABIERTA') or es_periodo_actual  # Período actual siempre abierto
+    
     qs = NovedadMensual.objects.filter(periodo=periodo_str).order_by('-fecha')
 
     # Filtros opcionales
@@ -30,7 +49,9 @@ def novedades_mensuales_list(request):
         qs = qs.filter(
             Q(descripcion__icontains=q) |
             Q(area__icontains=q) |
-            Q(extra__icontains=q)
+            Q(extra__icontains=q) |
+            Q(empleado__nombre__icontains=q) |
+            Q(empleado__apellido__icontains=q)
         )
 
     # Tipos disponibles para el selector
@@ -51,5 +72,9 @@ def novedades_mensuales_list(request):
         "tipos_novedad": tipos_novedad,
         "f_tipo": tipo,
         "f_q": q,
+        
+        # Estado del período para alertas
+        "periodo_confirmado": periodo_confirmado,
+        "periodo_abierto": periodo_abierto,
     }
     return render(request, "empleados/novedades_mensuales.html", contexto)

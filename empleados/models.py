@@ -1,12 +1,34 @@
-from django.db import models
+
 from django.conf import settings
-from django.db import models, transaction
+from django.apps import apps
 
 from decimal import Decimal
 from django.db import models
-from django.apps import apps
-from django.db import models
 
+
+# ---------- Niveles (tabla ya existente) ----------
+class NivelBasico(models.Model):
+    id_nivel = models.AutoField(primary_key=True)
+    monto = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        db_column="monto",
+        verbose_name="Monto",
+    )
+    descripcion = models.CharField("Descripción", max_length=255, blank=True)
+
+    class Meta:
+        db_table = "nivel_basico"
+        managed = False            # la tabla ya existe: Django NO la crea/alter
+        ordering = ["id_nivel"]
+        verbose_name = "Nivel básico"
+        verbose_name_plural = "Niveles básicos"
+
+    def __str__(self):
+        return f"Nivel {self.id_nivel} — ${self.monto:.2f}"
+
+
+# ---------- Categorías ----------
 class Categoria(models.Model):
     id_categoria = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=60)
@@ -19,14 +41,29 @@ class Categoria(models.Model):
     ]
     area = models.CharField(max_length=60, choices=AREAS, default='PRESIDENCIA')
 
+    # FK al nivel básico (columna existente id_nivel en la tabla de categorías)
     nivel = models.ForeignKey(
-        'NivelBasico',
+        NivelBasico,
         on_delete=models.PROTECT,
         db_column='id_nivel',
-        null=True, blank=True,
+        related_name='categorias',
+        null=True,
+        blank=True,
+        verbose_name='Nivel',
+        to_field='id_nivel'
     )
 
-    # Valores monetarios: default=0
+    # Campo para básico manual (cuando no se usa nivel predefinido)
+    basico_manual = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2, 
+        null=True, 
+        blank=True,
+        verbose_name='Básico manual',
+        help_text='Monto básico personalizado (solo si no se usa un nivel predefinido)'
+    )
+
+    # Suplementos (valores) y su tipo (1=% | 2=$)
     sup1  = models.DecimalField(max_digits=8, decimal_places=2, default=0)
     sup2  = models.DecimalField(max_digits=8, decimal_places=2, default=0)
     sup3  = models.DecimalField(max_digits=8, decimal_places=2, default=0)
@@ -35,29 +72,39 @@ class Categoria(models.Model):
     sup8  = models.DecimalField(max_digits=8, decimal_places=2, default=0)
     sup12 = models.DecimalField(max_digits=8, decimal_places=2, default=0)
 
-    # Tipos de suplemento: Porcentaje (1) o Monto fijo (2)
     TIPO_SUP_CHOICES = [(1, 'Porcentaje (%)'), (2, 'Monto fijo ($)')]
-
-    tipo_sup1  = models.PositiveSmallIntegerField(db_column='tipo_sup1',  default=1, choices=TIPO_SUP_CHOICES)
-    tipo_sup2  = models.PositiveSmallIntegerField(db_column='tipo_sup2',  default=1, choices=TIPO_SUP_CHOICES)
-    tipo_sup3  = models.PositiveSmallIntegerField(db_column='tipo_sup3',  default=1, choices=TIPO_SUP_CHOICES)
-    tipo_sup4  = models.PositiveSmallIntegerField(db_column='tipo_sup4',  default=1, choices=TIPO_SUP_CHOICES)
-    tipo_sup6  = models.PositiveSmallIntegerField(db_column='tipo_sup6',  default=2, choices=TIPO_SUP_CHOICES)  # monto fijo
-    tipo_sup8  = models.PositiveSmallIntegerField(db_column='tipo_sup8',  default=1, choices=TIPO_SUP_CHOICES)
-    tipo_sup12 = models.PositiveSmallIntegerField(db_column='tipo_sup12', default=2, choices=TIPO_SUP_CHOICES)  # monto fijo
+    tipo_sup1  = models.PositiveSmallIntegerField(default=1, choices=TIPO_SUP_CHOICES)
+    tipo_sup2  = models.PositiveSmallIntegerField(default=1, choices=TIPO_SUP_CHOICES)
+    tipo_sup3  = models.PositiveSmallIntegerField(default=1, choices=TIPO_SUP_CHOICES)
+    tipo_sup4  = models.PositiveSmallIntegerField(default=1, choices=TIPO_SUP_CHOICES)
+    tipo_sup6  = models.PositiveSmallIntegerField(default=2, choices=TIPO_SUP_CHOICES)  # fijo
+    tipo_sup8  = models.PositiveSmallIntegerField(default=1, choices=TIPO_SUP_CHOICES)
+    tipo_sup12 = models.PositiveSmallIntegerField(default=2, choices=TIPO_SUP_CHOICES)  # fijo
 
     class Meta:
         db_table = 'categorias'
+        verbose_name = "Categoría"
+        verbose_name_plural = "Categorías"
+        ordering = ["nombre"]
 
     def __str__(self):
         return self.nombre
 
+    @property
+    def basico(self) -> Decimal:
+        """Monto básico que se usa en cálculos (pre)liquidación."""
+        if self.nivel:
+            return self.nivel.monto
+        elif self.basico_manual:
+            return self.basico_manual
+        else:
+            return Decimal("0.00")
 
 
 
 class Oficina(models.Model):
     id_oficina = models.AutoField(primary_key=True)  # Si tu tabla tiene PK manual
-    nombre = models.CharField(max_length=100, unique=True)
+    nombre = models.CharField(max_length=200, unique=True)
 
     def __str__(self):
         return self.nombre
@@ -67,30 +114,7 @@ class Oficina(models.Model):
 
 
 
-class NivelBasico(models.Model):
-    id_nivel = models.AutoField(primary_key=True)
-
-    nivel = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        db_column="monto",          
-        verbose_name="Monto",        
-        unique=True,
-    )
-    descripcion = models.CharField(
-        "Descripción",
-        max_length=100,
-        blank=True,
-    )
-
-    def __str__(self):
-        # Muestra solo el ID para claridad en las FKs
-        return str(self.id_nivel)
-
-    class Meta:
-        db_table = "nivel_basico"
-        verbose_name = "Nivel básico"
-        verbose_name_plural = "Niveles básicos"
+    
 
 
 class Titulo(models.Model):
@@ -165,6 +189,17 @@ except Exception:
 
 
 class Empleado(models.Model):
+    # Constantes de estado
+    ESTADO_INACTIVO = 0
+    ESTADO_ACTIVO = 1
+    ESTADO_RETENCION = 2
+    
+    ESTADO_CHOICES = [
+        (ESTADO_ACTIVO, 'Activo'),
+        (ESTADO_INACTIVO, 'Inactivo'),
+        (ESTADO_RETENCION, 'Retención de Cargo'),
+    ]
+    
     id_empleado = models.AutoField(primary_key=True)
 
     nombre = models.CharField(max_length=100)
@@ -177,20 +212,22 @@ class Empleado(models.Model):
     SITUACIONES = (("P", "PERMANENTE"), ("C", "CONTRATADO"))
     situacion = models.CharField(max_length=1, choices=SITUACIONES, default="P")
 
-    # Usan estado=1 en las queries → numérico
+    # CAMBIADO: Ahora con choices
     estado = models.PositiveSmallIntegerField(
-        default=1, help_text="1=Activo / 0=Inactivo", db_index=True
+        choices=ESTADO_CHOICES,
+        default=ESTADO_ACTIVO,
+        verbose_name="Estado",
+        db_index=True
     )
 
-    # Permitimos null/blank para poder cargarla luego si hoy está vacía
     fecha_ingreso = models.DateField(null=True, blank=True)
-
-    # Se mantiene para reportes/export; NO se recalcula automáticamente en save()
     antiguedad = models.PositiveSmallIntegerField(default=0, null=True, blank=True)
-
-    # Debe existir Categoria.AREAS en tu modelo Categoria
-    area = models.CharField(max_length=40, choices=Categoria.AREAS, default="PRESIDENCIA")
-
+    area = models.CharField(
+        max_length=40,
+        default="PRESIDENCIA",
+        editable=False,
+        verbose_name="Área"
+    )
     fecha_salida = models.DateField(null=True, blank=True)
 
     categoria = models.ForeignKey(
@@ -226,7 +263,6 @@ class Empleado(models.Model):
     def nombre_completo(self):
         return f"{self.apellido}, {self.nombre}"
 
-    # Antigüedad IPVU “en vivo” para mostrar en listados (no persiste en DB)
     @property
     def antiguedad_ipvu_actual(self) -> int:
         """
@@ -722,6 +758,43 @@ class OficioJudicial(models.Model):
             return _q2(self.monto_descontar or 0)
         pct = (Decimal(self.porcentaje_descontar or 0) / Decimal('100'))
         return _q2(Decimal(importe_base or 0) * pct)
+
+
+  
+    
+    # ========== NUEVOS CAMPOS PARA ARCHIVO TXT BANCO ==========
+    
+    codigo_mutual = models.CharField(
+        max_length=3,
+        default='001',
+        verbose_name="Código mutual/servicio",
+        help_text="Código de 3 dígitos (ej: 001=AMUR, 048=Préstamos, 123=Seguros)"
+    )
+    
+    numero_cuota = models.PositiveSmallIntegerField(
+        default=1,
+        verbose_name="Número de cuota",
+        help_text="Cuota actual (ej: 4 de 12). Si es descuento fijo mensual, dejar en 1"
+    )
+    
+    # Opciones para el campo novedad
+    NOVEDAD_DESCUENTO = 'D'
+    NOVEDAD_ALTA = 'A'
+    NOVEDAD_BAJA = 'B'
+    NOVEDAD_CHOICES = (
+        (NOVEDAD_DESCUENTO, 'Descuento activo'),
+        (NOVEDAD_ALTA, 'Alta nueva'),
+        (NOVEDAD_BAJA, 'Baja/Cancelación'),
+    )
+    novedad = models.CharField(
+        max_length=1,
+        choices=NOVEDAD_CHOICES,
+        default=NOVEDAD_DESCUENTO,
+        verbose_name="Tipo de novedad",
+        help_text="D=Descuento activo, A=Alta nueva, B=Baja"
+    )
+
+
 
 
 

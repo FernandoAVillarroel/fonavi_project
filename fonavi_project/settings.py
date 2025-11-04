@@ -31,7 +31,15 @@ INSTALLED_APPS = [
     'autenticacion',
     'empleados.apps.EmpleadosConfig',
     'widget_tweaks',
+    
 ]
+
+# Configuración del cron job
+CRONJOBS = [
+    # Se ejecuta el día 1 de cada mes a las 00:01
+    ('1 0 1 * *', 'empleados.cron.inicializar_calificaciones_mes', '>> /tmp/calificaciones_cron.log 2>&1'),
+]
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

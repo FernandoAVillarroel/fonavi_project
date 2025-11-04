@@ -1,0 +1,198 @@
+{% load money %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Contribuciones Patronales — {{ month_name }} / {{ año_sel }}</title>
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 2.5cm;
+  }
+  
+  body { 
+    font-family: 'Helvetica', 'Arial', sans-serif; /* Fuente profesional estándar (Sans-Serif) */
+    font-size: 12px;
+    margin: 0; 
+    padding: 0; 
+    color: #333;
+    line-height: 1.5;
+  }
+  
+  /* --- Encabezado --- */
+  .header {
+    text-align: left;
+    margin-bottom: 40px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #000;
+  }
+  
+  .entity-name {
+    font-size: 13px;
+    color: #000;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 15px;
+  }
+  
+  h1 { 
+    font-size: 24px;
+    color: #000;
+    margin: 0 0 5px 0;
+    font-weight: bold;
+  }
+  
+  .period {
+    font-size: 16px;
+    color: #333;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+  
+  .report-type {
+    font-size: 14px;
+    color: #555;
+    font-weight: normal; /* <-- CAMBIO: Eliminada la cursiva y el bold */
+    font-style: normal;  /* <-- CAMBIO: Aseguramos que no sea itálica */
+  }
+
+  /* --- Secciones y Tablas de Datos --- */
+  .section {
+    margin: 30px 0;
+  }
+  
+  .section-title {
+    font-size: 16px;
+    color: #000;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 15px;
+    font-weight: bold;
+    border-bottom: 1px solid #999;
+    padding-bottom: 8px;
+  }
+
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+
+  .data-table tr {
+    border-bottom: 1px solid #eee;
+  }
+
+  .data-table tr:last-child {
+    border-bottom: none;
+  }
+
+  .data-table td {
+    padding: 12px 5px;
+    vertical-align: top;
+  }
+  
+  .data-table .data-label {
+    color: #333;
+    font-size: 14px;
+    width: 70%;
+  }
+  
+  .data-table .data-value {
+    font-weight: bold;
+    color: #000;
+    font-size: 15px;
+    text-align: right;
+    /* <-- CAMBIO: Se eliminó la fuente monospace. Usará la fuente del body. */
+  }
+  
+  /* --- Caja de Total --- */
+  .total-box {
+    background: #f5f5f5;
+    border-top: 2px solid #000;
+    border-bottom: 2px solid #000;
+    padding: 25px;
+    margin: 30px 0;
+    text-align: right;
+  }
+  
+  .total-label {
+    font-size: 16px;
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+    font-weight: bold;
+    color: #000;
+    text-transform: uppercase;
+  }
+  
+  .total-amount {
+    font-size: 28px;
+    font-weight: bold;
+    color: #000;
+    /* <-- CAMBIO: Se eliminó la fuente monospace. Usará la fuente del body. */
+  }
+  
+  /* --- Pie de Página --- */
+  .footer {
+    position: fixed;
+    bottom: 1.5cm;
+    left: 2.5cm;
+    right: 2.5cm;
+    text-align: center;
+    font-size: 10px;
+    color: #777;
+    padding-top: 10px;
+    border-top: 1px solid #ccc;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="entity-name">IPVU · Instituto Provincial de Vivienda y Urbanismo</div>
+  <h1>Contribuciones Patronales</h1>
+  <div class="period">{{ month_name|upper }} {{ año_sel }}</div>
+  <div class="report-type">{{ title|upper }}</div>
+</div>
+
+<div class="section">
+  <div class="section-title">Información General</div>
+  
+  <table class="data-table">
+    <tr>
+      <td class="data-label">Total de Empleados</td>
+      <td class="data-value">{{ count }}</td>
+    </tr>
+    <tr>
+      <td class="data-label">Masa Salarial Bruta</td>
+      <td class="data-value">{{ total_bruto|ars }}</td>
+    </tr>
+  </table>
+</div>
+
+<div class="section">
+  <div class="section-title">Detalle de Contribuciones</div>
+
+  <table class="data-table">
+    <tr>
+      <td class="data-label">Contribución Jubilación Patronal (10,17%)</td>
+      <td class="data-value">{{ total_jubilacion|ars }}</td>
+    </tr>
+    <tr>
+      <td class="data-label">Contribución Obra Social Patronal (6%)</td>
+      <td class="data-value">{{ total_obra_social|ars }}</td>
+    </tr>
+  </table>
+</div>
+
+<div class="total-box">
+  <div class="total-label">TOTAL GENERAL</div>
+  <div class="total-amount">{{ total_general|ars }}</div>
+</div>
+
+<div class="footer">
+  IPVU - Sistema de Liquidaciones | {{ "now"|date:"d/m/Y H:i" }} | Documento de uso interno
+</div>
+
+</body>
+</html>

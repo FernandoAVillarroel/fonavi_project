@@ -3,13 +3,14 @@
 
 {% block content %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-
 <style>
   :root {
     --primary-color: #0055A4;
     --primary-dark: #003087;
     --background-light: #f8f9fa;
     --text-dark: #343a40;
+    --color-monto: #6c757d; /* Gris para Monto Fijo */
+    --color-porcentaje: var(--primary-color); /* Azul para Porcentaje */
   }
   
   body {
@@ -43,38 +44,60 @@
   
   .input-group {
     border-radius: 8px;
+    flex-wrap: nowrap; 
   }
-  
-  .input-group .form-control, .input-group .form-select {
+
+  .input-group .form-control {
+    border-top-left-radius: 8px !important;
+    border-bottom-left-radius: 8px !important;
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+  }
+
+  .input-group .input-group-text,
+  .input-group .btn-group {
     border-radius: 0;
   }
   
-  .input-group .form-control:first-child, .input-group .form-select:first-child {
-    border-top-left-radius: 8px;
-    border-bottom-left-radius: 8px;
+  .input-group .btn-group:last-child {
+    border-top-right-radius: 8px !important;
+    border-bottom-right-radius: 8px !important;
+    overflow: hidden;
   }
   
-  .input-group .form-control:last-child, .input-group .form-select:last-child {
-    border-top-right-radius: 8px;
-    border-bottom-right-radius: 8px;
+  /* Estilos del texto del símbolo */
+  .input-group-text {
+    font-weight: bold;
+    color: var(--text-dark);
+    border: 1px solid #dee2e6;
+    border-left: none;
+    padding: 0.375rem 0.75rem;
+    transition: background-color 0.3s ease;
+    min-width: 35px;
+    text-align: center;
+    justify-content: center;
+  }
+
+  /* Clases de color para el símbolo */
+  .symbol-monto {
+    background-color: #e9ecef;
+    color: var(--color-monto);
   }
   
-  fieldset {
-    border: 1px solid #dee2e6 !important;
-    border-radius: 10px;
-    padding: 20px;
-    background: #f8f9fa;
+  .symbol-porcentaje {
+    background-color: #e8f4ff;
+    color: var(--color-porcentaje);
   }
-  
-  legend {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--primary-color);
-    width: auto;
-    padding: 0 10px;
-    margin-left: -10px;
+
+  /* El botón de flecha */
+  .btn-sm-custom {
+    padding: 0.375rem 0.5rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    border: none;
   }
-  
+
+  /* Estilo para los botones principales */
   .btn {
     border-radius: 8px;
     padding: 10px 20px;
@@ -104,6 +127,33 @@
     transform: translateY(-2px);
   }
   
+  /* Estilo de las opciones del dropdown */
+  .type-option[data-value="MONTO"] {
+      color: var(--color-monto);
+      font-weight: 600;
+  }
+  .type-option[data-value="PORCENTAJE"] {
+      color: var(--color-porcentaje);
+      font-weight: 600;
+  }
+  
+  /* Resto de estilos */
+  fieldset {
+    border: 1px solid #dee2e6 !important;
+    border-radius: 10px;
+    padding: 20px;
+    background: #f8f9fa;
+  }
+  
+  legend {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    width: auto;
+    padding: 0 10px;
+    margin-left: -10px;
+  }
+  
   .alert-info {
     background: #e8f4ff;
     border-left: 4px solid var(--primary-color);
@@ -128,11 +178,19 @@
     background: var(--primary-color);
     border-radius: 2px;
   }
+  
+  .nivel-basico-section {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
 </style>
 
 <div class="container py-5">
   <div class="row justify-content-center">
-    <div class="col-lg-8">
+    <div class="col-lg-10">
       <div class="card border-0 p-4 p-md-5">
 
         <div class="text-center mb-4">
@@ -147,9 +205,23 @@
           {% csrf_token %}
 
           <div class="row mb-4">
-            <div class="col-md-12 mb-3">
+            <div class="col-12 mb-3">
               <label for="{{ form.nombre.id_for_label }}" class="form-label">{{ form.nombre.label }}</label>
               {{ form.nombre }}
+            </div>
+          </div>
+
+          <div class="nivel-basico-section">
+            <h5 class="mb-3">
+              <i class="fa-solid fa-coins me-2"></i>Monto Básico
+            </h5>
+            
+            <div class="row">
+              <div class="col-12 mb-3">
+                <label for="{{ form.nivel.id_for_label }}" class="form-label">{{ form.nivel.label }}</label>
+                {{ form.nivel }}
+                <div class="form-text">{{ form.nivel.help_text }}</div>
+              </div>
             </div>
           </div>
 
@@ -158,56 +230,176 @@
               <i class="fa-solid fa-plus-circle me-2"></i>Suplementos
             </legend>
             
-            <div class="row">
-              <div class="col-6 col-md-4 mb-3">
+            <div class="row g-4">
+              
+              <div class="col-6 col-md-4">
                 <label class="form-label small text-uppercase fw-bold">Sup. 1</label>
                 <div class="input-group">
                   {{ form.sup1 }}
-                  {{ form.tipo_sup1 }}
+                  <span class="input-group-text symbol-display {% if form.tipo_sup1.value == 'PORCENTAJE' %}symbol-porcentaje{% else %}symbol-monto{% endif %}" data-target="tipo_sup1">
+                    {% if form.tipo_sup1.value == 'PORCENTAJE' %}
+                      %
+                    {% else %}
+                      $
+                    {% endif %}
+                  </span>
+                  <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-primary dropdown-toggle btn-sm-custom" data-bs-toggle="dropdown" aria-expanded="false" title="Cambiar tipo">
+                      <span class="visually-hidden">Tipo</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                      <li><a class="dropdown-item type-option" href="#" data-value="MONTO" data-symbol="$" data-target="tipo_sup1">$ (Monto fijo)</a></li>
+                      <li><a class="dropdown-item type-option" href="#" data-value="PORCENTAJE" data-symbol="%" data-target="tipo_sup1"> % (Porcentaje)</a></li>
+                    </ul>
+                  </div>
+                  {{ form.tipo_sup1.as_hidden }} 
                 </div>
               </div>
-              <div class="col-6 col-md-4 mb-3">
+
+              <div class="col-6 col-md-4">
                 <label class="form-label small text-uppercase fw-bold">Sup. 2</label>
                 <div class="input-group">
                   {{ form.sup2 }}
-                  {{ form.tipo_sup2 }}
+                  <span class="input-group-text symbol-display {% if form.tipo_sup2.value == 'PORCENTAJE' %}symbol-porcentaje{% else %}symbol-monto{% endif %}" data-target="tipo_sup2">
+                    {% if form.tipo_sup2.value == 'PORCENTAJE' %}
+                      %
+                    {% else %}
+                      $
+                    {% endif %}
+                  </span>
+                  <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-primary dropdown-toggle btn-sm-custom" data-bs-toggle="dropdown" aria-expanded="false" title="Cambiar tipo">
+                      <span class="visually-hidden">Tipo</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                      <li><a class="dropdown-item type-option" href="#" data-value="MONTO" data-symbol="$" data-target="tipo_sup2">$ (Monto fijo)</a></li>
+                      <li><a class="dropdown-item type-option" href="#" data-value="PORCENTAJE" data-symbol="%" data-target="tipo_sup2"> % (Porcentaje)</a></li>
+                    </ul>
+                  </div>
+                  {{ form.tipo_sup2.as_hidden }} 
                 </div>
               </div>
-              <div class="col-6 col-md-4 mb-3">
+
+              <div class="col-6 col-md-4">
                 <label class="form-label small text-uppercase fw-bold">Sup. 3</label>
                 <div class="input-group">
                   {{ form.sup3 }}
-                  {{ form.tipo_sup3 }}
+                  <span class="input-group-text symbol-display {% if form.tipo_sup3.value == 'PORCENTAJE' %}symbol-porcentaje{% else %}symbol-monto{% endif %}" data-target="tipo_sup3">
+                    {% if form.tipo_sup3.value == 'PORCENTAJE' %}
+                      %
+                    {% else %}
+                      $
+                    {% endif %}
+                  </span>
+                  <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-primary dropdown-toggle btn-sm-custom" data-bs-toggle="dropdown" aria-expanded="false" title="Cambiar tipo">
+                      <span class="visually-hidden">Tipo</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                      <li><a class="dropdown-item type-option" href="#" data-value="MONTO" data-symbol="$" data-target="tipo_sup3">$ (Monto fijo)</a></li>
+                      <li><a class="dropdown-item type-option" href="#" data-value="PORCENTAJE" data-symbol="%" data-target="tipo_sup3"> % (Porcentaje)</a></li>
+                    </ul>
+                  </div>
+                  {{ form.tipo_sup3.as_hidden }} 
                 </div>
               </div>
-              <div class="col-6 col-md-4 mb-3">
+
+              <div class="col-6 col-md-4">
                 <label class="form-label small text-uppercase fw-bold">Sup. 4</label>
                 <div class="input-group">
                   {{ form.sup4 }}
-                  {{ form.tipo_sup4 }}
+                  <span class="input-group-text symbol-display {% if form.tipo_sup4.value == 'PORCENTAJE' %}symbol-porcentaje{% else %}symbol-monto{% endif %}" data-target="tipo_sup4">
+                    {% if form.tipo_sup4.value == 'PORCENTAJE' %}
+                      %
+                    {% else %}
+                      $
+                    {% endif %}
+                  </span>
+                  <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-primary dropdown-toggle btn-sm-custom" data-bs-toggle="dropdown" aria-expanded="false" title="Cambiar tipo">
+                      <span class="visually-hidden">Tipo</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                      <li><a class="dropdown-item type-option" href="#" data-value="MONTO" data-symbol="$" data-target="tipo_sup4">$ (Monto fijo)</a></li>
+                      <li><a class="dropdown-item type-option" href="#" data-value="PORCENTAJE" data-symbol="%" data-target="tipo_sup4"> % (Porcentaje)</a></li>
+                    </ul>
+                  </div>
+                  {{ form.tipo_sup4.as_hidden }} 
                 </div>
               </div>
-              <div class="col-6 col-md-4 mb-3">
+
+              <div class="col-6 col-md-4">
                 <label class="form-label small text-uppercase fw-bold">Sup. 6</label>
                 <div class="input-group">
                   {{ form.sup6 }}
-                  {{ form.tipo_sup6 }}
+                  <span class="input-group-text symbol-display {% if form.tipo_sup6.value == 'PORCENTAJE' %}symbol-porcentaje{% else %}symbol-monto{% endif %}" data-target="tipo_sup6">
+                    {% if form.tipo_sup6.value == 'PORCENTAJE' %}
+                      %
+                    {% else %}
+                      $
+                    {% endif %}
+                  </span>
+                  <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-primary dropdown-toggle btn-sm-custom" data-bs-toggle="dropdown" aria-expanded="false" title="Cambiar tipo">
+                      <span class="visually-hidden">Tipo</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                      <li><a class="dropdown-item type-option" href="#" data-value="MONTO" data-symbol="$" data-target="tipo_sup6">$ (Monto fijo)</a></li>
+                      <li><a class="dropdown-item type-option" href="#" data-value="PORCENTAJE" data-symbol="%" data-target="tipo_sup6"> % (Porcentaje)</a></li>
+                    </ul>
+                  </div>
+                  {{ form.tipo_sup6.as_hidden }} 
                 </div>
               </div>
-              <div class="col-6 col-md-4 mb-3">
+
+              <div class="col-6 col-md-4">
                 <label class="form-label small text-uppercase fw-bold">Sup. 8</label>
                 <div class="input-group">
                   {{ form.sup8 }}
-                  {{ form.tipo_sup8 }}
+                  <span class="input-group-text symbol-display {% if form.tipo_sup8.value == 'PORCENTAJE' %}symbol-porcentaje{% else %}symbol-monto{% endif %}" data-target="tipo_sup8">
+                    {% if form.tipo_sup8.value == 'PORCENTAJE' %}
+                      %
+                    {% else %}
+                      $
+                    {% endif %}
+                  </span>
+                  <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-primary dropdown-toggle btn-sm-custom" data-bs-toggle="dropdown" aria-expanded="false" title="Cambiar tipo">
+                      <span class="visually-hidden">Tipo</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                      <li><a class="dropdown-item type-option" href="#" data-value="MONTO" data-symbol="$" data-target="tipo_sup8">$ (Monto fijo)</a></li>
+                      <li><a class="dropdown-item type-option" href="#" data-value="PORCENTAJE" data-symbol="%" data-target="tipo_sup8"> % (Porcentaje)</a></li>
+                    </ul>
+                  </div>
+                  {{ form.tipo_sup8.as_hidden }} 
                 </div>
               </div>
-              <div class="col-6 col-md-4 mb-3">
+
+              <div class="col-6 col-md-4">
                 <label class="form-label small text-uppercase fw-bold">Sup. 12</label>
                 <div class="input-group">
                   {{ form.sup12 }}
-                  {{ form.tipo_sup12 }}
+                  <span class="input-group-text symbol-display {% if form.tipo_sup12.value == 'PORCENTAJE' %}symbol-porcentaje{% else %}symbol-monto{% endif %}" data-target="tipo_sup12">
+                    {% if form.tipo_sup12.value == 'PORCENTAJE' %}
+                      %
+                    {% else %}
+                      $
+                    {% endif %}
+                  </span>
+                  <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-primary dropdown-toggle btn-sm-custom" data-bs-toggle="dropdown" aria-expanded="false" title="Cambiar tipo">
+                      <span class="visually-hidden">Tipo</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                      <li><a class="dropdown-item type-option" href="#" data-value="MONTO" data-symbol="$" data-target="tipo_sup12">$ (Monto fijo)</a></li>
+                      <li><a class="dropdown-item type-option" href="#" data-value="PORCENTAJE" data-symbol="%" data-target="tipo_sup12"> % (Porcentaje)</a></li>
+                    </ul>
+                  </div>
+                  {{ form.tipo_sup12.as_hidden }} 
                 </div>
               </div>
+              
             </div>
           </fieldset>
 
@@ -232,7 +424,7 @@
 
           <div class="alert alert-info mt-4 small">
             <i class="fa-solid fa-circle-info me-2"></i>
-            <strong>Nota:</strong> Seleccione el tipo de suplemento: <strong>porcentaje (%)</strong> o <strong>monto fijo ($)</strong>.
+            <strong>Nota:</strong> El símbolo ($ o %) y su color se actualizan al seleccionar una opción en el desplegable de la derecha.
           </div>
           
           <hr class="my-4">
@@ -242,8 +434,7 @@
               <i class="fa-solid fa-xmark me-2"></i>Cancelar
             </a>
             <button type="submit" class="btn btn-primary px-4">
-              <i class="fa-solid fa-floppy-disk me-2"></i>Guardar
-            </button>
+              <i class="fa-solid fa-floppy-disk me-2"></i>Guardar</button>
           </div>
 
         </form>
@@ -254,17 +445,56 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // Añadir clases a los campos de formulario para mejorar la apariencia
-  const inputs = document.querySelectorAll('input, select');
+  
+  // 1. Añadir clases a los campos de formulario para mejorar la apariencia (sin los campos tipo_sup)
+  const inputs = document.querySelectorAll('input:not([type="hidden"]):not([type="checkbox"]), select');
   inputs.forEach(input => {
-    if (input.type !== 'hidden') {
-      if (input.tagName === 'SELECT') {
-        input.classList.add('form-select');
-      } else {
-        input.classList.add('form-control');
-      }
+    if (input.tagName === 'SELECT') {
+      input.classList.add('form-select');
+    } else {
+      input.classList.add('form-control');
     }
   });
+
+  // 2. Lógica para actualizar el campo oculto, el símbolo visible y su color
+  const typeOptions = document.querySelectorAll('.type-option');
+
+  typeOptions.forEach(option => {
+    option.addEventListener('click', function(e) {
+      e.preventDefault(); 
+
+      const value = this.getAttribute('data-value'); // AHORA ES 'MONTO' o 'PORCENTAJE'
+      const symbol = this.getAttribute('data-symbol'); // $ o %
+      const targetName = 'id_' + this.getAttribute('data-target'); // id_tipo_supX
+
+      // Encontramos los elementos relevantes dentro del mismo input-group
+      const inputGroup = this.closest('.input-group');
+      const hiddenField = document.getElementById(targetName);
+      const symbolDisplay = inputGroup.querySelector('.symbol-display');
+
+      if (hiddenField) {
+        // 1. Actualiza el campo de formulario oculto que Django necesita
+        // Esto asigna 'MONTO' o 'PORCENTAJE' al campo oculto.
+        hiddenField.value = value;
+      }
+
+      if (symbolDisplay) {
+        // 2. Actualiza el símbolo visible
+        symbolDisplay.textContent = symbol;
+        
+        // 3. Actualiza el color
+        // Usamos el valor completo para la comparación:
+        if (value === 'PORCENTAJE') { 
+          symbolDisplay.classList.remove('symbol-monto');
+          symbolDisplay.classList.add('symbol-porcentaje');
+        } else {
+          symbolDisplay.classList.remove('symbol-porcentaje');
+          symbolDisplay.classList.add('symbol-monto');
+        }
+      }
+    });
+  });
+
 });
 </script>
 {% endblock %}

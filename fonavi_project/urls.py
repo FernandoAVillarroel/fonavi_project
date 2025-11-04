@@ -12,6 +12,15 @@ from empleados.views_liquidacion import (
     ver_liquidacion_periodo, 
 )
 
+from empleados.views_planillas import (
+    exportar_liquidaciones_pdf,
+    contribuciones_patronales,
+    exportar_contribuciones_pdf,
+    ver_liquidaciones_confirmadas
+
+)
+
+
 urlpatterns = [
     # Raíz → login
     path("", RedirectView.as_view(pattern_name="login", permanent=False), name="root"),
@@ -33,6 +42,7 @@ urlpatterns = [
 
     # App empleados (CRUDs y demás)
     path("empleados/", include(("empleados.urls", "empleados"), namespace="empleados")),
+   
 
     # Selector de período (desde el sidebar)
     path("seleccionar-periodo/", seleccionar_periodo, name="seleccionar_periodo"),
@@ -42,6 +52,19 @@ urlpatterns = [
     path("periodo/crear/", crear_liquidacion, name="crear_liquidacion"),
     path("periodo/cerrar/", cerrar_liquidacion, name="cerrar_liquidacion"),
     path("periodo/reabrir/", reabrir_liquidacion, name="reabrir_liquidacion"),
-    path("periodo/confirmar/", confirmar_liquidacion, name="confirmar_liquidacion"),
+   
     path("periodo/ver/", ver_liquidacion_periodo, name="ver_liquidacion_periodo"),
+    
+    
+    # Liquidaciones y contribuciones patronales
+    path("liquidacion-exportar-pdf/", exportar_liquidaciones_pdf, name="liquidacion-exportar-pdf"),
+    path("contribuciones-patronales/", contribuciones_patronales, name="contribuciones_patronales"),
+    path("contribuciones-patronales-pdf/", exportar_contribuciones_pdf, name="exportar_contribuciones_pdf"),
+    
+    
+    # Liquidaciones confirmadas
+    path("liquidaciones-confirmadas/", ver_liquidaciones_confirmadas, name="liquidaciones_confirmadas"),
+
+
 ]
+

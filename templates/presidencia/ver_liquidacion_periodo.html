@@ -1,56 +1,289 @@
 {% extends "base.html" %}
+{% load money %}
 {% load static %}
+
 {% block content %}
-<div class="container py-3">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
+<div class="container-fluid content-container">
+
   {% if messages %}
-    <div class="mb-3">
+    <div class="alert-container mb-3">
       {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} mb-2">{{ message }}</div>
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
       {% endfor %}
     </div>
   {% endif %}
 
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="mb-0">Liquidaciones confirmadas — {{ PERIODO_ACTUAL }}</h2>
-    <a class="btn btn-outline-primary" href="{% url 'periodo_panel' %}">Volver al panel</a>
-  </div>
-
-  <div class="card">
-    <div class="card-body">
-      <div class="table-responsive">
-        <table class="table table-sm table-striped">
-          <thead>
-            <tr>
-              <th>Empleado</th>
-              <th>Categoría</th>
-              <th>Oficina</th>
-              <th>Bruto</th>
-              <th>Jubilación</th>
-              <th>Obra Social</th>
-              <th>Oficio Judicial</th>
-              <th>Liquido</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for liq in planillas %}
-              <tr>
-                <td>{{ liq.empleado }}</td>
-                <td>{{ liq.categoria_nombre }}</td>
-                <td>{{ liq.oficina_nombre }}</td>
-                <td>{{ liq.bruto }}</td>
-                <td>{{ liq.jubilacion }}</td>
-                <td>{{ liq.obra_social }}</td>
-                <td>{{ liq.oficio_judicial }}</td>
-                <td><strong>{{ liq.liquido }}</strong></td>
-              </tr>
-            {% empty %}
-              <tr><td colspan="8" class="text-center text-muted">Sin planillas.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
+  <div class="page-header mb-4">
+    <div class="d-flex justify-content-between align-items-start mb-3">
+      <div>
+        <a class="back-link" href="{% url 'periodo_panel' %}">
+          <i class="fas fa-arrow-left me-1"></i> Volver al panel
+        </a>
+        <h1 class="page-title">Liquidaciones Confirmadas</h1>
+        <p class="display-4 text-primary fw-bold mb-0">{{ month_name|capfirst }} de {{ año_sel }}</p>
+        <p class="text-muted"></p>
       </div>
-      <div class="text-muted small mt-2">Total planillas: {{ total_planillas }}</div>
+      <div>
+        <a href="{% url 'empleados:generar_txt_banco' %}?mes={{ mes_sel }}&año={{ año_sel }}&tipo={{ tipo }}"
+           class="btn btn-success btn-lg">
+          <i class="fas fa-file-export me-2"></i>Generar TXT
+        </a>
+      </div>
     </div>
   </div>
+
+  <div class="card shadow-sm mb-4 filter-card">
+    <div class="card-body">
+      <form method="get" class="row g-3 align-items-end">
+        <div class="col-12 col-md-3">
+          <label class="form-label fw-bold">Filtrar por tipo de agente</label>
+          <select name="tipo" class="form-select">
+            <option value="todos" {% if tipo == 'todos' %}selected{% endif %}>Todos</option>
+            <option value="permanentes" {% if tipo == 'permanentes' %}selected{% endif %}>Permanentes</option>
+            <option value="contratados" {% if tipo == 'contratados' %}selected{% endif %}>Contratados</option>
+          </select>
+        </div>
+        <div class="col-auto">
+          <button class="btn btn-primary"><i class="fas fa-filter me-2"></i>Aplicar Filtro</button>
+        </div>
+        <div class="col-12 col-md-auto ms-md-auto">
+          <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'contribuciones_patronales' %}?mes={{ mes_sel }}&año={{ año_sel }}&tipo={{ tipo }}"
+               class="btn btn-warning animated-btn">
+              <i class="fas fa-hand-holding-usd me-2"></i>Contribuciones Patronales
+            </a>
+            <a href="{% url 'liquidacion-exportar-pdf' %}?mes={{ mes_sel }}&año={{ año_sel }}&tipo={{ tipo }}"
+               class="btn btn-danger animated-btn" target="_blank">
+              <i class="fas fa-file-pdf me-2"></i>Exportar a PDF
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {# === Totales arriba === #}
+  <div class="row mb-3 g-2">
+    <div class="col-12 col-md-3">
+      <div class="totals-card bg-info text-white rounded p-3 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="fw-semibold"><i class="fas fa-users me-2"></i>Total Empleados</span>
+          <span class="fs-5">{{ total_planillas }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="totals-card bg-primary text-white rounded p-3 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="fw-semibold"><i class="fas fa-coins me-2"></i>Bruto Total</span>
+          <span class="fs-5">{{ totales.bruto|ars }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="totals-card bg-warning text-dark rounded p-3 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="fw-semibold"><i class="fas fa-calculator me-2"></i>Total Descuentos</span>
+          <span class="fs-5">{{ totales.total_descuentos|ars }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="totals-card bg-success text-white rounded p-3 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="fw-semibold"><i class="fas fa-wallet me-2"></i>Líquido Total</span>
+          <span class="fs-5">{{ totales.liquido|ars }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="table-responsive table-container-sticky">
+      <table class="table table-striped table-hover table-sm align-middle mb-0">
+        <thead class="table-dark sticky-top">
+          <tr>
+            <th>Oficina</th>
+            <th>Empleado</th>
+            <th>CUIL</th>
+            <th class="text-end">Básico</th>
+            <th class="text-end">Imp. Antig.</th>
+            <th class="text-end">Imp. Título</th>
+            <th class="text-end">Total Básico</th>
+            <th class="text-end">Sup.1</th>
+            <th class="text-end">Sup.2</th>
+            <th class="text-end">Sup.3</th>
+            <th class="text-end">Sup.4</th>
+            <th class="text-end">Sup.6</th>
+            <th class="text-end">Sup.8</th>
+            <th class="text-end">Sup.12</th>
+            <th class="text-end">Total Sup.</th>
+            <th class="text-end">Bruto</th>
+            <th class="text-end">Jubilación</th>
+            <th class="text-end">Obra Social</th>
+            <th class="text-end">Of. Judicial</th>
+            <th class="text-end">Total Desc.</th>
+            <th class="text-end">Líquido</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for liq in planillas %}
+          <tr>
+            <td>{{ liq.oficina_nombre|default:"—" }}</td>
+            <td>{{ liq.empleado }}</td>
+            <td>{{ liq.empleado.cuil|default:"—" }}</td>
+            <td class="text-end">{{ liq.basico|ars }}</td>
+            <td class="text-end">{{ liq.importe_antiguedad|ars }}</td>
+            <td class="text-end">{{ liq.importe_titulo|ars }}</td>
+            <td class="text-end fw-bold">{{ liq.basico_total|ars }}</td>
+            <td class="text-end">{{ liq.supl1|ars }}</td>
+            <td class="text-end">{{ liq.supl2|ars }}</td>
+            <td class="text-end">{{ liq.supl3|ars }}</td>
+            <td class="text-end">{{ liq.supl4|ars }}</td>
+            <td class="text-end">{{ liq.supl6|ars }}</td>
+            <td class="text-end">{{ liq.supl8|ars }}</td>
+            <td class="text-end">{{ liq.supl12|ars }}</td>
+            <td class="text-end fw-bold">{{ liq.total_suplementos|ars }}</td>
+            <td class="text-end fw-bolder text-primary">{{ liq.bruto|ars }}</td>
+            <td class="text-end text-danger">{{ liq.jubilacion|ars }}</td>
+            <td class="text-end text-danger">{{ liq.obra_social|ars }}</td>
+            <td class="text-end text-danger">{{ liq.oficio_judicial|ars }}</td>
+            <td class="text-end text-danger fw-bold">{{ liq.total_descuentos|ars }}</td>
+            <td class="text-end fw-bolder text-success">{{ liq.liquido|ars }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="21" class="text-center py-5">No hay liquidaciones confirmadas para este período.</td></tr>
+          {% endfor %}
+        </tbody>
+        {% if totales %}
+        <tfoot>
+          <tr class="table-dark fw-bold">
+            <td colspan="3" class="text-end">TOTALES GENERALES →</td>
+            <td class="text-end">{{ totales.basico|ars }}</td>
+            <td class="text-end">{{ totales.importe_antiguedad|ars }}</td>
+            <td class="text-end">{{ totales.importe_titulo|ars }}</td>
+            <td class="text-end">{{ totales.basico_total|ars }}</td>
+            <td class="text-end">{{ totales.supl1|ars }}</td>
+            <td class="text-end">{{ totales.supl2|ars }}</td>
+            <td class="text-end">{{ totales.supl3|ars }}</td>
+            <td class="text-end">{{ totales.supl4|ars }}</td>
+            <td class="text-end">{{ totales.supl6|ars }}</td>
+            <td class="text-end">{{ totales.supl8|ars }}</td>
+            <td class="text-end">{{ totales.supl12|ars }}</td>
+            <td class="text-end">{{ totales.total_suplementos|ars }}</td>
+            <td class="text-end">{{ totales.bruto|ars }}</td>
+            <td class="text-end">{{ totales.jubilacion|ars }}</td>
+            <td class="text-end">{{ totales.obra_social|ars }}</td>
+            <td class="text-end">{{ totales.oficio_judicial|ars }}</td>
+            <td class="text-end">{{ totales.total_descuentos|ars }}</td>
+            <td class="text-end">{{ totales.liquido|ars }}</td>
+          </tr>
+        </tfoot>
+        {% endif %}
+      </table>
+    </div>
+  </div>
+
+  {# === PAGINACIÓN === #}
+  {% if paginator.num_pages > 1 %}
+  <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+    <div class="text-muted">
+      Mostrando {{ page_obj.start_index }} - {{ page_obj.end_index }} de {{ total_planillas }} liquidaciones
+    </div>
+    
+    <nav aria-label="Paginación">
+      <ul class="pagination mb-0">
+        {# Primera página #}
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?tipo={{ tipo }}&page=1" aria-label="Primera">
+              <span aria-hidden="true">&laquo;&laquo;</span>
+            </a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?tipo={{ tipo }}&page={{ page_obj.previous_page_number }}" aria-label="Anterior">
+              <span aria-hidden="true">&laquo;</span>
+            </a>
+          </li>
+        {% else %}
+          <li class="page-item disabled">
+            <span class="page-link">&laquo;&laquo;</span>
+          </li>
+          <li class="page-item disabled">
+            <span class="page-link">&laquo;</span>
+          </li>
+        {% endif %}
+
+        {# Números de página #}
+        {% for num in paginator.page_range %}
+          {% if page_obj.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <li class="page-item"><a class="page-link" href="?tipo={{ tipo }}&page={{ num }}">{{ num }}</a></li>
+          {% endif %}
+        {% endfor %}
+
+        {# Última página #}
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?tipo={{ tipo }}&page={{ page_obj.next_page_number }}" aria-label="Siguiente">
+              <span aria-hidden="true">&raquo;</span>
+            </a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?tipo={{ tipo }}&page={{ paginator.num_pages }}" aria-label="Última">
+              <span aria-hidden="true">&raquo;&raquo;</span>
+            </a>
+          </li>
+        {% else %}
+          <li class="page-item disabled">
+            <span class="page-link">&raquo;</span>
+          </li>
+          <li class="page-item disabled">
+            <span class="page-link">&raquo;&raquo;</span>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+
+  <div class="text-muted text-center mt-3 small">
+    <i class="fas fa-info-circle me-1"></i>
+    Mostrando {{ total_planillas }} liquidación{{ total_planillas|pluralize:"es" }} del período {{ month_name }} {{ año_sel }}
+  </div>
+
 </div>
+
+<style>
+  :root {
+    --primary-color: #0d6efd;
+    --secondary-color: #6c757d;
+    --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    --animation-speed: 0.3s;
+  }
+  body { background-color: #f8f9fa; }
+  .content-container { animation: fadeInUp 0.5s ease-out forwards; }
+  .page-header { border-bottom: 1px solid #dee2e6; padding-bottom: 1rem; }
+  .back-link { display: inline-block; margin-bottom: 0.25rem; text-decoration: none; font-weight: 500; color: var(--secondary-color); transition: color var(--animation-speed); }
+  .back-link:hover { color: var(--primary-color); }
+  .page-title { color: #343a40; font-weight: 700; margin-top: 0; margin-bottom: 0.25rem; }
+  .filter-card, .card { border: none; border-radius: 0.75rem; }
+  
+  .animated-btn { transition: transform var(--animation-speed) ease, box-shadow var(--animation-speed) ease; }
+  .animated-btn:hover { transform: translateY(-3px); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); }
+  .animated-btn:active { transform: translateY(-1px); }
+
+  @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+  .table-container-sticky { max-height: 75vh; overflow-y: auto; }
+  .totals-card { box-shadow: 0 3px 12px rgba(0,0,0,.08); transition: transform 0.3s ease; }
+  .totals-card:hover { transform: translateY(-2px); }
+</style>
+
 {% endblock %}

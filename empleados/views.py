@@ -136,57 +136,86 @@ def _leer_periodo(request, periodos):
 
     return mes_sel, año_sel
 
+from datetime import date
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.shortcuts import render
+
+from .models import Empleado, LiquidacionPeriodo, NovedadMensual
+from .utils import get_periodo_from_session, q_activo_en_periodo, MONTH_NAMES
+# is_presidencia debe estar definido en tu proyecto
+from django.contrib import messages
+
 @login_required(login_url='login')
 @user_passes_test(is_presidencia)
 def presidencia_dashboard(request):
-    # TODO SE CONTROLA DESDE LA VARIABLE GLOBAL DE PERÍODO
+    # --- Período seleccionado desde la sesión ---
     anio, mes, periodo_str = get_periodo_from_session(request)
-    
-    # Empleados del período seleccionado (no del actual)
-    from .utils import q_activo_en_periodo
-    empleados_periodo = Empleado.objects.filter(q_activo_en_periodo(anio, mes, prefix=""))
-    empleados_query = empleados_periodo.order_by('apellido', 'nombre')
-    
-    # Contadores de empleados del período seleccionado
-    total_empleados = empleados_periodo.count()
-    total_activos = total_empleados  # Los que están en el período son activos
-    total_inactivos = Empleado.objects.exclude(
-        q_activo_en_periodo(anio, mes, prefix="")
-    ).count()
-    
-    # Métricas de situación laboral del período
-    permanentes = empleados_periodo.filter(situacion='P').count()
-    contratados = empleados_periodo.filter(situacion='C').count()
-    
-    # Estado del período seleccionado
-    try:
-        from .models import LiquidacionPeriodo
-        lp = LiquidacionPeriodo.objects.filter(periodo=periodo_str).first()
-        estado = lp.estado if lp else 'SIN CREAR'
-    except:
-        estado = 'SIN CREAR'
-    
-    # Novedades del período seleccionado
-    from .models import NovedadMensual
+
+    # --- Detectar si el período es futuro (comparando primeros de mes) ---
+    hoy_1 = date.today().replace(day=1)
+    periodo_1 = date(anio, mes, 1)
+    es_periodo_futuro = periodo_1 > hoy_1
+
+    # --- Estado del período (y si existe registro de LiquidacionPeriodo) ---
+    lp = LiquidacionPeriodo.objects.filter(periodo=periodo_str).first()
+    estado = lp.estado if lp else 'SIN CREAR'
+    periodo_definido = bool(lp)
+
+    # --- Métricas base ---
+    if es_periodo_futuro or not periodo_definido:
+        # Períodos futuros o sin crear -> TODO EN CERO
+        empleados_periodo = Empleado.objects.none()
+        total_activos = 0
+        total_inactivos = 0
+        permanentes = 0
+        contratados = 0
+    else:
+        # Períodos creados (pasados/actual) -> lógica normal
+        q = q_activo_en_periodo(anio, mes, prefix="")
+        empleados_periodo = Empleado.objects.filter(q).order_by('apellido', 'nombre')
+
+        total_activos = empleados_periodo.count()
+        # Inactivos = empleados que NO están activos en el período
+        total_inactivos = Empleado.objects.exclude(q).count()
+
+        # Situación laboral (sobre los activos del período)
+        permanentes = empleados_periodo.filter(situacion='P').count()
+        contratados = empleados_periodo.filter(situacion='C').count()
+
+    # Total = universo (activos + inactivos)
+    total_empleados = total_activos + total_inactivos
+
+    # --- Novedades del período seleccionado ---
     novedades = NovedadMensual.objects.filter(periodo=periodo_str).order_by('-fecha', '-id')
-    
-    # Estadísticas de novedades del período seleccionado
-    stats_novedades = {}
-    for tipo_code, tipo_name in NovedadMensual.Tipo.choices:
-        stats_novedades[tipo_code] = novedades.filter(tipo=tipo_code).count()
-    
-    tipos_novedad = [choice[0] for choice in NovedadMensual.Tipo.choices]
-    
-    # Nombre del mes
-    from .utils import MONTH_NAMES
+
+    # Estadísticas por tipo de novedad
+    stats_novedades = {code: novedades.filter(tipo=code).count()
+                       for code, _ in NovedadMensual.Tipo.choices}
+    tipos_novedad = [code for code, _ in NovedadMensual.Tipo.choices]
+
+    # --- Nombre del mes para el encabezado ---
     mes_nombre = MONTH_NAMES.get(mes, str(mes)).upper()
-    
+
+    # Periodos para el selector (si usás ese helper)
+    periodos_list = []
+    try:
+        from .utils import _periodos_con_hoy_primero
+        periodos_list = _periodos_con_hoy_primero()
+    except Exception:
+        pass
+
+    # ---------- AVISO CONTROLADO ----------
+    # Muestra el mensaje una sola vez al venir del login (bandera de sesión)
+    # o siempre que el período NO esté abierto.
+    if request.session.pop('show_period_msg', False) or estado != 'ABIERTO':
+        messages.info(request, "Seleccioná el período de trabajo: Menú de Gestión → Período.")
+
     return render(request, 'presidencia/dashboard.html', {
-        'periodos': _periodos_con_hoy_primero(),  # Si lo usas
+        'periodos': periodos_list,          # Si lo usas en la plantilla
         'mes_sel': mes,
         'año_sel': anio,
-        'empleados': empleados_query,
-        'total_empleados': total_empleados,
+        'empleados': empleados_periodo,     # listado del período (o vacío)
+        'total_empleados': total_empleados, # = activos + inactivos
         'total_activos': total_activos,
         'total_inactivos': total_inactivos,
         'permanentes': permanentes,
@@ -194,7 +223,7 @@ def presidencia_dashboard(request):
         'estado': estado,
         'PERIODO_MES_NOMBRE': mes_nombre,
         'PERIODO_ANIO': anio,
-        'PERIODO_ELEGIDO': True,  # Siempre true si usa get_periodo_from_session
+        'PERIODO_ELEGIDO': True,            # si usás get_periodo_from_session
         'novedades': novedades,
         'stats_novedades': stats_novedades,
         'tipos_novedad': tipos_novedad,
@@ -203,90 +232,59 @@ def presidencia_dashboard(request):
 
 
 
-from decimal import Decimal
-from django.urls import reverse
-from django.db import transaction
-from django.db.models import Q, Sum
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.shortcuts import render, redirect
 
-from .models import (
-    Empleado, Preliquidacion, Liquidacion, Calificacion, OficioJudicial,
-    NivelBasico,  # importante
-)
+from datetime import date
+import calendar
 
-# ───────────────────────────── Helpers ─────────────────────────────
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.urls import reverse_lazy
+from django.views.generic import ListView, CreateView, UpdateView
 
-# helpers en views.py (o donde lo tengas)
-from decimal import Decimal
-
-def _extrae_importe(obj):
-    if not obj:
-        return None
-    # ahora también chequea 'nivel' (caso de tu modelo NivelBasico)
-    for nombre in ('monto', 'importe', 'basico', 'valor', 'sueldo_basico', 'nivel'):
-        val = getattr(obj, nombre, None)
-        if val is not None:
-            try:
-                return Decimal(val)
-            except Exception:
-                pass
-    return None
+from .models import Categoria
+from .forms import CategoriaForm
 
 
+class CategoriaListView(LoginRequiredMixin, ListView):
+    model = Categoria
+    template_name = 'empleados/categoria_list.html'
+    context_object_name = 'categorias'
+    login_url = 'login'
 
-def _nivel_desde_categoria(cat):
-    """
-    Devuelve el objeto NivelBasico asociado a la categoría.
-    Soporta:
-      - FK real: categoria.nivel
-      - ID entero: categoria.id_nivel / categoria.nivel_id
-    """
-    if not cat:
-        return None
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        hoy = date.today()
+        context['mes_actual'] = hoy.month
+        context['año_actual'] = hoy.year
+        context['month_name'] = calendar.month_name[hoy.month].capitalize()
+        return context
 
-    # 1) FK real
-    nb = getattr(cat, 'nivel', None)
-    if nb:
-        return nb
-
-    # 2) Campo entero
-    for attr in ('id_nivel', 'nivel_id'):
-        nivel_id = getattr(cat, attr, None)
-        if nivel_id:
-            try:
-                nivel_id = int(nivel_id)
-            except Exception:
-                nivel_id = None
-            if nivel_id:
-                # por PK
-                nb = NivelBasico.objects.filter(pk=nivel_id).first()
-                if nb:
-                    return nb
-                # por campo alternativo id_nivel dentro del modelo de niveles
-                try:
-                    nb = NivelBasico.objects.filter(id_nivel=nivel_id).first()
-                    if nb:
-                        return nb
-                except Exception:
-                    pass
-    return None
+    def get_queryset(self):
+        # Trae en la misma consulta el nivel (para poder mostrar el básico)
+        return (Categoria.objects
+                .select_related('nivel')    # ← clave para ver cat.nivel.monto / cat.basico
+                .order_by('nombre'))
 
 
-# --- Reemplaza el import opcional por esta función local ---
-def _nivel_y_basico_de(emp):
-    """
-    Devuelve (nivel_fk, basico) usando los atributos comunes de tu modelo.
-    Ajusta los nombres de campos si en tu proyecto se llaman distinto.
-    """
-    nv = getattr(emp, "nivel_basico", None) or getattr(emp, "nivel", None)
-    bas = None
-    if nv is not None:
-        for campo in ("basico", "importe", "monto", "valor"):
-            if hasattr(nv, campo):
-                bas = getattr(nv, campo)
-                break
-    return nv, bas
+class CategoriaCreateView(LoginRequiredMixin, CreateView):
+    model = Categoria
+    form_class = CategoriaForm
+    template_name = 'empleados/categoria_form.html'
+    success_url = reverse_lazy('empleados:categoria-list')
+
+    def form_valid(self, form):
+        form.instance.area = 'PRESIDENCIA'
+        return super().form_valid(form)
+
+
+class CategoriaUpdateView(LoginRequiredMixin, UpdateView):
+    model = Categoria
+    form_class = CategoriaForm
+    template_name = 'empleados/categoria_form.html'
+    success_url = reverse_lazy('empleados:categoria-list')
+
+    def form_valid(self, form):
+        form.instance.area = 'PRESIDENCIA'
+        return super().form_valid(form)
 
 
 # ───────────────────────────── Constantes ──────────────────────────
@@ -575,6 +573,9 @@ except Exception:
 
 
 
+
+
+
 # arriba del archivo (si no están aún)
 from django.db.models import Sum
 from django.db.models.functions import Coalesce
@@ -595,12 +596,67 @@ try:
 except Exception:
     calcular_antiguedad_ipvu = None
 
+# ... tus imports ...
+
+def _q2(valor):
+    """Redondea a 2 decimales usando ROUND_HALF_UP"""
+    from decimal import Decimal, ROUND_HALF_UP
+    if valor is None:
+        return Decimal("0.00")
+    return Decimal(str(valor)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+# empleados/views.py (busca donde está def _nivel_y_basico_de y pega ANTES):
+
+def to_decimal(raw):
+    """Convierte formato argentino (10.000,00) o USA (10,000.00) a Decimal"""
+    if raw is None:
+        return Decimal('0')
+    s = str(raw).strip()
+    
+    # Si tiene coma, puede ser formato argentino (10.000,00) o USA (10,000.00)
+    if ',' in s:
+        # Si después de la coma hay 2 dígitos, es decimal argentino
+        if ',' in s and len(s.split(',')[-1]) <= 2:
+            # Formato argentino: 10.000,50 → quita puntos, coma→punto
+            s = s.replace('.', '').replace(',', '.')
+        else:
+            # Formato USA: 10,000.50 → quita comas
+            s = s.replace(',', '')
+    # Si solo tiene punto y 2 decimales, ya está en formato USA
+    # No hacer nada, ya está correcto
+    
+    try:
+        return Decimal(s)
+    except Exception:
+        return Decimal('0')
+
+
+def _nivel_y_basico_de(emp):
+    """
+    Determina qué nivel (FK) y básico usar para un empleado.
+    Retorna: (nivel_fk, basico_decimal)
+    """
+    from decimal import Decimal
+    # Ya NO importes from .utils import to_decimal
+    
+    if emp.categoria and emp.categoria.nivel:
+        return (emp.categoria.nivel, Decimal(str(emp.categoria.nivel.monto)))
+    
+    if emp.categoria and emp.categoria.basico_manual:
+        return (None, to_decimal(emp.categoria.basico_manual))
+    
+    if hasattr(emp, 'nivel_basico') and emp.nivel_basico:
+        return (emp.nivel_basico, Decimal(str(emp.nivel_basico.monto)))
+    
+    return (None, Decimal("0.00"))
+
+
 @login_required(login_url="login")
 @user_passes_test(is_presidencia)
 def generar_preliquidacion(request):
     """
-    Regenera preliquidaciones SOLO para el PERÍODO ACTUAL y, si existe
-    LiquidacionPeriodo, cuando éste NO esté CERRADO ni CONFIRMADO.
+    Regenera preliquidaciones para el período seleccionado, si existe
+    LiquidacionPeriodo y éste NO esté CERRADO ni CONFIRMADO.
     Solo genera para empleados activos estrictos: estado=1 y fecha_salida IS NULL.
     """
     anio_ses, mes_ses, _ = get_periodo_from_session(request)
@@ -608,27 +664,41 @@ def generar_preliquidacion(request):
     año = int(request.GET.get("año", anio_ses))
     periodo_str = f"{año:04d}-{mes:02d}"
 
-    # Solo período ACTUAL
-    hoy = date.today()
-    if not (año == hoy.year and mes == hoy.month):
-        messages.error(request, "Las preliquidaciones solo se generan para el PERÍODO ACTUAL.")
-        return redirect("periodo_panel")
-
     # Debe existir período y estar ABIERTA (o reabierta)
     lp = LiquidacionPeriodo.objects.filter(periodo=periodo_str).first()
     if lp is None:
-        messages.error(request, f"No existe un período abierto para {periodo_str}. Abrilo desde el Panel del Período.")
+        messages.error(request, f"No existe un período abierto para {periodo_str}. Ábrelo desde el Panel del Período.")
         return redirect("periodo_panel")
     if lp.estado == getattr(LiquidacionPeriodo, "ESTADO_CERRADA", "CERRADA"):
-        messages.error(request, f"El período {periodo_str} está CERRADO. Reabrilo para poder regenerar.")
+        messages.error(request, f"El período {periodo_str} está CERRADO. Reábrelo para poder regenerar.")
         return redirect("periodo_panel")
     if lp.estado == getattr(LiquidacionPeriodo, "ESTADO_CONFIRMADA", "CONFIRMADA"):
         messages.error(request, f"El período {periodo_str} está CONFIRMADO (solo lectura).")
         return redirect("periodo_panel")
 
-    # Debe haber datos (calificaciones u oficios) para el período
+    # Si no hay calificaciones, crearlas automáticamente al 100%
     hay_calif = Calificacion.objects.filter(año=año, mes=mes).exists()
-    hay_oj    = OficioJudicial.objects.filter(anio=año, mes=mes).exists()
+    if not hay_calif:
+        empleados_activos = Empleado.objects.filter(
+            fecha_salida__isnull=True,
+            estado=1
+        )
+        
+        creadas = 0
+        for emp in empleados_activos:
+            Calificacion.objects.create(
+                empleado=emp,
+                año=año,
+                mes=mes,
+                calificacion=Decimal("100.00")
+            )
+            creadas += 1
+        
+        messages.info(request, f"Se crearon {creadas} calificaciones al 100% para {periodo_str}.")
+        hay_calif = True
+
+    hay_oj = OficioJudicial.objects.filter(anio=año, mes=mes).exists()
+    
     if not (hay_calif or hay_oj):
         messages.error(request, "No hay datos cargados (Calificaciones u Oficios Judiciales) para este período.")
         return redirect("periodo_panel")
@@ -651,37 +721,32 @@ def generar_preliquidacion(request):
 
     with transaction.atomic():
         for emp in empleados:
-            # Resolver nivel/básico según tu lógica
             nivel_fk, basico = _nivel_y_basico_de(emp)
 
-            # Nunca dejes 'basico' en NULL
             obj, _ = Preliquidacion.objects.update_or_create(
                 empleado=emp, año=año, mes=mes,
                 defaults={
-                    "categoria"        : emp.categoria,
-                    "oficina"          : emp.oficina,
-                    "titulo"           : getattr(emp, "titulo", None),
-                    "nivel"            : nivel_fk,
-                    "basico"           : basico if basico is not None else Decimal("0.00"),
-                    "situacion"        : getattr(emp, "situacion", None),
-                    "categoria_nombre" : getattr(emp.categoria, "nombre", None),
-                    "oficina_nombre"   : getattr(emp.oficina, "nombre", None),
-                    "titulo_completo"  : getattr(getattr(emp, "titulo", None), "titulo_completo", None),
+                    "categoria": emp.categoria,
+                    "oficina": emp.oficina,
+                    "titulo": getattr(emp, "titulo", None),
+                    "nivel": nivel_fk,
+                    "basico": basico if basico is not None else Decimal("0.00"),
+                    "situacion": getattr(emp, "situacion", None),
+                    "categoria_nombre": getattr(emp.categoria, "nombre", None),
+                    "oficina_nombre": getattr(emp.oficina, "nombre", None),
+                    "titulo_completo": getattr(getattr(emp, "titulo", None), "titulo_completo", None),
                 }
             )
 
-            # Calificación (default 100)
             calif = (Calificacion.objects
                      .filter(empleado=emp, año=año, mes=mes)
                      .values_list("calificacion", flat=True)
                      .first())
             obj.calificacion = calif if calif is not None else Decimal("100")
 
-            # Antigüedad (años) — REGLA IPVU POR PERÍODO
             if calcular_antiguedad_ipvu:
                 obj.antiguedad = calcular_antiguedad_ipvu(emp.fecha_ingreso, año, mes)
             else:
-                # Fallback defensivo
                 if emp.fecha_ingreso:
                     ref = date(int(año), int(mes), 1)
                     anios = ref.year - emp.fecha_ingreso.year
@@ -691,59 +756,83 @@ def generar_preliquidacion(request):
                 else:
                     obj.antiguedad = 0
 
-            # Primer save: el modelo calcula importes con esa antigüedad
             obj.save()
 
-            # Guardar % reales de Jub/OS que calculó el modelo
             bruto_prev = _d(obj.bruto)
-            j_prev     = _d(obj.jubilacion)
-            os_prev    = _d(obj.obra_social)
-            j_pct  = (j_prev / bruto_prev) if bruto_prev else Decimal("0")
+            j_prev = _d(obj.jubilacion)
+            os_prev = _d(obj.obra_social)
+            j_pct = (j_prev / bruto_prev) if bruto_prev else Decimal("0")
             os_pct = (os_prev / bruto_prev) if bruto_prev else Decimal("0")
 
-            # Ajustes de suplementos fijos por categoría (4/6/8/12)
             cat = emp.categoria
-            s = {
-                1: _d(getattr(obj, "supl1", 0)),
-                2: _d(getattr(obj, "supl2", 0)),
-                3: _d(getattr(obj, "supl3", 0)),
-                4: _d(getattr(obj, "supl4", 0)),
-                6: _d(getattr(obj, "supl6", 0)),
-                8: _d(getattr(obj, "supl8", 0)),
-                12: _d(getattr(obj, "supl12", 0)),
-            }
-            updates = {}
+            
+            # ========== LÓGICA CONDICIONAL: MONTO MANUAL vs NIVEL ==========
+            tiene_basico_manual = cat and getattr(cat, "basico_manual", None)
+            
+            if tiene_basico_manual:
+                # Para empleados con MONTO MANUAL: recalcular todo desde la categoría
+                importe_titulo = _d(getattr(obj, "importe_titulo", 0))
+                importe_antiguedad = _d(getattr(obj, "importe_antiguedad", 0))
+                basico_total = _q2(basico + importe_titulo + importe_antiguedad)
+                
+                s = {}
+                updates = {}
+                
+                for n in (1, 2, 3, 4, 6, 8, 12):
+                    sup_valor = to_decimal(getattr(cat, f"sup{n}", 0))
+                    tipo = int(getattr(cat, f"tipo_sup{n}", 1))
+                    
+                    if tipo == 1:  # Porcentaje sobre BASICO_TOTAL
+                        if sup_valor > 1:  # 30 → 0.30
+                            sup_valor = sup_valor / Decimal("100")
+                        s[n] = _q2(basico_total * sup_valor)
+                    else:  # tipo == 2, monto fijo
+                        s[n] = _q2(sup_valor)
+                    
+                    updates[f"supl{n}"] = s[n]
+            
+            else:
+                # Para empleados con NIVEL: lógica original (funciona bien)
+                basico_total = _d(getattr(obj, "basico_total", 0))
+                
+                s = {
+                    1: _d(getattr(obj, "supl1", 0)),
+                    2: _d(getattr(obj, "supl2", 0)),
+                    3: _d(getattr(obj, "supl3", 0)),
+                    4: _d(getattr(obj, "supl4", 0)),
+                    6: _d(getattr(obj, "supl6", 0)),
+                    8: _d(getattr(obj, "supl8", 0)),
+                    12: _d(getattr(obj, "supl12", 0)),
+                }
+                updates = {}
 
-            for n in (4, 6, 8, 12):
-                try:
-                    tipo = int(getattr(cat, f"tipo_sup{n}") or 1)
-                except Exception:
-                    tipo = 1
-                if tipo == 2:  # fijo $
-                    fijo = _q2(_d(getattr(cat, f"sup{n}") or 0))
-                    if fijo != s[n]:
-                        s[n] = fijo
-                        updates[f"supl{n}"] = fijo
-                # Si es %, dejamos lo que calculó el modelo
+                for n in (4, 6, 8, 12):
+                    try:
+                        tipo = int(getattr(cat, f"tipo_sup{n}") or 1)
+                    except Exception:
+                        tipo = 1
+                    if tipo == 2:
+                        fijo = _q2(_d(getattr(cat, f"sup{n}") or 0))
+                        if fijo != s[n]:
+                            s[n] = fijo
+                            updates[f"supl{n}"] = fijo
 
-            # Recalcular bruto y descuentos con los % previos
-            basico_total = _d(getattr(obj, "basico_total", 0))
-            suma_suples  = _q2(s[1] + s[2] + s[3] + s[4] + s[6] + s[8] + s[12])
-            bruto        = _q2(basico_total + suma_suples)
-            j            = _q2(bruto * j_pct)
-            os           = _q2(bruto * os_pct)
+            # ========== FIN LÓGICA CONDICIONAL ==========
 
-            # ===== Oficios judiciales (MÚLTIPLES) =====
+            suma_suples = _q2(s[1] + s[2] + s[3] + s[4] + s[6] + s[8] + s[12])
+            bruto = _q2(basico_total + suma_suples)
+            j = _q2(bruto * j_pct)
+            os = _q2(bruto * os_pct)
+
             agg_oj = (OficioJudicial.objects
                       .filter(empleado=emp, anio=año, mes=mes)
                       .aggregate(
                           monto_total=Coalesce(Sum('monto_descontar'), Decimal('0.00')),
-                          porc_total =Coalesce(Sum('porcentaje_descontar'), Decimal('0.00')),
+                          porc_total=Coalesce(Sum('porcentaje_descontar'), Decimal('0.00')),
                       ))
             oj_monto = _q2(_d(agg_oj['monto_total']))
-            oj_pct   = _d(agg_oj['porc_total']) / Decimal("100")
-            ojd      = _q2(oj_monto + (bruto * oj_pct))
-            # ==========================================
+            oj_pct = _d(agg_oj['porc_total']) / Decimal("100")
+            ojd = _q2(oj_monto + (bruto * oj_pct))
 
             liquido = _q2(bruto - (j + os + ojd))
 
@@ -755,7 +844,6 @@ def generar_preliquidacion(request):
                 "liquido": liquido,
             })
 
-            # Update directo (evita llamar save() otra vez)
             Preliquidacion.objects.filter(pk=obj.pk).update(**updates)
 
             if not basico or basico <= 0:
@@ -768,22 +856,21 @@ def generar_preliquidacion(request):
         )
 
     messages.success(request, f"Preliquidaciones regeneradas para {periodo_str}.")
-    return redirect(f"{reverse('preliquidacion_overview')}?mes={mes}&año={año}&area=TODAS")
+    return redirect(f"{reverse('empleados:preliquidacion_overview')}?mes={mes}&año={año}&area=TODAS")
 
 
-
-
-# --- Listado de Preliquidaciones (overview) ---
+# --- Listado de Preliquidaciones (overview) CON PAGINACIÓN ---
 from django.shortcuts import render  # si ya está importado, dejalo
 from django.db.models import Q       # si ya está importado, dejalo
 from datetime import date
 import calendar
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 @login_required(login_url="login")
 @user_passes_test(is_presidencia)
 def preliquidacion_overview(request):
     """
-    Muestra TODAS las preliquidaciones del período.
+    Muestra TODAS las preliquidaciones del período con PAGINACIÓN.
     Filtros: área (por Empleado.area) y búsqueda por DNI/CUIL/Nombre/Apellido.
     """
     mes  = int(request.GET.get("mes",  date.today().month))
@@ -836,17 +923,30 @@ def preliquidacion_overview(request):
 
     month_name = calendar.month_name[mes] if 1 <= mes <= 12 else str(mes)
 
+    # === PAGINACIÓN ===
+    paginator = Paginator(qs, 15)  # 15 registros por página
+    page_number = request.GET.get('page', 1)
+    
+    try:
+        preliquidaciones_paginadas = paginator.page(page_number)
+    except PageNotAnInteger:
+        preliquidaciones_paginadas = paginator.page(1)
+    except EmptyPage:
+        preliquidaciones_paginadas = paginator.page(paginator.num_pages)
+
     ctx = {
-        "preliquidaciones": qs,
+        "preliquidaciones": preliquidaciones_paginadas,  # Ahora paginado
         "areas"           : areas,
         "mes_sel"         : mes,
         "año_sel"         : año,
         "area_sel"        : area,
         "q"               : q,
         "month_name"      : month_name,
+        "paginator"       : paginator,
+        "page_obj"        : preliquidaciones_paginadas,
+        "total_registros" : qs.count(),
     }
     return render(request, "presidencia/preliquidacion_overview.html", ctx)
-
 
 # ——————————————————————————————————————————————————————————————————————
 # Exportar Liquidaciones a PDF
@@ -923,50 +1023,39 @@ def exportar_liquidaciones_pdf(request):
 # ——————————————————————————————————————————————————————————————————————
 # empleados/views.py — bloque para recalcular antigüedad en Empleado
 
+# empleados/views.py — actualización de antigüedad
+
 from datetime import date
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import redirect
 
 from .models import Empleado
+from .utils import get_periodo_from_session, calcular_antiguedad_ipvu
 
-# Permiso (usa tu helper real si existe)
+# Permiso
 try:
     from .auth import is_presidencia
 except Exception:
     def is_presidencia(user):
         return user.is_authenticated and user.is_staff
 
-# Tomar período desde sesión si lo tenés; si no, usa hoy
-try:
-    from .utils import get_periodo_from_session
-except Exception:
-    def get_periodo_from_session(request):
-        hoy = date.today()
-        return hoy.year, hoy.month, f"{hoy.year:04d}-{hoy.month:02d}"
-
-# Cálculo de antigüedad por PERÍODO, regla IPVU (enero +1, julio +1)
-try:
-    from .utils import calcular_antiguedad_ipvu
-except Exception:
-    calcular_antiguedad_ipvu = None
 
 @login_required(login_url='login')
 @user_passes_test(is_presidencia)
 def actualizar_antiguedad(request):
     """
-    Recalcula y guarda Empleado.antiguedad según la REGLA IPVU
-    (enero +1, julio +1) para el PERÍODO ACTUAL.
-    Nota: Para liquidación se recomienda calcular por período en Preliquidación.
+    Recalcula y guarda Empleado.antiguedad según REGLA IPVU:
+    - Ingreso ene-jun: suma 1 año el 1º enero siguiente
+    - Ingreso jul-dic: NO suma año el 1º enero siguiente
     """
     # Período de referencia
-    anio, mes, _ = get_periodo_from_session(request)
-    hoy = date.today()
+    anio, mes, periodo_str = get_periodo_from_session(request)
 
     messages.info(
         request,
-        f"Recalculando antigüedades con regla IPVU para {mes:02d}/{anio} "
-        "(enero +1, julio +1)."
+        f"Recalculando antigüedades con regla IPVU para {periodo_str} "
+        "(ingreso ene-jun: +1 en enero; jul-dic: espera siguiente enero)."
     )
 
     empleados = Empleado.objects.filter(estado=1, fecha_salida__isnull=True)
@@ -977,17 +1066,10 @@ def actualizar_antiguedad(request):
         if not emp.fecha_ingreso:
             continue
 
-        # Cálculo IPVU por período
-        if calcular_antiguedad_ipvu:
-            nuevo_valor = calcular_antiguedad_ipvu(emp.fecha_ingreso, anio, mes)
-        else:
-            # Fallback defensivo (no debería usarse si utils está bien)
-            ref = date(int(anio), int(mes), 1)
-            anios = ref.year - emp.fecha_ingreso.year
-            if ref.month >= 7:
-                anios += 1
-            nuevo_valor = max(anios, 0)
+        # Calcular antigüedad según regla IPVU
+        nuevo_valor = calcular_antiguedad_ipvu(emp.fecha_ingreso, anio, mes)
 
+        # Solo actualizar si cambió
         if nuevo_valor != (emp.antiguedad or 0):
             emp.antiguedad = nuevo_valor
             emp.save(update_fields=['antiguedad'])
@@ -997,8 +1079,8 @@ def actualizar_antiguedad(request):
 
     messages.success(
         request,
-        f"Se recalcularon antigüedades de {actualizados} empleados. "
-        f"Se actualizaron {cambios_realizados} registros."
+        f"✓ Antigüedades recalculadas: {actualizados} empleados procesados, "
+        f"{cambios_realizados} actualizaciones realizadas."
     )
     return redirect('empleados:empleado-list')
 
@@ -1122,140 +1204,6 @@ def _get_queryset_and_totals(mes, año, area):
 # from django.db.models import Sum
 # from django.utils import timezone
 
-@login_required(login_url='login')
-@user_passes_test(is_presidencia)
-def confirmar_liquidacion(request):
-    mes  = int(request.GET.get('mes',  date.today().month))
-    año  = int(request.GET.get('año',  date.today().year))
-    area = request.GET.get('area', 'PRESIDENCIA')
-    tipo = request.GET.get('tipo', 'todos')  # 'todos' | 'contratados' | 'permanentes'
-    periodo_str = f"{año:04d}-{mes:02d}"
-
-    # 1) Tomar preliqs del período (opcionalmente filtrar por área)
-    preqs = Preliquidacion.objects.filter(
-        mes=mes, año=año,
-        empleado__estado=1,
-        empleado__fecha_salida__isnull=True
-    )
-    if area and area.upper() not in ('TODAS', 'PRESIDENCIA'):
-        preqs = preqs.filter(categoria_nombre=area)
-
-    # 2) Sincronizar a Liquidacion
-    with transaction.atomic():
-        for pre in preqs:
-            Liquidacion.objects.update_or_create(
-                empleado=pre.empleado, mes=mes, año=año,
-                defaults={
-                    'categoria':          pre.categoria,
-                    'oficina':            pre.oficina,
-                    'titulo':             pre.titulo,
-                    'nivel':              pre.nivel,
-                    'basico':             pre.basico,
-                    'calificacion':       pre.calificacion,
-                    'antiguedad':         pre.antiguedad,
-                    'importe_antiguedad': pre.importe_antiguedad,
-                    'importe_titulo':     pre.importe_titulo,
-                    'basico_total':       pre.basico_total,
-                    'supl1':              pre.supl1,
-                    'supl2':              pre.supl2,
-                    'supl3':              pre.supl3,
-                    'supl4':              pre.supl4,
-                    'supl6':              pre.supl6,
-                    'supl8':              pre.supl8,
-                    'supl12':             pre.supl12,
-                    'total_suplementos':  pre.total_suplementos,
-                    'bruto':              pre.bruto,
-                    'jubilacion':         pre.jubilacion,
-                    'obra_social':        pre.obra_social,
-                    'oficio_judicial':    pre.oficio_judicial,
-                    'total_descuentos':   pre.total_descuentos,
-                    'liquido':            pre.liquido,
-                    'situacion':          pre.situacion,
-                    'categoria_nombre':   pre.categoria_nombre,
-                    'oficina_nombre':     pre.oficina_nombre,
-                    'titulo_completo':    pre.titulo_completo,
-                }
-            )
-
-        # 3) Marcar el período como CONFIRMADA
-        try:
-            lp, _ = LiquidacionPeriodo.objects.get_or_create(
-                periodo=periodo_str,
-                defaults={
-                    "estado": getattr(LiquidacionPeriodo, "ESTADO_ABIERTA", "ABIERTA"),
-                    "fecha_creada": timezone.now(),
-                    **({"abierta_por": request.user} if hasattr(LiquidacionPeriodo, "abierta_por") else {}),
-                },
-            )
-            estado_confirmada = getattr(LiquidacionPeriodo, "ESTADO_CONFIRMADA", "CONFIRMADA")
-            if lp.estado != estado_confirmada:
-                lp.estado = estado_confirmada
-                if hasattr(lp, "fecha_confirmada"):
-                    lp.fecha_confirmada = timezone.now()
-                if hasattr(lp, "confirmada_por"):
-                    lp.confirmada_por = request.user
-                elif hasattr(lp, "confirmada_por_id"):
-                    lp.confirmada_por_id = request.user.id
-
-                campos = ["estado"]
-                for f in ("fecha_confirmada", "confirmada_por"):
-                    if hasattr(lp, f):
-                        campos.append(f)
-                lp.save(update_fields=campos)
-        except Exception as e:
-            messages.warning(request, f"Liquidaciones confirmadas, pero no pude actualizar el estado del período: {e}")
-
-    # 4) Armar queryset para mostrar
-    empleados_ids = preqs.values_list('empleado_id', flat=True)
-    base_qs = Liquidacion.objects.filter(
-        mes=mes, año=año,
-        empleado_id__in=empleados_ids,
-        empleado__estado=1,
-        empleado__fecha_salida__isnull=True
-    )
-
-    if tipo == 'contratados':
-        liqs, title = base_qs.filter(situacion='C'), 'Contratados'
-    elif tipo == 'permanentes':
-        liqs, title = base_qs.filter(situacion='P'), 'Permanentes'
-    else:
-        liqs, title = base_qs, 'Todos los Empleados'
-
-    tot = {
-        'count'  : liqs.count(),
-        'bruto'  : liqs.aggregate(Sum('bruto'))['bruto__sum'] or Decimal('0'),
-        'liquido': liqs.aggregate(Sum('liquido'))['liquido__sum'] or Decimal('0'),
-    }
-
-    totales_col = liqs.aggregate(
-        basico=Sum('basico'),
-        importe_antiguedad=Sum('importe_antiguedad'),
-        importe_titulo=Sum('importe_titulo'),
-        basico_total=Sum('basico_total'),
-        supl1=Sum('supl1'), supl2=Sum('supl2'), supl3=Sum('supl3'),
-        supl4=Sum('supl4'), supl6=Sum('supl6'), supl8=Sum('supl8'), supl12=Sum('supl12'),
-        total_suplementos=Sum('total_suplementos'),
-        bruto=Sum('bruto'),
-        jubilacion=Sum('jubilacion'),
-        obra_social=Sum('obra_social'),
-        oficio_judicial=Sum('oficio_judicial'),
-        total_descuentos=Sum('total_descuentos'),
-        liquido=Sum('liquido'),
-    )
-
-    messages.success(request, f"Liquidaciones confirmadas y período {periodo_str} marcado como CONFIRMADO.")
-    return render(request, 'presidencia/liquidacion_list.html', {
-        'mes_sel': mes,
-        'año_sel': año,
-        'month_name': MONTH_NAMES.get(mes, str(mes)),
-        'area_sel': area,
-        'tipo': tipo,
-        'liqs': liqs.order_by('empleado__apellido', 'empleado__nombre'),
-        'tot': tot,
-        'title': title,
-        'totales_col': totales_col,
-    })
-
 
 # periodo/views.py
 from datetime import date
@@ -1287,7 +1235,7 @@ from .models import Empleado, Categoria
 
 class EmpleadoListView(ListView):
     model = Empleado
-    template_name = "empleados/empleados_list.html"  # ← debe coincidir con el archivo
+    template_name = "empleados/empleados_list.html"
     context_object_name = "empleados"
     paginate_by = 20
 
@@ -1319,11 +1267,13 @@ class EmpleadoListView(ListView):
         if situacion in ("P", "C"):
             qs = qs.filter(situacion=situacion)
 
-        # Activo real = estado=1 y sin fecha_salida
+        # FILTROS DE ESTADO CORREGIDOS
         if estado == "activos":
-            qs = qs.filter(estado=1, fecha_salida__isnull=True)
+            qs = qs.filter(estado=1)  # Solo activos (estado=1)
         elif estado == "inactivos":
-            qs = qs.filter(Q(estado=0) | Q(fecha_salida__isnull=False))
+            qs = qs.filter(estado=0)  # Solo inactivos (estado=0)
+        elif estado == "retencion":
+            qs = qs.filter(estado=2)  # Solo retención (estado=2)
         # 'todos' -> sin filtro
 
         return qs
@@ -1332,7 +1282,13 @@ class EmpleadoListView(ListView):
         ctx = super().get_context_data(**kwargs)
         ctx["areas"]        = ["TODAS"] + [a for a, _ in Categoria.AREAS]
         ctx["situaciones"]  = ["TODAS", "P", "C"]
-        ctx["estados"]      = [("activos", "Activos"), ("inactivos", "Inactivos"), ("todos", "Todos")]
+        # AGREGADA LA OPCIÓN DE RETENCIÓN
+        ctx["estados"]      = [
+            ("activos", "Activos"),
+            ("inactivos", "Inactivos"),
+            ("retencion", "Retención de Cargo"),
+            ("todos", "Todos")
+        ]
         ctx["q"]          = (self.request.GET.get("q") or "").strip()
         ctx["area_sel"]   = self.request.GET.get("area", "TODAS")
         ctx["sit_sel"]    = self.request.GET.get("situacion", "TODAS")
@@ -1411,41 +1367,46 @@ class EmpleadoDeleteView(LoginRequiredMixin, DeleteView):
 
 
 # --- CALIFICACIONES LIST ---
-from datetime import date
+import re
 import calendar
+from datetime import date
 from calendar import monthrange
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import (
     Q, OuterRef, Subquery, Value,
-    IntegerField, BooleanField, SmallIntegerField, PositiveSmallIntegerField,
-    CharField, TextField,  # Importaciones corregidas
+    IntegerField as ModelIntegerField,  # alias para output_field
+    BooleanField, SmallIntegerField, PositiveSmallIntegerField,
+    CharField, TextField,
 )
 from django.db.models.functions import Coalesce
 from django.views.generic import ListView
 
-from .models import Empleado, Calificacion, Liquidacion, LiquidacionPeriodo
-from .forms import CalificacionForm  # Asegúrate de que existe
+from .models import Empleado, Calificacion, Liquidacion, LiquidacionPeriodo, Oficina
 from .utils import get_periodo_from_session
 
-# --- CALIFICACIONES LIST ---
-# --- CALIFICACIONES LIST ---
+# Import perezoso (evita NameError y circularidades)
+try:
+    from .forms import CalificacionForm  # debe existir en forms.py
+except Exception:
+    CalificacionForm = None
+
+
 class CalificacionListView(LoginRequiredMixin, ListView):
     model = Empleado
     template_name = 'empleados/calificacion_list.html'
     context_object_name = 'empleados'
+    paginate_by = 20
     login_url = 'login'
+    
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        
+    
 
-    # ---- helper interno: "empleado activo en período" sobre el modelo Empleado ----
+    # ---- helper interno: "empleado activo en período" ----
     def _q_empleado_activo_periodo(self, anio: int, mes: int, estricto: bool = False) -> Q:
-        """
-        Activo si:
-          - estado activo (1/True o 'A'/'ACTIVO'/'1'/'true'/'True' si es CharField)
-          - y:
-              estricto=False → (fecha_salida IS NULL o fecha_salida > fin del mes)
-              estricto=True  → (fecha_salida IS NULL)
-        """
         anio = int(anio); mes = int(mes)
         fin = date(anio, mes, monthrange(anio, mes)[1])
 
@@ -1455,8 +1416,7 @@ class CalificacionListView(LoginRequiredMixin, ListView):
         except Exception:
             f = None
 
-        # Usando los imports correctos
-        if f is None or isinstance(f, (BooleanField, IntegerField, SmallIntegerField, PositiveSmallIntegerField)):
+        if f is None or isinstance(f, (BooleanField, ModelIntegerField, SmallIntegerField, PositiveSmallIntegerField)):
             q_estado = Q(estado=1) | Q(estado=True)
         elif isinstance(f, (CharField, TextField)):
             q_estado = Q(estado__in=["A", "ACTIVO", "1", "true", "True"])
@@ -1471,20 +1431,17 @@ class CalificacionListView(LoginRequiredMixin, ListView):
         return q_estado & q_salida
 
     def get_queryset(self):
-        # Período tomado SIEMPRE del panel (sesión)
         anio, mes, periodo_str = get_periodo_from_session(self.request)
         hoy = date.today()
         es_actual = (anio == hoy.year and mes == hoy.month)
         es_futuro = (anio, mes) > (hoy.year, hoy.month)
 
-        # Verificar estado del período
+        # estado del período
         periodo_confirmado = False
         periodo_abierto = False
-        
         try:
             lp = LiquidacionPeriodo.objects.filter(periodo=periodo_str).first()
             if lp:
-                # Asumiendo que tienes estos estados definidos en tu modelo
                 if hasattr(LiquidacionPeriodo, 'ESTADO_CONFIRMADA') and lp.estado == LiquidacionPeriodo.ESTADO_CONFIRMADA:
                     periodo_confirmado = True
                 elif hasattr(LiquidacionPeriodo, 'ESTADO_ABIERTA') and lp.estado == LiquidacionPeriodo.ESTADO_ABIERTA:
@@ -1492,20 +1449,17 @@ class CalificacionListView(LoginRequiredMixin, ListView):
                 elif hasattr(LiquidacionPeriodo, 'ESTADO_CERRADA') and lp.estado == LiquidacionPeriodo.ESTADO_CERRADA:
                     periodo_abierto = False
                 else:
-                    # Por defecto, si no está confirmado, considerar abierto
                     periodo_abierto = not periodo_confirmado
-        except:
-            # Si hay error, asumir que no está confirmado y está abierto
+        except Exception:
             periodo_confirmado = False
             periodo_abierto = True
 
-        # flags para template - Permitir edición si el período está ABIERTO (no confirmado)
         self._allow_edit = periodo_abierto and not periodo_confirmado
         self._periodo_confirmado = periodo_confirmado
         self._periodo_abierto = periodo_abierto
         self._es_periodo_actual = es_actual
 
-        area = (self.request.GET.get('area') or '').strip()
+        oficina_id = (self.request.GET.get('oficina') or '').strip()
         q = (self.request.GET.get('q') or '').strip()
 
         # Períodos futuros → nada y aviso
@@ -1516,48 +1470,47 @@ class CalificacionListView(LoginRequiredMixin, ListView):
         # 1) Empleados ACTIVOS en el PERÍODO
         qs = Empleado.objects.filter(self._q_empleado_activo_periodo(anio, mes, estricto=False))
 
-        # Filtro por área
-        if area and area.upper() != 'TODAS':
-            qs = qs.filter(area__iexact=area)
+        # 2) Filtro por oficina (acepta id numérico o texto parcial del nombre)
+        if oficina_id and oficina_id.upper() != 'TODAS':
+            try:
+                oficina_pk = int(oficina_id)
+                qs = qs.filter(oficina_id=oficina_pk)
+            except ValueError:
+                qs = qs.filter(oficina__nombre__icontains=oficina_id)
 
-        # 2) Empleados con calificación cargada en el PERÍODO
-        empleados_con_calif = Calificacion.objects.filter(
-            mes=mes, año=anio
-        ).values_list('empleado_id', flat=True)
+        # 3) Empleados con calificación cargada en el PERÍODO
+        empleados_con_calif = Calificacion.objects.filter(mes=mes, año=anio).values_list('empleado_id', flat=True)
 
-        # 3) Solo para períodos ABIERTOS: auto-generar calificaciones para empleados existentes
+        # 4) Auto-generar calificaciones solo en períodos ABIERTOs
         if periodo_abierto and not periodo_confirmado:
-            # Empleados "no nuevos" que no tienen calificación
             empleados_no_nuevos = qs.exclude(
                 fecha_ingreso__year=anio,
                 fecha_ingreso__month=mes
             )
             sin_calif = empleados_no_nuevos.exclude(pk__in=empleados_con_calif)
-            
-            # Crear calificaciones en lote
+
             calificaciones_a_crear = [
                 Calificacion(empleado=emp, mes=mes, año=anio, calificacion=100)
                 for emp in sin_calif
             ]
             if calificaciones_a_crear:
                 Calificacion.objects.bulk_create(calificaciones_a_crear, ignore_conflicts=True)
-            
-            # Actualizar lista de empleados con calificación
-            empleados_con_calif = Calificacion.objects.filter(
-                mes=mes, año=anio
-            ).values_list('empleado_id', flat=True)
 
-        # 4) Mostrar SOLO empleados con calificación
+            empleados_con_calif = Calificacion.objects.filter(mes=mes, año=anio).values_list('empleado_id', flat=True)
+
+        # 5) Mostrar SOLO empleados con calificación
         qs = qs.filter(pk__in=empleados_con_calif)
 
-        # 5) Si el período está CONFIRMADO, mostrar solo los que tienen liquidación
+        # 6) Si el período está CONFIRMADO, solo los que tienen liquidación
         if periodo_confirmado:
             liq_sub = (Liquidacion.objects
                        .filter(empleado=OuterRef('pk'), año=anio, mes=mes)
                        .values('pk')[:1])
-            qs = qs.annotate(tiene_liq=Subquery(liq_sub)).filter(tiene_liq__isnull=False)
+            qs = qs.annotate(
+                tiene_liq=Subquery(liq_sub, output_field=ModelIntegerField())
+            ).filter(tiene_liq__isnull=False)
 
-        # 6) Anotaciones
+        # 7) Anotaciones (calificación actual y pk de calificación)
         calificacion_subq = (Calificacion.objects
                              .filter(empleado=OuterRef('pk'), mes=mes, año=anio)
                              .values('calificacion')[:1])
@@ -1568,36 +1521,52 @@ class CalificacionListView(LoginRequiredMixin, ListView):
 
         qs = qs.annotate(
             calificacion_actual=Coalesce(
-                Subquery(calificacion_subq, output_field=IntegerField()),
+                Subquery(calificacion_subq, output_field=ModelIntegerField()),
                 Value(100),
-                output_field=IntegerField()
+                output_field=ModelIntegerField()
             ),
-            cal_pk=Subquery(cal_pk_subq, output_field=IntegerField()),
+            cal_pk=Subquery(cal_pk_subq, output_field=ModelIntegerField()),
         )
 
-        # 7) Búsqueda
+        # 8) Búsqueda por nombre/apellido en ambos órdenes + CUIL/DNI
         if q:
-            qs = qs.filter(
-                Q(nombre__icontains=q) |
-                Q(apellido__icontains=q) |
-                Q(cuil__icontains=q) |
-                Q(dni__icontains=q)
-            )
+            tokens = [t for t in re.split(r"\s+", q) if t]
+
+            # Base: coincide por CUIL o DNI (parcial o completo)
+            q_busqueda = Q(cuil__icontains=q) | Q(dni__icontains=q)
+
+            if len(tokens) == 1:
+                t = tokens[0]
+                q_busqueda |= Q(nombre__icontains=t) | Q(apellido__icontains=t)
+            elif len(tokens) >= 2:
+                a, b = tokens[0], tokens[1]
+                # nombre apellido
+                orden_1 = Q(nombre__icontains=a) & Q(apellido__icontains=b)
+                # apellido nombre
+                orden_2 = Q(nombre__icontains=b) & Q(apellido__icontains=a)
+                q_busqueda |= (orden_1 | orden_2)
+
+                # match flexible: TODAS las palabras deben aparecer en nombre o apellido
+                q_all = Q()
+                for t in tokens:
+                    q_all &= (Q(nombre__icontains=t) | Q(apellido__icontains=t))
+                q_busqueda |= q_all
+
+            qs = qs.filter(q_busqueda)
 
         if not qs.exists():
             messages.info(self.request, f"No hay calificaciones para {periodo_str} con los filtros aplicados.")
 
-        return qs.order_by('apellido', 'nombre')
+        # evitar N+1
+        return qs.select_related('oficina', 'categoria').order_by('apellido', 'nombre')
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         anio, mes, periodo_str = get_periodo_from_session(self.request)
         hoy = date.today()
-        
-        # Verificar estado del período
+
         periodo_confirmado = False
         periodo_abierto = False
-        
         try:
             lp = LiquidacionPeriodo.objects.filter(periodo=periodo_str).first()
             if lp:
@@ -1609,14 +1578,26 @@ class CalificacionListView(LoginRequiredMixin, ListView):
                     periodo_abierto = False
                 else:
                     periodo_abierto = not periodo_confirmado
-        except:
+        except Exception:
             periodo_confirmado = False
             periodo_abierto = True
 
         es_actual = (anio == hoy.year and mes == hoy.month)
 
-        ctx['areas'] = Empleado.objects.values_list('area', flat=True).order_by('area').distinct()
-        ctx['area_sel'] = self.request.GET.get('area', 'TODAS')
+        ctx['oficinas'] = Oficina.objects.all().order_by('nombre')
+        ctx['oficina_sel'] = self.request.GET.get('oficina', 'TODAS')
+
+        # nombre de oficina seleccionada (si corresponde)
+        oficina_sel = ctx['oficina_sel']
+        if oficina_sel and oficina_sel != 'TODAS':
+            try:
+                ctx['oficina_nombre'] = Oficina.objects.get(pk=int(oficina_sel)).nombre
+            except Exception:
+                oficina_obj = Oficina.objects.filter(nombre__icontains=oficina_sel).first()
+                ctx['oficina_nombre'] = oficina_obj.nombre if oficina_obj else ''
+        else:
+            ctx['oficina_nombre'] = ''
+
         ctx['q'] = self.request.GET.get('q', '')
         ctx['mes_actual'] = mes
         ctx['año_actual'] = anio
@@ -1626,8 +1607,9 @@ class CalificacionListView(LoginRequiredMixin, ListView):
         ctx['periodo_confirmado'] = periodo_confirmado
         ctx['periodo_abierto'] = periodo_abierto
         ctx['es_periodo_actual'] = es_actual
-        
+
         return ctx
+
 
 class CalificacionCreateView(LoginRequiredMixin, CreateView):
     model = Calificacion
@@ -1660,10 +1642,14 @@ class CalificacionUpdateView(LoginRequiredMixin, UpdateView):
 
 from datetime import date
 import calendar
+
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import ListView
+from django.urls import reverse_lazy
+from django.views.generic import ListView, CreateView, UpdateView
 
 from .models import Categoria
+from .forms import CategoriaForm
+
 
 class CategoriaListView(LoginRequiredMixin, ListView):
     model = Categoria
@@ -1673,14 +1659,6 @@ class CategoriaListView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['areas'] = [
-            'PRESIDENCIA',
-            'SECRET. TÉCNICA CONTABLE',
-            'PLANES DE EMERGENCIA',
-            'SECRETARÍA TEC. SOCIAL',
-            # Agregá las que necesites
-        ]
-        context['area_sel'] = self.request.GET.get('area', '')
         hoy = date.today()
         context['mes_actual'] = hoy.month
         context['año_actual'] = hoy.year
@@ -1688,33 +1666,36 @@ class CategoriaListView(LoginRequiredMixin, ListView):
         return context
 
     def get_queryset(self):
-        qs = super().get_queryset()
-        area = self.request.GET.get('area')
-        if area:
-            qs = qs.filter(nombre__iexact=area)
-        return qs
-
+        # Trae en la misma consulta el nivel (para poder mostrar el básico)
+        return (Categoria.objects
+                .select_related('nivel')    # ← clave para ver cat.nivel.monto / cat.basico
+                .order_by('nombre'))
 
 
 class CategoriaCreateView(LoginRequiredMixin, CreateView):
     model = Categoria
-    fields = [
-        'nombre', 'area',
-        'sup1', 'sup2', 'sup3', 'sup4', 'sup6', 'sup8', 'sup12',
-        'tipo_sup1', 'tipo_sup2', 'tipo_sup3', 'tipo_sup4', 'tipo_sup6', 'tipo_sup8', 'tipo_sup12',
-    ]
+    form_class = CategoriaForm
     template_name = 'empleados/categoria_form.html'
-    success_url   = reverse_lazy('empleados:categoria-list')
+    success_url = reverse_lazy('empleados:categoria-list')
+
+    def form_valid(self, form):
+        form.instance.area = 'PRESIDENCIA'
+        return super().form_valid(form)
+
 
 class CategoriaUpdateView(LoginRequiredMixin, UpdateView):
     model = Categoria
-    fields = [
-        'nombre', 'area',
-        'sup1', 'sup2', 'sup3', 'sup4', 'sup6', 'sup8', 'sup12',
-        'tipo_sup1', 'tipo_sup2', 'tipo_sup3', 'tipo_sup4', 'tipo_sup6', 'tipo_sup8', 'tipo_sup12',
-    ]
+    form_class = CategoriaForm
     template_name = 'empleados/categoria_form.html'
-    success_url   = reverse_lazy('empleados:categoria-list')
+    success_url = reverse_lazy('empleados:categoria-list')
+
+    def form_valid(self, form):
+        form.instance.area = 'PRESIDENCIA'
+        return super().form_valid(form)
+
+
+
+
 
 
 # --- OFICIOS JUDICIALES (LIST) ---
@@ -1751,7 +1732,7 @@ class OficioJudicialListView(LoginRequiredMixin, ListView):
     template_name = 'empleados/oficiojudicial_list.html'
     context_object_name = 'rows'
     login_url = 'login'
-    paginate_by = 100
+    paginate_by = 20
 
     def _periodo(self):
         anio_ses, mes_ses, _ = get_periodo_from_session(self.request)
@@ -1829,7 +1810,6 @@ class OficioJudicialListView(LoginRequiredMixin, ListView):
         # Filtros adicionales
         empleado = (self.request.GET.get('empleado') or '').strip()
         tipo     = (self.request.GET.get('tipo') or '').strip()   # '1' o '2'
-        area     = (self.request.GET.get('area') or '').strip()
 
         if empleado:
             qs = qs.filter(
@@ -1840,8 +1820,6 @@ class OficioJudicialListView(LoginRequiredMixin, ListView):
             )
         if tipo in ('1', '2'):
             qs = qs.filter(oj_id__isnull=False, oj_tipo=int(tipo))
-        if area:
-            qs = qs.filter(area=area)
 
         # Si no es editable → mostrar solo quienes tengan al menos un oficio
         if not self._allow_edit:
@@ -1874,7 +1852,6 @@ class OficioJudicialListView(LoginRequiredMixin, ListView):
         ctx['f_anio']     = anio
         ctx['f_mes']      = mes
         ctx['f_tipo']     = self.request.GET.get('tipo', '')
-        ctx['f_area']     = self.request.GET.get('area', '')
         ctx['f_estado']   = self.request.GET.get('estado', 'activos')
 
         # Años / meses
@@ -1884,11 +1861,7 @@ class OficioJudicialListView(LoginRequiredMixin, ListView):
         ctx['years'] = list(range(first_year, current_year + 1))
         ctx['months'] = [(i, calendar.month_name[i]) for i in range(1, 13)]
 
-        # Áreas del período
-        q_periodo = _q_activo_en_periodo_empleado(anio, mes)
-        ctx['areas'] = (Empleado.objects.filter(q_periodo)
-                        .values_list('area', flat=True)
-                        .order_by('area').distinct())
+        
         return ctx
 
 

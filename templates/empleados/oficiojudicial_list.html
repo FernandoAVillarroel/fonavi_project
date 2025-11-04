@@ -484,11 +484,11 @@
       {% endif %}
     </div>
 
-    {% if not is_future %}
+   {% if not is_future %}
     <div class="card shadow-sm mb-4 filter-card">
       <div class="card-body">
         <form method="get" class="row g-3 align-items-end" id="filtrosForm">
-          <div class="col-12 col-xl-4">
+          <div class="col-12 col-xl-5">
             <label for="empleado" class="form-label">Buscar Empleado</label>
             <input type="text" name="empleado" id="empleado" class="form-control" value="{{ f_empleado }}" placeholder="Apellido, nombre, CUIL o DNI…">
           </div>
@@ -503,16 +503,6 @@
           </div>
 
           <div class="col-6 col-md-3 col-xl-2">
-            <label for="area" class="form-label">Área</label>
-            <select name="area" id="area" class="form-select">
-              <option value="">Todas</option>
-              {% for value in areas %}
-                <option value="{{ value }}" {% if f_area == value %}selected{% endif %}>{{ value }}</option>
-              {% endfor %}
-            </select>
-          </div>
-
-          <div class="col-6 col-md-3 col-xl-2">
             <label for="estado" class="form-label">Estado</label>
             <select name="estado" id="estado" class="form-select">
               <option value="activos" {% if f_estado == 'activos' %}selected{% endif %}>Activos</option>
@@ -521,7 +511,7 @@
             </select>
           </div>
 
-          <div class="col-6 col-md-3 col-xl-2 d-flex gap-2">
+          <div class="col-12 col-md-6 col-xl-3 d-flex gap-2">
             <button class="btn btn-primary animated-btn w-100" type="submit">
               <i class="fas fa-filter me-2"></i>Filtrar
             </button>
@@ -608,6 +598,71 @@
         </table>
       </div>
     </div>
+    {% if is_paginated %}
+    <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+      <div class="text-muted">
+        Mostrando {{ page_obj.start_index }} - {{ page_obj.end_index }} de {{ page_obj.paginator.count }} empleados
+      </div>
+      
+      <nav aria-label="Paginación">
+        <ul class="pagination mb-0">
+          {# Primera página #}
+          {% if page_obj.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?empleado={{ f_empleado }}&tipo={{ f_tipo }}&estado={{ f_estado }}&page=1" aria-label="Primera">
+                <span aria-hidden="true">&laquo;&laquo;</span>
+              </a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="?empleado={{ f_empleado }}&tipo={{ f_tipo }}&estado={{ f_estado }}&page={{ page_obj.previous_page_number }}" aria-label="Anterior">
+                <span aria-hidden="true">&laquo;</span>
+              </a>
+            </li>
+          {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">&laquo;&laquo;</span>
+            </li>
+            <li class="page-item disabled">
+              <span class="page-link">&laquo;</span>
+            </li>
+          {% endif %}
+
+          {# Números de página #}
+          {% for num in paginator.page_range %}
+            {% if page_obj.number == num %}
+              <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+              <li class="page-item">
+                <a class="page-link" href="?empleado={{ f_empleado }}&tipo={{ f_tipo }}&estado={{ f_estado }}&page={{ num }}">{{ num }}</a>
+              </li>
+            {% endif %}
+          {% endfor %}
+
+          {# Última página #}
+          {% if page_obj.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?empleado={{ f_empleado }}&tipo={{ f_tipo }}&estado={{ f_estado }}&page={{ page_obj.next_page_number }}" aria-label="Siguiente">
+                <span aria-hidden="true">&raquo;</span>
+              </a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="?empleado={{ f_empleado }}&tipo={{ f_tipo }}&estado={{ f_estado }}&page={{ paginator.num_pages }}" aria-label="Última">
+                <span aria-hidden="true">&raquo;&raquo;</span>
+              </a>
+            </li>
+          {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">&raquo;</span>
+            </li>
+            <li class="page-item disabled">
+              <span class="page-link">&raquo;&raquo;</span>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+    {% endif %}
+    {# === FIN PAGINACIÓN === #}
     {% endif %}
 
   </div> {# Fin de .content-container #}
@@ -636,7 +691,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // auto-submit selects
-  document.querySelectorAll('#area, #tipo, #estado').forEach(sel => {
+    javascriptdocument.querySelectorAll('#tipo, #estado').forEach(sel => {
     sel.addEventListener('change', () => document.getElementById('filtrosForm').submit());
   });
 

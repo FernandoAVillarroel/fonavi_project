@@ -1,57 +1,482 @@
 {% load money %}
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="es">
 <head>
-  <meta charset="utf-8">
-  <style>
-    body { font-size: 11px; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { border: 1px solid #999; padding: 4px; }
-    th { background: #eee; }
-    .right { text-align: right; }
-    .bold { font-weight: bold; }
-  </style>
+<meta charset="UTF-8">
+<title>Liquidaciones {{ PERIODO_ACTUAL }}</title>
+<style>
+  @page { 
+    size: A4 landscape; 
+    margin: 0.8cm 0.5cm;
+  }
+  
+  body { 
+    font-family: Arial, sans-serif; 
+    font-size: 7px; 
+    margin: 0; 
+    padding: 0;
+    color: #333;
+    line-height: 1.2;
+  }
+  
+  .header {
+    text-align: center;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 3px solid #3498db;
+  }
+  
+  .header h1 {
+    margin: 0 0 5px 0;
+    font-size: 16px;
+    color: #2980b9;
+    font-weight: bold;
+  }
+  
+  .header h2 {
+    margin: 0 0 8px 0;
+    font-size: 20px;
+    color: #2980b9;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+  
+  .periodo-principal {
+    font-size: 24px;
+    color: #2980b9;
+    font-weight: bold;
+    margin: 0;
+    padding: 5px 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  
+  .info-bar {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    padding: 12px 15px;
+    background: #3498db;
+    border-radius: 5px;
+    color: white;
+  }
+  
+  .info-group {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  
+  .info-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .info-label {
+    font-size: 9px;
+    color: #ecf0f1;
+    text-transform: uppercase;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+  }
+  
+  .info-value {
+    font-size: 11px;
+    font-weight: bold;
+    color: white;
+    letter-spacing: 0.5px;
+  }
+  
+  .divider {
+    color: #ecf0f1;
+    margin: 0 5px;
+    font-weight: normal;
+  }
+  
+  table { 
+    width: 100%; 
+    border-collapse: collapse;
+    margin-bottom: 8px;
+    font-size: 7px;
+    table-layout: fixed;
+  }
+  
+  thead th { 
+    background: #2980b9;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    padding: 6px 2px;
+    border: 1px solid #2471a3;
+    font-size: 6.5px;
+    line-height: 1.2;
+    overflow: hidden;
+  }
+  
+  tbody td { 
+    border: 1px solid #ddd;
+    padding: 5px 2px;
+    font-size: 7px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  tbody tr:nth-child(odd) { 
+    background: #ffffff;
+  }
+  
+  tbody tr:nth-child(even) { 
+    background: #f8f9fa;
+  }
+  
+  .office-section {
+    margin-bottom: 12px;
+  }
+  
+  .office-header {
+    background: #d6eaf8;
+    font-weight: bold;
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin-bottom: 5px;
+    font-size: 8px;
+    border-left: 5px solid #3498db;
+    color: #2980b9;
+  }
+  
+  /* ESTILO PARA SUBTOTALES POR OFICINA - NÚMEROS EN NEGRO */
+  .subtotal-oficina {
+    background: #85c1e9 !important;
+    font-weight: bold;
+    border-top: 2px solid #2980b9 !important;
+    border-bottom: 2px solid #2980b9 !important;
+  }
+  
+  .subtotal-oficina td {
+    padding: 7px 3px !important;
+    font-size: 7.5px !important;
+    background: #85c1e9 !important;
+    color: #1a5490 !important;
+  }
+  
+  /* NÚMEROS DE SUBTOTALES EN NEGRO */
+  .subtotal-oficina .numero-resaltado {
+    color: #000000 !important; /* NEGRO */
+    font-weight: 900 !important;
+    font-size: 8px !important;
+    text-shadow: 0.5px 0.5px 1px rgba(0,0,0,0.1);
+  }
+  
+  /* SUPLEMENTOS MÁS PEQUEÑOS EN SUBTOTALES */
+  .subtotal-oficina .suplemento-cell.numero-resaltado {
+    font-size: 6.5px !important; /* Más pequeño que los otros números */
+    letter-spacing: -0.4px !important;
+  }
+  
+  td.text-left { 
+    text-align: left; 
+    padding-left: 4px;
+  }
+  
+  td.text-center { text-align: center; }
+  
+  td.text-right { 
+    text-align: right;
+    font-family: 'Courier New', monospace;
+    font-weight: normal;
+    padding-right: 4px;
+    letter-spacing: -0.2px;
+  }
+  
+  .highlight-bruto {
+    background: #e8f4f8 !important;
+    font-weight: bold;
+  }
+  
+  .highlight-liquido {
+    background: #e8f6f3 !important;
+    font-weight: bold;
+  }
+  
+  /* TOTALES GENERALES CON FONDO CELESTE Y NÚMEROS MÁS PEQUEÑOS - TODOS NEGRO INTENSO */
+  tfoot td {
+    background: #d6eaf8 !important; /* FONDO CELESTE */
+    color: #000000 !important; /* TEXTO NEGRO */
+    font-weight: 900 !important; /* MÁS INTENSO */
+    font-size: 6.5px !important; /* MÁS PEQUEÑO */
+    padding: 6px 1px !important; /* Menos padding */
+    border: 1px solid #85c1e9 !important; /* Borde celeste */
+    overflow: hidden;
+    letter-spacing: -0.4px;
+    white-space: nowrap;
+  }
+  
+  /* TODOS LOS NÚMEROS DE TOTALES GENERALES EN NEGRO INTENSO UNIFORME */
+  tfoot .numero-resaltado-total {
+    color: #000000 !important; /* NEGRO INTENSO */
+    font-weight: 900 !important; /* MÁXIMA INTENSIDAD */
+    font-size: 7px !important; /* MÁS PEQUEÑO */
+    background: #d6eaf8 !important; /* Fondo celeste */
+  }
+  
+  /* SUPLEMENTOS MÁS PEQUEÑOS EN TOTALES GENERALES - MISMO NEGRO INTENSO */
+  tfoot .suplemento-cell.numero-resaltado-total {
+    font-size: 5.8px !important; /* Aún más pequeño en totales generales */
+    letter-spacing: -0.5px !important;
+    color: #000000 !important; /* NEGRO INTENSO */
+    font-weight: 900 !important; /* MÁXIMA INTENSIDAD */
+  }
+  
+  .footer {
+    margin-top: 15px;
+    padding-top: 12px;
+    border-top: 1px solid #ddd;
+    text-align: center;
+    font-size: 7px;
+    color: #666;
+  }
+  
+  .valor-importante {
+    font-weight: bold;
+    font-size: 7px;
+    padding: 0 1px;
+    letter-spacing: -0.3px;
+  }
+  
+  .sin-datos {
+    text-align: center;
+    padding: 30px;
+    font-style: italic;
+    color: #666;
+    background: #f8f9fa;
+    font-size: 9px;
+  }
+  
+  .total-label {
+    font-size: 7px !important; /* Más pequeño */
+    text-align: center;
+    background: #85c1e9 !important; /* Celeste */
+    padding-left: 3px !important;
+    color: #000000 !important; /* Texto negro */
+    font-weight: 900 !important; /* MÁS INTENSO */
+  }
+  
+  /* ESTILOS ESPECÍFICOS PARA SUPLEMENTOS - MÁS PEQUEÑOS */
+  .suplementos-group {
+    background: #2471a3 !important;
+  }
+  
+  .suplemento-header {
+    font-size: 6px !important;
+    padding: 4px 1px !important;
+  }
+  
+  .suplemento-cell {
+    font-size: 6px !important; /* Reducido de 6.5px a 6px */
+    padding: 4px 1px !important; /* Menos padding horizontal */
+    letter-spacing: -0.4px !important; /* Más compacto */
+  }
+
+  /* Ajuste específico para suplementos en totales generales - NEGRO INTENSO */
+  tfoot td.suplemento-cell {
+    font-size: 5.5px !important;
+    padding: 6px 0px !important; /* Menos padding vertical */
+    letter-spacing: -0.6px !important; /* Más compacto */
+    overflow: hidden !important;
+    text-overflow: clip !important;
+    color: #000000 !important; /* NEGRO INTENSO */
+    font-weight: 900 !important; /* MÁXIMA INTENSIDAD */
+  }
+
+  tfoot td.valor-importante.suplemento-cell {
+    font-size: 5.8px !important;
+    font-weight: 900 !important; /* MÁXIMA INTENSIDAD */
+    color: #000000 !important; /* NEGRO INTENSO */
+  }
+</style>
 </head>
 <body>
-  <h3>Liquidaciones confirmadas — {{ PERIODO_ACTUAL }} ({{ title }})</h3>
-  <table>
-    <thead>
-      <tr>
-        <th>Empleado</th>
-        <th>Categoría</th>
-        <th>Oficina</th>
-        <th class="right">Bruto</th>
-        <th class="right">Jubilación</th>
-        <th class="right">Obra Social</th>
-        <th class="right">Oficio Judicial</th>
-        <th class="right">Líquido</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for liq in planillas %}
-      <tr>
-        <td>{{ liq.empleado }}</td>
-        <td>{{ liq.categoria_nombre }}</td>
-        <td>{{ liq.oficina_nombre }}</td>
-        <td class="right">{{ liq.bruto|ars_auto }}</td>
-        <td class="right">{{ liq.jubilacion|ars_auto }}</td>
-        <td class="right">{{ liq.obra_social|ars_auto }}</td>
-        <td class="right">{{ liq.oficio_judicial|ars_auto }}</td>
-        <td class="right bold">{{ liq.liquido|ars_auto }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-    <tfoot>
-      <tr>
-        <td colspan="3" class="right bold">TOTALES →</td>
-        <td class="right bold">{{ totales.bruto|ars_auto }}</td>
-        <td class="right bold">{{ totales.jubilacion|ars_auto }}</td>
-        <td class="right bold">{{ totales.obra_social|ars_auto }}</td>
-        <td class="right bold">{{ totales.oficio_judicial|ars_auto }}</td>
-        <td class="right bold">{{ totales.liquido|ars_auto }}</td>
-      </tr>
-    </tfoot>
-  </table>
-  <p>Cantidad de planillas: {{ total_planillas }}</p>
+
+<div class="header">
+  <h1>IPVU - INSTITUTO PROVINCIAL DE VIVIENDA Y URBANISMO</h1>
+  <h2>ÁREA DE PRESIDENCIA - LIQUIDACIÓN DE SUELDOS</h2>
+  <div class="periodo-principal">{{ month_name|upper }} DE {{ año_sel }}</div>
+</div>
+
+<div class="info-bar">
+  <div class="info-group">
+    <div class="info-item">
+      <span class="info-label">TIPO:</span>
+      <span class="info-value">
+        {% if title == "Permanentes" %}
+          PLANTA PERMANENTE
+        {% elif title == "Contratados" %}
+          PLANTA CONTRATADOS
+        {% else %}
+          {{ title|upper }}
+        {% endif %}
+      </span>
+    </div>
+  </div>
+  <div class="info-group">
+    <div class="info-item">
+      <span class="info-label">EMPLEADOS:</span>
+      <span class="info-value">{{ total_planillas }}</span>
+    </div>
+    <span class="divider">|</span>
+    <div class="info-item">
+      <span class="info-label">TOTAL BRUTO:</span>
+      <span class="info-value">{{ totales.bruto|ars }}</span>
+    </div>
+    <span class="divider">|</span>
+    <div class="info-item">
+      <span class="info-label">TOTAL LÍQUIDO:</span>
+      <span class="info-value">{{ totales.liquido|ars }}</span>
+    </div>
+  </div>
+</div>
+
+{% if oficinas_agrupadas %}
+  {% for oficina_grupo in oficinas_agrupadas %}
+  <div class="office-section">
+    <div class="office-header">
+      {{ oficina_grupo.nombre|upper }} - {{ oficina_grupo.subtotal.count }} EMPLEADO{{ oficina_grupo.subtotal.count|pluralize:"S"|upper }}
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 15%;">EMPLEADO</th>
+          <th style="width: 9%;">CUIL</th>
+          <th style="width: 6%;">BÁSICO</th>
+          <th style="width: 5%;">ANTIG.</th>
+          <th style="width: 5%;">TÍTULO</th>
+          <th style="width: 6%;">TOTAL<br>BÁSICO</th>
+          
+          <!-- GRUPO DE SUPLEMENTOS CON ESPECIFICACIÓN CLARA -->
+          <th class="suplementos-group" colspan="7" style="width: 28%;">SUPLEMENTOS</th>
+          
+          <th style="width: 6%;">TOTAL<br>SUP.</th>
+          <th style="width: 7%;">BRUTO</th>
+          <th style="width: 6%;">TOTAL<br>DESC.</th>
+          <th style="width: 7%;">LÍQUIDO</th>
+        </tr>
+        <tr>
+          <th style="width: 15%;"></th>
+          <th style="width: 9%;"></th>
+          <th style="width: 6%;"></th>
+          <th style="width: 5%;"></th>
+          <th style="width: 5%;"></th>
+          <th style="width: 6%;"></th>
+          
+          <!-- HEADERS INDIVIDUALES DE SUPLEMENTOS MÁS PEQUEÑOS -->
+          <th class="suplemento-header" style="width: 4%;">S1</th>
+          <th class="suplemento-header" style="width: 4%;">S2</th>
+          <th class="suplemento-header" style="width: 4%;">S3</th>
+          <th class="suplemento-header" style="width: 4%;">S4</th>
+          <th class="suplemento-header" style="width: 4%;">S6</th>
+          <th class="suplemento-header" style="width: 4%;">S8</th>
+          <th class="suplemento-header" style="width: 4%;">S12</th>
+          
+          <th style="width: 6%;"></th>
+          <th style="width: 7%;"></th>
+          <th style="width: 6%;"></th>
+          <th style="width: 7%;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for liq in oficina_grupo.liquidaciones %}
+        <tr>
+          <td class="text-left" style="width: 15%;">{{ liq.empleado.apellido }}, {{ liq.empleado.nombre }}</td>
+          <td class="text-center" style="width: 9%;">{{ liq.empleado.cuil|default:"—" }}</td>
+          <td class="text-right" style="width: 6%;">{{ liq.basico|ars_strict }}</td>
+          <td class="text-right" style="width: 5%;">{{ liq.importe_antiguedad|ars_strict }}</td>
+          <td class="text-right" style="width: 5%;">{{ liq.importe_titulo|ars_strict }}</td>
+          <td class="text-right" style="width: 6%;">{{ liq.basico_total|ars_strict }}</td>
+          
+          <!-- CELDAS DE SUPLEMENTOS MÁS COMPACTAS Y PEQUEÑAS -->
+          <td class="text-right suplemento-cell" style="width: 4%;">{{ liq.supl1|ars_strict }}</td>
+          <td class="text-right suplemento-cell" style="width: 4%;">{{ liq.supl2|ars_strict }}</td>
+          <td class="text-right suplemento-cell" style="width: 4%;">{{ liq.supl3|ars_strict }}</td>
+          <td class="text-right suplemento-cell" style="width: 4%;">{{ liq.supl4|ars_strict }}</td>
+          <td class="text-right suplemento-cell" style="width: 4%;">{{ liq.supl6|ars_strict }}</td>
+          <td class="text-right suplemento-cell" style="width: 4%;">{{ liq.supl8|ars_strict }}</td>
+          <td class="text-right suplemento-cell" style="width: 4%;">{{ liq.supl12|ars_strict }}</td>
+          
+          <td class="text-right" style="width: 6%;">{{ liq.total_suplementos|ars_strict }}</td>
+          <td class="text-right highlight-bruto" style="width: 7%;">{{ liq.bruto|ars_strict }}</td>
+          <td class="text-right" style="width: 6%;">{{ liq.total_descuentos|ars_strict }}</td>
+          <td class="text-right highlight-liquido" style="width: 7%;">{{ liq.liquido|ars_strict }}</td>
+        </tr>
+        {% endfor %}
+        
+        <!-- SUBTOTAL POR OFICINA - CON NÚMEROS EN NEGRO Y SUPLEMENTOS PEQUEÑOS -->
+        <tr class="subtotal-oficina">
+          <td colspan="2" class="text-left" style="width: 24%;">SUBTOTAL {{ oficina_grupo.nombre|upper }}</td>
+          <td class="text-right numero-resaltado" style="width: 6%;">{{ oficina_grupo.subtotal.basico|ars_strict }}</td>
+          <td class="text-right numero-resaltado" style="width: 5%;">{{ oficina_grupo.subtotal.importe_antiguedad|ars_strict }}</td>
+          <td class="text-right numero-resaltado" style="width: 5%;">{{ oficina_grupo.subtotal.importe_titulo|ars_strict }}</td>
+          <td class="text-right numero-resaltado" style="width: 6%;">{{ oficina_grupo.subtotal.basico_total|ars_strict }}</td>
+          
+          <td class="text-right suplemento-cell numero-resaltado" style="width: 4%;">{{ oficina_grupo.subtotal.supl1|ars_strict }}</td>
+          <td class="text-right suplemento-cell numero-resaltado" style="width: 4%;">{{ oficina_grupo.subtotal.supl2|ars_strict }}</td>
+          <td class="text-right suplemento-cell numero-resaltado" style="width: 4%;">{{ oficina_grupo.subtotal.supl3|ars_strict }}</td>
+          <td class="text-right suplemento-cell numero-resaltado" style="width: 4%;">{{ oficina_grupo.subtotal.supl4|ars_strict }}</td>
+          <td class="text-right suplemento-cell numero-resaltado" style="width: 4%;">{{ oficina_grupo.subtotal.supl6|ars_strict }}</td>
+          <td class="text-right suplemento-cell numero-resaltado" style="width: 4%;">{{ oficina_grupo.subtotal.supl8|ars_strict }}</td>
+          <td class="text-right suplemento-cell numero-resaltado" style="width: 4%;">{{ oficina_grupo.subtotal.supl12|ars_strict }}</td>
+          
+          <td class="text-right numero-resaltado" style="width: 6%;">{{ oficina_grupo.subtotal.total_suplementos|ars_strict }}</td>
+          <td class="text-right numero-resaltado" style="width: 7%;">{{ oficina_grupo.subtotal.bruto|ars_strict }}</td>
+          <td class="text-right numero-resaltado" style="width: 6%;">{{ oficina_grupo.subtotal.total_descuentos|ars_strict }}</td>
+          <td class="text-right numero-resaltado" style="width: 7%;">{{ oficina_grupo.subtotal.liquido|ars_strict }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="sin-datos">
+    No hay liquidaciones confirmadas para el período seleccionado.
+  </div>
+{% endif %}
+
+{% if oficinas_agrupadas %}
+<table>
+  <tfoot>
+    <tr>
+      <td colspan="2" class="total-label" style="width: 24%;">
+        TOTALES GENERALES - {{ title|upper }} - {{ month_name|upper }} {{ año_sel }}
+      </td>
+      <td class="text-right valor-importante numero-resaltado-total" style="width: 6%;">{{ totales.basico|ars_strict }}</td>
+      <td class="text-right valor-importante numero-resaltado-total" style="width: 5%;">{{ totales.importe_antiguedad|ars_strict }}</td>
+      <td class="text-right valor-importante numero-resaltado-total" style="width: 5%;">{{ totales.importe_titulo|ars_strict }}</td>
+      <td class="text-right valor-importante numero-resaltado-total" style="width: 6%;">{{ totales.basico_total|ars_strict }}</td>
+      
+      <!-- TOTALES DE SUPLEMENTOS COMPACTOS - TODOS NEGRO INTENSO -->
+      <td class="text-right valor-importante suplemento-cell numero-resaltado-total" style="width: 4%;">{{ totales.supl1|ars_strict }}</td>
+      <td class="text-right valor-importante suplemento-cell numero-resaltado-total" style="width: 4%;">{{ totales.supl2|ars_strict }}</td>
+      <td class="text-right valor-importante suplemento-cell numero-resaltado-total" style="width: 4%;">{{ totales.supl3|ars_strict }}</td>
+      <td class="text-right valor-importante suplemento-cell numero-resaltado-total" style="width: 4%;">{{ totales.supl4|ars_strict }}</td>
+      <td class="text-right valor-importante suplemento-cell numero-resaltado-total" style="width: 4%;">{{ totales.supl6|ars_strict }}</td>
+      <td class="text-right valor-importante suplemento-cell numero-resaltado-total" style="width: 4%;">{{ totales.supl8|ars_strict }}</td>
+      <td class="text-right valor-importante suplemento-cell numero-resaltado-total" style="width: 4%;">{{ totales.supl12|ars_strict }}</td>
+      
+      <td class="text-right valor-importante numero-resaltado-total" style="width: 6%;">{{ totales.total_suplementos|ars_strict }}</td>
+      <td class="text-right valor-importante numero-resaltado-total" style="width: 7%;">{{ totales.bruto|ars_strict }}</td>
+      <td class="text-right valor-importante numero-resaltado-total" style="width: 6%;">{{ totales.total_descuentos|ars_strict }}</td>
+      <td class="text-right valor-importante numero-resaltado-total" style="width: 7%;">{{ totales.liquido|ars_strict }}</td>
+    </tr>
+  </tfoot>
+</table>
+{% endif %}
+
+<div class="footer">
+  <strong>IPVU - Sistema de Liquidaciones</strong> | 
+  Documento generado el {{ "now"|date:"d/m/Y" }} a las {{ "now"|date:"H:i" }} hs | 
+  Total de empleados: {{ total_planillas }} | Uso interno
+</div>
+
 </body>
 </html>

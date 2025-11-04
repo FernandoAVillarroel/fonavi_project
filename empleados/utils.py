@@ -215,27 +215,82 @@ class RequireSelectedPeriodCurrentMixin:
 # empleados/utils.py
 from datetime import date
 
-def calcular_antiguedad_ipvu(fecha_ingreso, anio, mes):
+def calcular_antiguedad_ipvu(fecha_ingreso, anio_ref, mes_ref):
     """
-    Regla IPVU:
-      - Antigüedad base se mide al 1.º de enero del año del PERÍODO.
-      - En el 2.º semestre (mes >= 7) se suma +1.
-      - Ej.: ingreso 11/12/2017, período 09/2025 -> base enero 2025 = 7; 2.º semestre => 8.
+    Calcula antigüedad según REGLA IPVU:
+    - Ingreso en primeros 6 meses (ene-jun): suma 1 año el 1º enero siguiente
+    - Ingreso en últimos 6 meses (jul-dic): NO suma año el 1º enero siguiente
+    
+    Ejemplos:
+    - Ingreso 15/03/2024 → 01/01/2025: 1 año ✓
+    - Ingreso 15/08/2024 → 01/01/2025: 0 años ✓
+    - Ingreso 15/08/2024 → 01/01/2026: 1 año ✓
     """
     if not fecha_ingreso:
         return 0
+    
+    ref = date(anio_ref, mes_ref, 1)
+    
+    # Si la referencia es anterior al ingreso, antigüedad = 0
+    if ref < fecha_ingreso:
+        return 0
+    
+    # Años transcurridos desde el año de ingreso
+    anios = anio_ref - fecha_ingreso.year
+    
+    # Aplicar regla IPVU según mes de ingreso
+    if fecha_ingreso.month <= 6:
+        # Ingresó enero-junio: suma 1 año desde el 1º enero siguiente
+        return anios
+    else:
+        # Ingresó julio-diciembre: NO suma el 1º enero siguiente
+        # Recién suma desde el segundo 1º enero
+        return max(anios - 1, 0)
 
-    anio = int(anio); mes = int(mes)
-    ref_enero = date(anio, 1, 1)
 
-    # años "cumplidos" al 1.º de enero del año del período
-    base = anio - fecha_ingreso.year
-    if (fecha_ingreso.month, fecha_ingreso.day) > (1, 1):
-        base -= 1
-    base = max(base, 0)
 
-    # +1 para el segundo semestre
-    if mes >= 7:
-        base += 1
+# empleados/utils.py
+from django.utils import timezone
 
-    return base
+def get_periodo_actual():
+    """Devuelve el período actual en formato YYYY-MM"""
+    now = timezone.now()
+    return now.strftime("%Y-%m")
+
+def get_novedades_por_periodo(periodo):
+    """Obtiene todas las novedades de un período específico"""
+    from .models import Novedad
+    return Novedad.objects.filter(periodo=periodo).select_related('empleado')
+
+def crear_novedad_manual(periodo, tipo, descripcion, empleado=None, objeto_relacionado=None):
+    """Crea una novedad manualmente"""
+    from .models import Novedad
+    from django.contrib.contenttypes.models import ContentType
+    
+    novedad = Novedad(
+        periodo=periodo,
+        tipo=tipo,
+        descripcion=descripcion,
+        empleado=empleado
+    )
+    
+    if objeto_relacionado:
+        novedad.content_type = ContentType.objects.get_for_model(objeto_relacionado)
+        novedad.object_id = objeto_relacionado.id
+    
+    novedad.save()
+    return novedad
+
+# empleados/utils.py
+from decimal import Decimal
+
+def to_decimal(raw):
+    """Convierte formato argentino (10.000,00) a Decimal"""
+    if raw is None:
+        return Decimal('0')
+    s = str(raw).strip()
+    s = s.replace('.', '').replace(',', '.')  # quita miles, coma → punto
+    try:
+        return Decimal(s)
+    except Exception:
+        return Decimal('0')

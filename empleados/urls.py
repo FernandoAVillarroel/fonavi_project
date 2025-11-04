@@ -1,11 +1,6 @@
 # empleados/urls.py
 from django.urls import path
 
-from .views_planillas import (
-    ver_liquidaciones_confirmadas,
-    exportar_liquidaciones_pdf,
-)
-
 from .views import (
     EmpleadoListView, EmpleadoCreateView, EmpleadoUpdateView, EmpleadoDeleteView,
     empleado_toggle_estado,
@@ -14,20 +9,29 @@ from .views import (
     OficioJudicialListView, OficioJudicialCreateView, OficioJudicialUpdateView, OficioJudicialDeleteView,
     OficioJudicialEmpleadoListView,
     LiquidacionListView, crear_preliq_y_liq, liq_edit,
-    confirmar_liquidacion, antiguedad_actualizar,
+    antiguedad_actualizar,
+    preliquidacion_overview,
+    generar_preliquidacion,  
+    
 )
 
-# ⬅️ Cambiar período (mes/año) en la sesión
-from .views_periodo import seleccionar_periodo
 
-# ⬅️ Listado de Novedades Mensuales (dashboard / presidencia)
-#    Asegúrate de tener esta vista creada en empleados/views_novedades.py
-#    con la función `novedades_mensuales_list`.
+from .views_liquidacion import confirmar_liquidacion  # 👈 ESTA sí está en views_liquidacion.py
+
+from .views_periodo import seleccionar_periodo
 from .views_novedades import novedades_mensuales_list
+from .views_planillas import (
+    ver_liquidaciones_confirmadas, 
+    exportar_liquidaciones_pdf,
+    contribuciones_patronales,
+    exportar_contribuciones_pdf,
+    generar_txt_banco,
+)
 
 app_name = "empleados"
 
 urlpatterns = [
+    
     # ───────── Empleados ─────────
     path("", EmpleadoListView.as_view(), name="empleado-list"),
     path("nuevo/", EmpleadoCreateView.as_view(), name="empleado-create"),
@@ -60,15 +64,27 @@ urlpatterns = [
 
     # ───────── Liquidaciones (CRUD) ─────────
     path("liquidaciones/", LiquidacionListView.as_view(), name="liquidacion-list"),
+    path("preliquidacion-overview/", preliquidacion_overview, name="preliquidacion_overview"),
     path("liquidaciones/nueva/", crear_preliq_y_liq, name="liquidacion-create"),
     path("liquidaciones/<int:pk>/editar/", liq_edit, name="liquidacion-update"),
 
-    # Confirmar (cuando generás desde presidencia)
+    # ───────── Presidencia (acciones) ─────────
+    path("presidencia/generar-preliq/", generar_preliquidacion, name="generar_preliquidacion"),
     path("presidencia/confirmar_liquidacion/", confirmar_liquidacion, name="confirmar_liquidacion"),
 
     # Planillas confirmadas + PDF
     path("presidencia/planillas/", ver_liquidaciones_confirmadas, name="planillas_confirmadas"),
+    path('generar-txt-banco/', generar_txt_banco, name='generar_txt_banco'),
     path("presidencia/exportar-pdf/", exportar_liquidaciones_pdf, name="liquidacion-exportar-pdf"),
+    
+    # Contribuciones patronales
+    path("presidencia/contribuciones/", contribuciones_patronales, name="contribuciones_patronales"),
+    path("presidencia/contribuciones-pdf/", exportar_contribuciones_pdf, name="exportar_contribuciones_pdf"),
+    
+    
+    
+    
+    
 
     # ───────── Novedades Mensuales ─────────
     path("novedades/", novedades_mensuales_list, name="novedades_mensuales_list"),

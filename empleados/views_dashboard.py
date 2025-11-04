@@ -27,9 +27,10 @@ def dashboard_empleados(request):
     permanentes = qs.filter(situacion='P').count()
     contratados = qs.filter(situacion='C').count()
     
-    # Obtener novedades (aquí debes implementar la lógica según tu modelo de novedades)
-    novedades = []  # Reemplazar con tu lógica para obtener novedades
-    tipos_novedad = []  # Reemplazar con los tipos de novedad disponibles
+    # Obtener novedades del período actual
+    from .models import NovedadMensual
+    novedades = NovedadMensual.objects.filter(periodo=per).order_by('-fecha')[:10]
+    tipos_novedad = NovedadMensual.Tipo.choices
     
     # Variables para el template
     from .utils import MONTH_NAMES

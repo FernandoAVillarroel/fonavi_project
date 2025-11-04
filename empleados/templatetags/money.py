@@ -45,22 +45,10 @@ def ars(value):
 @register.filter
 def ars_auto(value):
     """
-    Formatea con miles/decimales e INTENTA detectar valores en centavos.
-    Úsalo solo si a veces recibís valores en centavos y otras veces en pesos.
+    CORREGIDO: Ahora simplemente formatea sin intentar detectar centavos.
+    Es un alias de ars_strict para compatibilidad con templates existentes.
     """
-    v = _to_decimal(value)
-
-    two_decimals = (v == v.quantize(Decimal("0.01")))
-    is_integer   = (v == v.quantize(Decimal("1")))
-
-    looks_like_cents = (
-        (is_integer and abs(v) >= Decimal("10000")) or
-        (two_decimals and abs(v) >= Decimal("1000000"))
-    )
-    if looks_like_cents:
-        v = v / Decimal("100")
-
-    return _fmt_num(_q2(v))
+    return ars_strict(value)
 
 @register.filter
 def ars_from_cents(value):

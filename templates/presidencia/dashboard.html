@@ -25,7 +25,7 @@
   .sidebar-header h3{ margin:0; font-size:1.2rem; font-weight:600; }
   .sidebar-nav{ padding:15px; flex-grow:1; overflow-y:auto; }
   .nav-link{ color:var(--text-light); padding:8px 15px; display:flex; align-items:center; text-decoration:none;
-    border-radius:5px; margin-bottom:6px; transition:all .3s ease; font-weight:500; position:relative; font-size:.9rem; }
+    border-radius:5px; margin-bottom:6px; transition:all .3s ease; font-weight:500; font-size:.9rem; }
   .nav-link:hover{ background:rgba(255,255,255,.1); transform:translateX(3px); }
   .nav-link.active,.nav-link[aria-expanded="true"]{ background:#fff; color:var(--primary-color); font-weight:600; }
 
@@ -56,37 +56,49 @@
   .table tbody tr:hover{ background:#f8f9fa; }
   .table td{ padding:10px; vertical-align:middle; border-bottom:1px solid #e9ecef; font-size:.85rem; }
 
-  /* Estado de período */
+  /* Cartel del estado del período (masculino + colores) */
   .pulse-button{ color:#fff; font-size:1.2rem; padding:8px 16px; border-radius:6px; display:inline-block; font-weight:600;
                  letter-spacing:.5px; border:none; animation:pulse-glow 2s infinite ease-in-out; text-decoration:none; }
   .pulse-static{ pointer-events:none; user-select:none; }
-  .pulse-button.status-abierta{ background:#007bff; --glow-color:#007bff; }
-  .pulse-button.status-cerrada{ background:#ffc107; --glow-color:#ffc107; color:var(--text-dark); }
-  .pulse-button.status-confirmada{ background:#198754; --glow-color:#198754; }
-  .pulse-button.status-sin_crear{ background:#6c757d; --glow-color:#6c757d; }
+  .pulse-button.status-abierto{ background:#198754; --glow-color:#198754; }     /* ABIERTO: verde */
+  .pulse-button.status-cerrado{ background:#dc3545; --glow-color:#dc3545; }     /* CERRADO: rojo */
+  .pulse-button.status-confirmado{ background:#0d6efd; --glow-color:#0d6efd; }  /* CONFIRMADO: azul */
+  .pulse-button.status-sin_crear{ background:#6c757d; --glow-color:#6c757d; }   /* SIN CREAR: gris */
   @keyframes pulse-glow{ 0%,100%{ box-shadow:0 0 4px var(--glow-color),0 0 8px var(--glow-color);} 50%{ box-shadow:0 0 15px var(--glow-color),0 0 30px var(--glow-color);} }
 
-  /* Novedades */
-  .badge-tipo{ font-weight:600; letter-spacing:.2px; }
+  /* Novedades: colores originales */
+  .nov-stats{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:15px; }
+  .badge-tipo{ font-weight:600; letter-spacing:.2px; padding:6px 10px; border-radius:12px; font-size:0.8rem; color:white; }
+  .badge-alta{ background-color:#28a745; }      /* verde */
+  .badge-baja{ background-color:#dc3545; }      /* rojo */
+  .badge-calificacion{ background-color:#17a2b8; } /* celeste */
+  .badge-oficio{ background-color:#6f42c1; }    /* violeta */
+  .badge-categoria{ background-color:#fd7e14; } /* naranja */
+  .badge-otro{ background-color:#6c757d; }      /* gris */
+
   .nov-tools .form-select,.nov-tools .form-control{ max-width:220px; }
   .nov-counter{ font-size:.85rem; color:#6c757d; }
   .nov-sticky{ position:sticky; top:0; z-index:1; background:#fff; }
-  @media (max-width:992px){ .main-content.shifted{ margin-left:0; } .pulse-button{ font-size:1rem; } }
+
+  /* Indicador mínimo bajo el cartel (solo si no está ABIERTO) */
+  .mini-indicacion{ margin-top:10px; font-size:.85rem; color:#6c757d; }
+
+  @media (max-width:992px){
+    .main-content.shifted{ margin-left:0; }
+    .pulse-button{ font-size:1rem; }
+  }
 </style>
 
 <div class="sidebar" id="sidebar">
   <button class="sidebar-toggle" id="sidebar-toggle"><i class="fas fa-chevron-right"></i></button>
   <div class="sidebar-header"><h3>Menú de Gestión</h3></div>
   <ul class="nav flex-column sidebar-nav">
-    <li class="nav-item"><a href="#" class="nav-link active"><i class="fas fa-tachometer-alt fa-fw me-2"></i> Administrador</a></li>
+    <li class="nav-item"><a href="{% url 'presidencia_dashboard' %}" class="nav-link active"><i class="fas fa-tachometer-alt fa-fw me-2"></i> Administrador</a></li>
     <li class="nav-item"><a href="{% url 'empleados:empleado-list' %}" class="nav-link"><i class="fas fa-users fa-fw me-2"></i> Empleados</a></li>
     <li class="nav-item"><a href="{% url 'empleados:calificacion-list' %}" class="nav-link"><i class="fas fa-star fa-fw me-2"></i> Calificaciones</a></li>
     <li class="nav-item"><a href="{% url 'empleados:categoria-list' %}" class="nav-link"><i class="fas fa-layer-group fa-fw me-2"></i> Categorías</a></li>
     <li class="nav-item"><a href="{% url 'empleados:oficiojudicial-list' %}" class="nav-link"><i class="fas fa-gavel fa-fw me-2"></i> Oficios Judiciales</a></li>
-
-    {# NUEVO: enlace directo al listado de Novedades Mensuales #}
     <li class="nav-item"><a href="{% url 'empleados:novedades_mensuales_list' %}" class="nav-link"><i class="fas fa-bell fa-fw me-2"></i> Novedades mensuales</a></li>
-
     <li class="nav-item"><a href="{% url 'periodo_panel' %}" class="nav-link"><i class="fas fa-calendar-alt fa-fw me-2"></i> Período</a></li>
   </ul>
 </div>
@@ -96,19 +108,21 @@
 
     <div class="mb-4 text-center">
       <span class="pulse-button pulse-static
-        {% if estado == 'ABIERTA' %}status-abierta
-        {% elif estado == 'CERRADA' %}status-cerrada
-        {% elif estado == 'CONFIRMADA' %}status-confirmada
+        {% if estado == 'ABIERTO' or estado == 'ABIERTA' %}status-abierto
+        {% elif estado == 'CERRADO' or estado == 'CERRADA' %}status-cerrado
+        {% elif estado == 'CONFIRMADO' or estado == 'CONFIRMADA' %}status-confirmado
         {% else %}status-sin_crear{% endif %}" aria-live="polite">
         {{ PERIODO_MES_NOMBRE|upper }} DE {{ PERIODO_ANIO }} -
-        {% if estado == 'ABIERTA' %}ABIERTO
-        {% elif estado == 'CERRADA' %}CERRADO
-        {% elif estado == 'CONFIRMADA' %}CONFIRMADO
+        {% if estado == 'ABIERTO' or estado == 'ABIERTA' %}ABIERTO
+        {% elif estado == 'CERRADO' or estado == 'CERRADA' %}CERRADO
+        {% elif estado == 'CONFIRMADO' or estado == 'CONFIRMADA' %}CONFIRMADO
         {% else %}SIN CREAR{% endif %}
       </span>
-      {% if not PERIODO_ELEGIDO %}
-        <div class="text-muted mt-2 small">
-          Abrí <strong>Menú de Gestión → Panel del Período</strong> para seleccionar el período de trabajo.
+
+      {% if estado != 'ABIERTO' and estado != 'ABIERTA' %}
+        <div class="mini-indicacion">
+          <i class="fas fa-info-circle me-1"></i>
+          Abrí <strong>Menú de Gestión</strong> → <strong>Período</strong> y seleccioná el período de trabajo.
         </div>
       {% endif %}
     </div>
@@ -133,83 +147,102 @@
         <div class="chart-canvas"><canvas id="chartSituacion"></canvas></div>
         <div class="counts-container">
           <div class="small text-muted" id="txt-porc-sit">Permanentes: —, Contratados: —</div>
-          <div>Total: <strong id="total-sit">—</strong></div>
-          <div class="status-permanente">Permanentes: <strong id="n-perm">—</strong></div>
-          <div class="status-contratado">Contratados: <strong id="n-cont">—</strong></div>
+          <div>Total: <strong id="total-sit">{{ permanentes|add:contratados }}</strong></div>
+          <div class="status-permanente">Permanentes: <strong id="n-perm">{{ permanentes }}</strong></div>
+          <div class="status-contratado">Contratados: <strong id="n-cont">{{ contratados }}</strong></div>
         </div>
       </div>
     </div>
 
     {# ================= Novedades del período ================= #}
     <div class="card">
-      <div class="d-flex flex-wrap justify-content-between align-items-center">
-        <h5 class="card-title mb-2 mb-lg-0"><i class="fas fa-bell me-2"></i>Novedades del período</h5>
-        <div class="d-flex flex-wrap gap-2 align-items-center nov-tools">
-          <span class="nov-counter"><span id="novCount">{{ novedades|length|default:0 }}</span> registro(s)</span>
-          <select id="fTipo" class="form-select form-select-sm">
-            <option value="">Todos los tipos</option>
-            {% if tipos_novedad %}
-              {% for t in tipos_novedad %}
-                <option value="{{ t|lower }}">{{ t }}</option>
-              {% endfor %}
-            {% endif %}
-          </select>
-          <div class="input-group input-group-sm">
-            <span class="input-group-text"><i class="fas fa-search"></i></span>
-            <input id="fBuscar" type="text" class="form-control" placeholder="Buscar por empleado o descripción…">
-          </div>
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+        <h5 class="card-title mb-0"><i class="fas fa-bell me-2"></i>Novedades del período</h5>
+        <div class="d-flex align-items-center gap-2">
+          <span class="nov-counter">{{ novedades|length|default:0 }} registro(s)</span>
+          <a href="{% url 'empleados:novedades_mensuales_list' %}" class="btn btn-sm btn-outline-primary">
+            <i class="fas fa-list me-1"></i>Ver todas
+          </a>
         </div>
       </div>
 
-      <div class="table-responsive mt-3">
-        <table class="table align-middle mb-0" id="tablaNovedades">
-          <thead>
-            <tr>
-              <th class="nov-sticky" data-sort="fecha">Fecha</th>
-              <th class="nov-sticky">Tipo</th>
-              <th class="nov-sticky">Empleado</th>
-              <th class="nov-sticky">Descripción</th>
-              <th class="nov-sticky text-end">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for n in novedades %}
-            <tr data-tipo="{{ n.tipo|lower }}"
-                data-q="{{ n.empleado|default:''|lower }} {{ n.descripcion|default:''|lower }}"
-                data-fecha="{{ n.fecha|date:'c' }}">
-              <td class="text-nowrap">{{ n.fecha|date:"d/m/Y H:i" }}</td>
-              <td>
-                {% with tl=n.tipo|lower %}
-                <span class="badge badge-tipo
-                  {% if 'licencia' in tl %} bg-warning text-dark
-                  {% elif 'calif' in tl %} bg-info text-dark
-                  {% elif 'oficio' in tl %} bg-primary
-                  {% elif 'preliq' in tl %} bg-secondary
-                  {% elif 'categor' in tl %} bg-success
-                  {% elif 'emplead' in tl %} bg-dark
-                  {% else %} bg-secondary {% endif %}">
-                  {{ n.tipo }}
-                </span>
-                {% endwith %}
-              </td>
-              <td>{{ n.empleado|default:"—" }}</td>
-              <td style="max-width: 520px; word-break: break-word;">{{ n.descripcion|default:"—" }}</td>
-              <td class="text-end">
-                {% if n.url %}
-                  <a class="btn btn-sm btn-outline-primary" href="{{ n.url }}"><i class="fas fa-external-link-alt"></i> Ver</a>
-                {% else %}
-                  <span class="text-muted">—</span>
-                {% endif %}
-              </td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="5" class="text-center py-4">No hay novedades registradas para este período.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+      {% if novedades %}
+        <!-- Estadísticas rápidas -->
+        <div class="nov-stats">
+          {% if stats_novedades.EMPLEADO_ALTA %}
+            <span class="badge-tipo badge-alta">{{ stats_novedades.EMPLEADO_ALTA }} Alta(s)</span>
+          {% endif %}
+          {% if stats_novedades.EMPLEADO_BAJA %}
+            <span class="badge-tipo badge-baja">{{ stats_novedades.EMPLEADO_BAJA }} Baja(s)</span>
+          {% endif %}
+          {% if stats_novedades.CAMBIO_CALIF %}
+            <span class="badge-tipo badge-calificacion">{{ stats_novedades.CAMBIO_CALIF }} Calificación(es)</span>
+          {% endif %}
+          {% if stats_novedades.OFICIO_CREADO %}
+            <span class="badge-tipo badge-oficio">{{ stats_novedades.OFICIO_CREADO }} Oficio(s)</span>
+          {% endif %}
+          {% if stats_novedades.CAMBIO_CATEG %}
+            <span class="badge-tipo badge-categoria">{{ stats_novedades.CAMBIO_CATEG }} Categoría(s)</span>
+          {% endif %}
+          {% if stats_novedades.OTRO %}
+            <span class="badge-tipo badge-otro">{{ stats_novedades.OTRO }} Otro(s)</span>
+          {% endif %}
+        </div>
+
+        <!-- Tabla de novedades (solo últimas 15) -->
+        <div class="table-responsive">
+          <table class="table align-middle mb-0" id="tablaNovedades">
+            <thead>
+              <tr>
+                <th class="nov-sticky">Fecha</th>
+                <th class="nov-sticky">Tipo</th>
+                <th class="nov-sticky">Empleado</th>
+                <th class="nov-sticky">Descripción</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for n in novedades|slice:":15" %}
+              <tr data-tipo="{{ n.tipo|lower }}"
+                  data-q="{{ n.empleado|default:''|lower }} {{ n.descripcion|default:''|lower }}"
+                  data-fecha="{{ n.fecha|date:'c' }}">
+                <td class="text-nowrap">{{ n.fecha|date:"d/m/Y H:i" }}</td>
+                <td>
+                  {% if n.tipo == 'EMPLEADO_ALTA' %}
+                    <span class="badge-tipo badge-alta">Alta Empleado</span>
+                  {% elif n.tipo == 'EMPLEADO_BAJA' %}
+                    <span class="badge-tipo badge-baja">Baja Empleado</span>
+                  {% elif n.tipo == 'CAMBIO_CALIF' %}
+                    <span class="badge-tipo badge-calificacion">Calificación</span>
+                  {% elif n.tipo == 'OFICIO_CREADO' %}
+                    <span class="badge-tipo badge-oficio">Oficio Judicial</span>
+                  {% elif n.tipo == 'CAMBIO_CATEG' %}
+                    <span class="badge-tipo badge-categoria">Cambio Categoría</span>
+                  {% else %}
+                    <span class="badge-tipo badge-otro">{{ n.get_tipo_display|default:n.tipo }}</span>
+                  {% endif %}
+                </td>
+                <td>{{ n.empleado|default:"—" }}</td>
+                <td style="max-width: 400px; word-break: break-word;">{{ n.descripcion|truncatewords:15 }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        
+        {% if novedades|length > 15 %}
+          <div class="text-center mt-3">
+            <small class="text-muted">Mostrando las últimas 15 de {{ novedades|length }} novedades.</small>
+            <a href="{% url 'empleados:novedades_mensuales_list' %}" class="btn btn-link btn-sm">Ver todas</a>
+          </div>
+        {% endif %}
+      {% else %}
+        <!-- Sin novedades -->
+        <div class="text-center py-4 text-muted">
+          <i class="fas fa-info-circle me-2"></i>No hay novedades registradas para este período.
+          <br><small>Las novedades aparecen automáticamente cuando realizas cambios.</small>
+        </div>
+      {% endif %}
     </div>
-    {# ========================================================= #}
 
   </div>
 </div>
@@ -238,129 +271,59 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Utilidad: crea un doughnut "vacío" (sin porciones, sin números, sin leyenda ni tooltips)
-  function renderEmptyDoughnut(ctx) {
-    new Chart(ctx, {
-      type: 'doughnut',
-      data: { labels: [], datasets: [{ data: [] }] }, // sin datos
-      options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        cutout: '70%',
-        plugins: { legend: { display: false }, tooltip: { enabled: false } },
-        animation: false
-      }
-    });
-  }
-
-  // ===== Gráfico Activos/Inactivos =====
+  // ===== Datos iniciales para gráficos =====
   const total = {{ total_empleados|default:0 }};
   const act   = {{ total_activos|default:0 }};
   const ina   = {{ total_inactivos|default:0 }};
 
-  const $txtAct = document.getElementById('txt-porc-activos');
-  const $totEmp = document.getElementById('total-empleados');
-  const $totAct = document.getElementById('total-activos');
-  const $totIna = document.getElementById('total-inactivos');
-
-  const ctxAct = document.getElementById('chartActivos').getContext('2d');
+  const ctxActivos = document.getElementById('chartActivos').getContext('2d');
 
   if (total === 0) {
-    // Mostrar sin números
-    $txtAct.textContent = 'Sin datos para este período';
-    if ($totEmp) $totEmp.textContent = '—';
-    if ($totAct) $totAct.textContent = '—';
-    if ($totIna) $totIna.textContent = '—';
-    renderEmptyDoughnut(ctxAct);
-  } else {
-    const pAct = ((act / total) * 100).toFixed(1);
-    const pIna = ((ina / total) * 100).toFixed(1);
-    $txtAct.textContent = `Activos: ${pAct}%, Inactivos: ${pIna}%`;
-    if ($totEmp) $totEmp.textContent = total;
-    if ($totAct) $totAct.textContent = act;
-    if ($totIna) $totIna.textContent = ina;
-
-    new Chart(ctxAct, {
+    document.getElementById('txt-porc-activos').textContent = 'Sin datos para este período';
+    document.getElementById('total-empleados').textContent = '0';
+    document.getElementById('total-activos').textContent = '0';
+    document.getElementById('total-inactivos').textContent = '0';
+    new Chart(ctxActivos, {
       type:'doughnut',
-      data:{
-        labels:['Activos','Inactivos'],
-        datasets:[{ data:[act, ina], backgroundColor:['#0055A4','#800080'], borderWidth:0 }]
-      },
+      data:{ labels:['Sin datos'], datasets:[{ data:[1], backgroundColor:['#e0e0e0'], borderWidth:0 }] },
+      options:{ responsive:true, cutout:'70%', plugins:{ legend:{ display:false }, tooltip:{ enabled:false } } }
+    });
+  } else {
+    const pAct = ((act/total)*100).toFixed(1), pIna=((ina/total)*100).toFixed(1);
+    document.getElementById('txt-porc-activos').textContent = `Activos: ${pAct}%, Inactivos: ${pIna}%`;
+    new Chart(ctxActivos, {
+      type:'doughnut',
+      data:{ labels:['Activos','Inactivos'], datasets:[{ data:[act,ina], backgroundColor:['#0055A4','#800080'], borderWidth:0 }] },
       options:{ responsive:true, cutout:'70%', plugins:{ legend:{ display:false } } }
     });
   }
 
-  // ===== Gráfico Situación (Permanentes/Contratados) =====
-  // Tomamos las métricas ya calculadas en el servidor
-  const nPerm  = {{ permanentes|default:0 }};
-  const nCont  = {{ contratados|default:0 }};
+  // Gráfico de situación
+  const nPerm = {{ permanentes|default:0 }};
+  const nCont = {{ contratados|default:0 }};
   const totSit = nPerm + nCont;
-
-  const $txtSit = document.getElementById('txt-porc-sit');
-  const $totSit = document.getElementById('total-sit');
-  const $nPerm  = document.getElementById('n-perm');
-  const $nCont  = document.getElementById('n-cont');
-
-  const ctxSit = document.getElementById('chartSituacion').getContext('2d');
+  const ctxSituacion = document.getElementById('chartSituacion').getContext('2d');
 
   if (totSit === 0) {
-    // Mostrar sin números
-    $txtSit.textContent = 'Sin datos para este período';
-    if ($totSit) $totSit.textContent = '—';
-    if ($nPerm)  $nPerm.textContent  = '—';
-    if ($nCont)  $nCont.textContent  = '—';
-    renderEmptyDoughnut(ctxSit);
-  } else {
-    const pPerm = ((nPerm / totSit) * 100).toFixed(1);
-    const pCont = ((nCont / totSit) * 100).toFixed(1);
-    $txtSit.textContent = `Permanentes: ${pPerm}%, Contratados: ${pCont}%`;
-    if ($totSit) $totSit.textContent = totSit;
-    if ($nPerm)  $nPerm.textContent  = nPerm;
-    if ($nCont)  $nCont.textContent  = nCont;
-
-    new Chart(ctxSit, {
+    document.getElementById('txt-porc-sit').textContent = 'Sin datos para este período';
+    document.getElementById('total-sit').textContent = '0';
+    document.getElementById('n-perm').textContent = '0';
+    document.getElementById('n-cont').textContent = '0';
+    new Chart(ctxSituacion, {
       type:'doughnut',
-      data:{
-        labels:['Permanentes','Contratados'],
-        datasets:[{ data:[nPerm, nCont], backgroundColor:['#00CED1','#000000'], borderWidth:0 }]
-      },
+      data:{ labels:['Sin datos'], datasets:[{ data:[1], backgroundColor:['#e0e0e0'], borderWidth:0 }] },
+      options:{ responsive:true, cutout:'70%', plugins:{ legend:{ display:false }, tooltip:{ enabled:false } } }
+    });
+  } else {
+    const pPerm = ((nPerm/totSit)*100).toFixed(1), pCont=((nCont/totSit)*100).toFixed(1);
+    document.getElementById('txt-porc-sit').textContent = `Permanentes: ${pPerm}%, Contratados: ${pCont}%`;
+    new Chart(ctxSituacion, {
+      type:'doughnut',
+      data:{ labels:['Permanentes','Contratados'], datasets:[{ data:[nPerm,nCont], backgroundColor:['#00CED1','#000000'], borderWidth:0 }] },
       options:{ responsive:true, cutout:'70%', plugins:{ legend:{ display:false } } }
     });
   }
-
-  // ===== Filtros/orden para Novedades =====
-  const fTipo   = document.getElementById('fTipo');
-  const fBuscar = document.getElementById('fBuscar');
-  const tbody   = document.querySelector('#tablaNovedades tbody');
-  const rows    = Array.from(tbody?.querySelectorAll('tr') || []);
-  const novCount = document.getElementById('novCount');
-
-  if (fTipo && fTipo.options.length <= 1) {
-    const tipos = Array.from(new Set(rows.map(r => r.dataset.tipo).filter(Boolean))).sort();
-    tipos.forEach(t => { const opt = document.createElement('option'); opt.value=t; opt.textContent=t.charAt(0).toUpperCase()+t.slice(1); fTipo.appendChild(opt); });
-  }
-
-  function applyFilters(){
-    const t = (fTipo?.value || '').toLowerCase();
-    const q = (fBuscar?.value || '').toLowerCase();
-    let count = 0;
-    rows.forEach(r => {
-      const okT = !t || r.dataset.tipo === t;
-      const okQ = !q || (r.dataset.q || '').includes(q);
-      const show = okT && okQ;
-      r.style.display = show ? '' : 'none';
-      if (show) count++;
-    });
-    if (novCount) novCount.textContent = count;
-  }
-  fTipo?.addEventListener('change', applyFilters);
-  fBuscar?.addEventListener('input', applyFilters);
-
-  rows.sort((a,b) => new Date(b.dataset.fecha) - new Date(a.dataset.fecha))
-      .forEach(r => tbody?.appendChild(r));
-  applyFilters();
 });
 </script>
 
 {% endblock %}
-
