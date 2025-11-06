@@ -1622,6 +1622,7 @@ class CalificacionCreateView(LoginRequiredMixin, CreateView):
         hoy = date.today()
         form.instance.mes = hoy.month
         form.instance.año = hoy.year
+        form.instance.id_usuario = self.request.user  # ← AGREGAR ESTA LÍNEA
         return super().form_valid(form)
 
 
@@ -1632,13 +1633,15 @@ class CalificacionUpdateView(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy('empleados:calificacion-list')
     login_url = 'login'
 
+    def form_valid(self, form):
+        form.instance.id_usuario = self.request.user  # ← AGREGAR ESTA LÍNEA
+        return super().form_valid(form)
+
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         if self.object and self.object.empleado:
             ctx['empleado'] = self.object.empleado
         return ctx
-
-
 
 from datetime import date
 import calendar

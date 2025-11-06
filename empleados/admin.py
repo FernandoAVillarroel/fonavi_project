@@ -86,12 +86,18 @@ class NivelBasicoAdmin(admin.ModelAdmin):
 class CalificacionAdmin(admin.ModelAdmin):
     list_display = (
         'id', 'año', 'mes', 'empleado',
-        'empleado_dni', 'empleado_cuil', 'calificacion',
+        'empleado_dni', 'empleado_cuil', 'calificacion', 'usuario_registra'  # ← Agregado
     )
     list_filter   = ('año', 'mes')
     search_fields = (
         'empleado__nombre', 'empleado__apellido', 'empleado__dni', 'empleado__cuil',
     )
+    
+    readonly_fields = ('id_usuario',)  # ← Se ve pero NO se puede editar
+    
+    def usuario_registra(self, obj):
+        return obj.id_usuario.username if obj.id_usuario else '—'
+    usuario_registra.short_description = 'Usuario'
 
     def empleado_dni(self, obj):
         return obj.empleado.dni
@@ -104,12 +110,13 @@ class CalificacionAdmin(admin.ModelAdmin):
     empleado_cuil.admin_order_field = 'empleado__cuil'
 
     def save_model(self, request, obj, form, change):
-        obj.id_usuario = request.user
+        if not obj.id_usuario:  # ← Solo si está vacío
+            obj.id_usuario = request.user
         super().save_model(request, obj, form, change)
 
     def has_add_permission(self, request):
         return False
-
+    
 @admin.register(Empleado)
 class EmpleadoAdmin(admin.ModelAdmin):
     list_display = ('id_empleado', 'nombre', 'apellido', 'dni', 'categoria', 'oficina', 'titulo')
