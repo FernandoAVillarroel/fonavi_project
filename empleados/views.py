@@ -256,13 +256,17 @@ class CategoriaListView(LoginRequiredMixin, ListView):
         context['mes_actual'] = hoy.month
         context['año_actual'] = hoy.year
         context['month_name'] = calendar.month_name[hoy.month].capitalize()
+        context['q'] = (self.request.GET.get('q') or '').strip()
         return context
 
     def get_queryset(self):
-        # Trae en la misma consulta el nivel (para poder mostrar el básico)
-        return (Categoria.objects
-                .select_related('nivel')    # ← clave para ver cat.nivel.monto / cat.basico
-                .order_by('nombre'))
+        qs = (Categoria.objects
+              .select_related('nivel')
+              .order_by('nombre'))
+        q = (self.request.GET.get('q') or '').strip()
+        if q:
+            qs = qs.filter(nombre__icontains=q)
+        return qs
 
 
 class CategoriaCreateView(LoginRequiredMixin, CreateView):
@@ -865,6 +869,9 @@ from django.db.models import Q       # si ya está importado, dejalo
 from datetime import date
 import calendar
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.db.models import F, Value, IntegerField, DecimalField
+from django.db.models.functions import Coalesce
+from decimal import Decimal
 
 @login_required(login_url="login")
 @user_passes_test(is_presidencia)
@@ -921,7 +928,61 @@ def preliquidacion_overview(request):
     except Exception:
         areas = ["TODAS"]
 
-    month_name = calendar.month_name[mes] if 1 <= mes <= 12 else str(mes)
+    month_name = MONTH_NAMES.get(mes, str(mes))
+
+    sort_key = (request.GET.get("sort") or "").strip()
+    sort_dir = request.GET.get("dir", "asc").lower()
+    allowed_sort = {
+        "cuil": "empleado__cuil",
+        "nivel": "nivel__id_nivel",
+        "basico": "basico",
+        "calificacion": "calificacion",
+        "antiguedad": "antiguedad",
+        "imp_antiguedad": "importe_antiguedad",
+        "imp_titulo": "importe_titulo",
+        "basico_total": "basico_total",
+        "sup1": "supl1",
+        "sup2": "supl2",
+        "sup3": "supl3",
+        "sup4": "supl4",
+        "sup6": "supl6",
+        "sup8": "supl8",
+        "sup12": "supl12",
+        "total_suplementos": "total_suplementos",
+        "bruto": "bruto",
+        "jubilacion": "jubilacion",
+        "obra_social": "obra_social",
+        "oficio_judicial": "oficio_judicial",
+        "total_descuentos": "total_descuentos",
+        "liquido": "liquido",
+        # strings
+        "oficina": "oficina_nombre",
+        "categoria": "categoria_nombre",
+        "titulo": "titulo_completo",
+    }
+    if sort_key == "empleado":
+        if sort_dir == "desc":
+            qs = qs.order_by("-empleado__apellido", "-empleado__nombre")
+        else:
+            qs = qs.order_by("empleado__apellido", "empleado__nombre")
+    elif sort_key in allowed_sort:
+        field = allowed_sort[sort_key]
+        numeric_keys_int = {"nivel"}
+        numeric_keys_dec = {
+            "basico", "calificacion", "antiguedad",
+            "imp_antiguedad", "imp_titulo", "basico_total",
+            "sup1", "sup2", "sup3", "sup4", "sup6", "sup8", "sup12",
+            "total_suplementos", "bruto", "jubilacion", "obra_social",
+            "oficio_judicial", "total_descuentos", "liquido",
+        }
+        if sort_key in numeric_keys_int:
+            qs = qs.annotate(_sv=Coalesce(F(field), Value(0), output_field=IntegerField()))
+            qs = qs.order_by("-_sv" if sort_dir == "desc" else "_sv")
+        elif sort_key in numeric_keys_dec:
+            qs = qs.annotate(_sv=Coalesce(F(field), Value(Decimal("0.00")), output_field=DecimalField(max_digits=20, decimal_places=2)))
+            qs = qs.order_by("-_sv" if sort_dir == "desc" else "_sv")
+        else:
+            qs = qs.order_by(f"-{field}" if sort_dir == "desc" else field)
 
     # === PAGINACIÓN ===
     paginator = Paginator(qs, 15)  # 15 registros por página
@@ -1601,7 +1662,7 @@ class CalificacionListView(LoginRequiredMixin, ListView):
         ctx['q'] = self.request.GET.get('q', '')
         ctx['mes_actual'] = mes
         ctx['año_actual'] = anio
-        ctx['month_name'] = calendar.month_name[mes].capitalize()
+        ctx['month_name'] = MONTH_NAMES.get(mes, str(mes))
         ctx['periodo_str'] = periodo_str
         ctx['allow_edit'] = periodo_abierto and not periodo_confirmado
         ctx['periodo_confirmado'] = periodo_confirmado
@@ -1844,7 +1905,7 @@ class OficioJudicialListView(LoginRequiredMixin, ListView):
 
         ctx['anio_actual'] = anio
         ctx['mes_actual']  = mes
-        ctx['month_name']  = calendar.month_name[mes].capitalize()
+        ctx['month_name']  = MONTH_NAMES.get(mes, str(mes))
         ctx['allow_edit']  = (periodo_abierto and es_actual and not periodo_confirmado)
         ctx['periodo_confirmado'] = periodo_confirmado
         ctx['periodo_abierto']    = periodo_abierto or (lp is None and es_actual)
@@ -1862,7 +1923,7 @@ class OficioJudicialListView(LoginRequiredMixin, ListView):
         first_year = first_employee.fecha_ingreso.year if first_employee else timezone.now().year
         current_year = timezone.now().year
         ctx['years'] = list(range(first_year, current_year + 1))
-        ctx['months'] = [(i, calendar.month_name[i]) for i in range(1, 13)]
+        ctx['months'] = [(i, MONTH_NAMES.get(i, str(i))) for i in range(1, 13)]
 
         
         return ctx
@@ -1929,7 +1990,7 @@ class OficioJudicialEmpleadoListView(LoginRequiredMixin, ListView):
             'empleado': self.empleado,
             'anio_actual': anio,
             'mes_actual': mes,
-            'month_name': calendar.month_name[mes].capitalize(),
+            'month_name': MONTH_NAMES.get(mes, str(mes)),
             'allow_edit': self._allow_edit,
             'periodo_confirmado': periodo_confirmado,
             'periodo_abierto': periodo_abierto or (lp is None and es_actual),
@@ -2058,7 +2119,7 @@ class OficioJudicialDeleteView(LoginRequiredMixin, DeleteView):
 
 from django.db.models import Q, OuterRef, Subquery
 from datetime import date
-from calendar import month_name
+from .views import MONTH_NAMES
 from .models import Empleado, Calificacion
 
 from django.db.models import OuterRef, Subquery, Value
@@ -2106,7 +2167,7 @@ def calificacion_list(request):
         .distinct()
     )
 
-    month_name_str = month_name[mes_actual].capitalize()
+    month_name_str = MONTH_NAMES.get(mes_actual, str(mes_actual))
 
     return render(request, 'empleados/calificacion_list.html', {
         'empleados': empleados.order_by('apellido', 'nombre'),

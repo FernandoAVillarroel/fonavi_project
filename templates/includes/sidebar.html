@@ -1,0 +1,16 @@
+<div class="sidebar" id="sidebar">
+  <button class="sidebar-toggle" id="sidebar-toggle" type="button"
+          onclick="(function(btn){var s=document.getElementById('sidebar');var m=document.getElementById('main-content');var i=btn.querySelector('i');var willOpen=!s.classList.contains('active');s.classList.toggle('active');if(m) m.classList.toggle('shifted');if(i){i.classList.toggle('fa-chevron-left',willOpen);i.classList.toggle('fa-chevron-right',!willOpen);}})(this)">
+    <i class="fas fa-chevron-right"></i>
+  </button>
+  <div class="sidebar-header"><h3>Menú de Gestión</h3></div>
+  <ul class="nav flex-column sidebar-nav">
+    <li class="nav-item"><a href="{% url 'presidencia_dashboard' %}" class="nav-link {% if active_menu == 'dashboard' %}active{% endif %}"><i class="fas fa-tachometer-alt fa-fw me-2"></i> Administrador</a></li>
+    <li class="nav-item"><a href="{% url 'empleados:empleado-list' %}" class="nav-link {% if active_menu == 'empleados' %}active{% endif %}"><i class="fas fa-users fa-fw me-2"></i> Empleados</a></li>
+    <li class="nav-item"><a href="{% url 'empleados:calificacion-list' %}" class="nav-link {% if active_menu == 'calificaciones' %}active{% endif %}"><i class="fas fa-star fa-fw me-2"></i> Calificaciones</a></li>
+    <li class="nav-item"><a href="{% url 'empleados:categoria-list' %}" class="nav-link {% if active_menu == 'categorias' %}active{% endif %}"><i class="fas fa-layer-group fa-fw me-2"></i> Categorías</a></li>
+    <li class="nav-item"><a href="{% url 'empleados:oficiojudicial-list' %}" class="nav-link {% if active_menu == 'oficios' %}active{% endif %}"><i class="fas fa-gavel fa-fw me-2"></i> Oficios Judiciales</a></li>
+    <li class="nav-item"><a href="{% url 'empleados:novedades_mensuales_list' %}" class="nav-link {% if active_menu == 'novedades' %}active{% endif %}"><i class="fas fa-bell fa-fw me-2"></i> Novedades Mensuales</a></li>
+    <li class="nav-item"><a href="{% url 'periodo_panel' %}" class="nav-link {% if active_menu == 'periodo' %}active{% endif %}"><i class="fas fa-calendar-alt fa-fw me-2"></i> Período</a></li>
+  </ul>
+</div>

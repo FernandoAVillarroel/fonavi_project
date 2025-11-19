@@ -42,19 +42,7 @@
   @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 
-<div class="sidebar" id="sidebar">
-  <button class="sidebar-toggle" id="sidebar-toggle"><i class="fas fa-chevron-right"></i></button>
-  <div class="sidebar-header"><h3>Menú de Gestión</h3></div>
-  <ul class="nav flex-column sidebar-nav">
-    <li class="nav-item"><a href="{% url 'presidencia_dashboard' %}" class="nav-link"><i class="fas fa-tachometer-alt fa-fw me-2"></i> Administrador</a></li>
-    <li class="nav-item"><a href="{% url 'empleados:empleado-list' %}" class="nav-link"><i class="fas fa-users fa-fw me-2"></i> Empleados</a></li>
-    <li class="nav-item"><a href="{% url 'empleados:calificacion-list' %}" class="nav-link"><i class="fas fa-star fa-fw me-2"></i> Calificaciones</a></li>
-    <li class="nav-item"><a href="{% url 'empleados:categoria-list' %}" class="nav-link"><i class="fas fa-layer-group fa-fw me-2"></i> Categorías</a></li>
-    <li class="nav-item"><a href="{% url 'empleados:oficiojudicial-list' %}" class="nav-link"><i class="fas fa-gavel fa-fw me-2"></i> Oficios Judiciales</a></li>
-    <li class="nav-item"><a href="{% url 'empleados:novedades_mensuales_list' %}" class="nav-link"><i class="fas fa-bell fa-fw me-2"></i> Novedades mensuales</a></li>
-    <li class="nav-item"><a href="{% url 'periodo_panel' %}" class="nav-link active"><i class="fas fa-calendar-alt fa-fw me-2"></i> Panel del Período</a></li>
-  </ul>
-</div>
+{% with active_menu='periodo' %}{% include 'includes/sidebar.html' %}{% endwith %}
 
 <div class="main-content" id="main-content">
   <div class="container-fluid content-container">

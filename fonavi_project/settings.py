@@ -87,7 +87,7 @@ DATABASES = {
         'ENGINE':   'django.db.backends.mysql',
         'NAME':     'fonavi_db',
         'USER':     'root',
-        'PASSWORD': 'fernando',
+        'PASSWORD': '1234',
         'HOST':     'localhost',
         'PORT':     '3306',
         'OPTIONS': {
