@@ -189,7 +189,7 @@ class CategoriaForm(forms.ModelForm):
     class Meta:
         model = Categoria
         fields = [
-            'nombre', 'nivel', 'basico_manual',
+            'nombre', 'nivel',  # ← SIN basico_manual
             'sup1', 'tipo_sup1',
             'sup2', 'tipo_sup2',
             'sup3', 'tipo_sup3',
@@ -200,8 +200,7 @@ class CategoriaForm(forms.ModelForm):
         ]
         labels = {
             'nombre': 'Nombre de la Categoría',
-            'nivel':  'Nivel (opcional)',
-            'basico_manual': 'Básico (monto)',
+            'nivel':  'Nivel',
         }
         widgets = {
             'sup1':  forms.NumberInput(attrs={'step': '0.01', 'inputmode': 'decimal'}),
@@ -211,38 +210,27 @@ class CategoriaForm(forms.ModelForm):
             'sup6':  forms.NumberInput(attrs={'step': '0.01', 'inputmode': 'decimal'}),
             'sup8':  forms.NumberInput(attrs={'step': '0.01', 'inputmode': 'decimal'}),
             'sup12': forms.NumberInput(attrs={'step': '0.01', 'inputmode': 'decimal'}),
-            'basico_manual': forms.NumberInput(attrs={'step': '0.01', 'inputmode': 'decimal'}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # Cambiar help_text
-        self.fields['nivel'].help_text = "Opcional: seleccione un nivel predefinido (actualizará el básico automáticamente)."
-        self.fields['basico_manual'].help_text = "Monto básico de la categoría. Si selecciona un nivel, este campo se actualizará automáticamente."
+        # Campo nivel obligatorio
+        self.fields['nivel'].required = True
+        self.fields['nivel'].help_text = "Seleccione el nivel de la categoría."
 
     def clean(self):
         cleaned = super().clean()
         
-        # Validar que haya al menos nivel O básico_manual
+        # Validar que haya nivel
         nivel = cleaned.get('nivel')
-        basico_manual = cleaned.get('basico_manual')
         
-        # Convertir a Decimal si viene como string
-        if basico_manual and isinstance(basico_manual, str):
-            try:
-                basico_manual = Decimal(basico_manual.replace(',', '.'))
-                cleaned['basico_manual'] = basico_manual
-            except:
-                pass
+        if not nivel:
+            raise forms.ValidationError('Debe seleccionar un nivel.')
         
-        if not nivel and (not basico_manual or basico_manual == 0):
-            raise forms.ValidationError('Debe seleccionar un nivel O ingresar un monto básico.')
-        
-        # Si hay ambos, priorizar nivel y limpiar basico_manual
-        if nivel and basico_manual:
-            cleaned['basico_manual'] = None
-        
+        # Limpiar basico_manual (no se usa desde web)
+        cleaned['basico_manual'] = None
+                        
         # Aceptar coma como separador decimal en sup*
         for f in ['sup1', 'sup2', 'sup3', 'sup4', 'sup6', 'sup8', 'sup12']:
             v = cleaned.get(f)
@@ -259,6 +247,9 @@ class CategoriaForm(forms.ModelForm):
     def save(self, commit=True):
         obj = super().save(commit=False)
 
+        # Limpiar basico_manual (solo se edita desde admin)
+        obj.basico_manual = None
+
         # tipo_sup*: 1 por defecto; 6 y 12 suelen ser monto fijo (2)
         defaults_tipo = {1: 1, 2: 1, 3: 1, 4: 1, 6: 2, 8: 1, 12: 2}
         for i in [1, 2, 3, 4, 6, 8, 12]:
@@ -273,7 +264,6 @@ class CategoriaForm(forms.ModelForm):
         if commit:
             obj.save()
         return obj
-    
     
 # forms.py
 from decimal import Decimal, InvalidOperation

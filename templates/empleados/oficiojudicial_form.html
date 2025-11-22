@@ -1,318 +1,635 @@
-{% extends "base.html" %}
+ {% extends "base.html" %}
+
 {% load humanize %}
+
 {% block content %}
 
+
+
 <style>
+
   /* Paleta de colores y variables de diseño para una personalización sencilla */
+
   :root {
+
     --primary-color: #0d6efd;
+
     --success-color: #198754;
+
     --border-color: #dee2e6;
+
     --background-light: #f8f9fa;
+
     --text-dark: #212529;
+
     --text-muted: #6c757d;
+
     --border-radius: 0.5rem;
+
     --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+
   }
+
+
 
   /* Contenedor principal y cabecera de la tarjeta */
+
   .container-form {
+
     max-width: 760px;
+
     margin: 2rem auto;
+
     background-color: #fff;
+
     border-radius: var(--border-radius);
+
     box-shadow: var(--shadow);
+
     border: 1px solid var(--border-color);
+
   }
+
   .form-header {
+
     padding: 1.25rem 1.5rem;
+
     background-color: var(--background-light);
+
     border-bottom: 1px solid var(--border-color);
+
   }
+
   .form-title {
+
     margin: 0;
+
     font-weight: 700;
+
     color: var(--text-dark);
+
     font-size: 1.3rem;
+
   }
+
   .form-body {
+
     padding: 1.5rem;
+
   }
+
+
 
   /* Grilla del formulario para una alineación perfecta */
+
   .form-grid {
+
     display: grid;
+
     grid-template-columns: repeat(2, 1fr);
+
     gap: 1.5rem;
+
   }
+
   .form-grid .full-width {
+
     grid-column: 1 / -1;
+
   }
-  
+
+ 
+
   /* Grupos de campos (etiqueta + input) */
+
   .form-group {
+
     display: flex;
+
     flex-direction: column;
+
   }
+
   .form-label {
+
     font-weight: 600;
+
     color: #495057;
+
     margin-bottom: 0.5rem;
+
     font-size: 0.9rem;
+
   }
+
+
 
   /* Estilos para inputs, selects */
+
   .form-control, .form-select {
+
     display: block;
+
     width: 100%;
+
     padding: 0.6rem 0.75rem;
+
     font-size: 1rem;
+
     font-weight: 400;
+
     line-height: 1.5;
+
     color: var(--text-dark);
+
     background-color: #fff;
+
     background-clip: padding-box;
+
     border: 1px solid var(--border-color);
+
     appearance: none;
+
     border-radius: var(--border-radius);
+
     transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+
   }
+
   /* Efecto visual al seleccionar un campo */
+
   .form-control:focus, .form-select:focus {
+
     border-color: #86b7fe;
+
     outline: 0;
+
     box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, .25);
+
   }
+
+
 
   /* Campos de solo lectura con apariencia de input deshabilitado */
+
   .readonly-field {
+
     background-color: #e9ecef;
+
     padding: 0.6rem 0.75rem;
+
     border-radius: var(--border-radius);
+
     font-weight: 500;
+
     color: #495057;
+
     min-height: calc(1.5em + 1.2rem + 2px); /* Para alinear con la altura de los inputs */
+
     display: flex;
+
     align-items: center;
+
   }
+
+
 
   /* Separador de sección para mayor claridad */
+
   .section-divider {
+
     grid-column: 1 / -1;
+
     margin-top: 1.5rem;
+
     padding-top: 1.5rem;
+
     border-top: 1px solid var(--border-color);
+
   }
+
   .section-title {
+
     color: var(--primary-color);
+
     font-weight: 600;
+
     margin: 0 0 1.5rem 0;
+
     font-size: 1.1rem;
+
     display: flex;
+
     align-items: center;
+
     gap: 0.5rem;
+
   }
+
+
 
   /* Botones y enlaces de acción */
+
   .form-actions {
+
     margin-top: 2rem;
+
   }
+
   .btn-back {
+
     color: var(--text-muted);
+
     text-decoration: none;
+
     font-weight: 500;
+
   }
+
   .btn-back:hover {
+
     color: var(--text-dark);
+
   }
+
   .btn-submit {
+
     background-color: var(--success-color);
+
     color: white;
+
     padding: 0.75rem 1.5rem;
+
     border-radius: var(--border-radius);
+
     border: none;
+
     font-weight: 600;
+
     cursor: pointer;
+
     transition: background-color .15s ease-in-out;
+
   }
+
   .btn-submit:hover {
+
     background-color: #157347;
+
   }
-  
+
+ 
+
   /* Textos de ayuda y mensajes de error */
+
   .form-text {
+
     font-size: 0.85rem;
+
     color: var(--text-muted);
+
     display: block;
+
     margin-top: 0.35rem;
+
   }
+
   .form-error {
+
     color: #dc3545;
+
     font-size: 0.85rem;
+
     margin-top: 0.35rem;
+
   }
-  
+
+ 
+
   /* Clases para el control de visibilidad con JS (con animación) */
+
   .toggleable-group {
+
     transition: all 0.35s cubic-bezier(0.25, 0.1, 0.25, 1);
+
     overflow: hidden;
+
     max-height: 200px; /* Altura suficiente para cualquier campo */
+
     transform-origin: top;
+
   }
+
   .toggleable-group.is-hidden {
+
     opacity: 0;
+
     max-height: 0;
+
     padding-top: 0;
+
     padding-bottom: 0;
+
     margin: 0;
+
     border: none;
+
     transform: scaleY(0);
+
   }
+
 </style>
 
+
+
 <div class="mb-4">
+
   <a href="{% url 'empleados:oficiojudicial-list' %}" class="btn-back">← Volver a la lista</a>
+
 </div>
+
+
 
 <div class="container-form">
+
   <header class="form-header">
+
     <h1 class="form-title">
+
       {% if modo == 'update' %}Editar{% else %}Nuevo{% endif %} Oficio Judicial
+
     </h1>
+
   </header>
 
+
+
   <main class="form-body">
+
     <form method="post" novalidate>
+
       {% csrf_token %}
 
+
+
       <div style="display:none;">
+
         {{ form.empleado }} {{ form.anio }} {{ form.mes }}
+
       </div>
+
+
 
       {% if form.non_field_errors %}
+
         <div class="alert alert-danger mb-3">{{ form.non_field_errors }}</div>
+
       {% endif %}
 
+
+
       <div class="form-grid">
-        
+
+       
+
         <div class="form-group full-width">
+
           <label class="form-label">Empleado</label>
+
           <div class="readonly-field">
+
             {{ empleado_obj.apellido }} {{ empleado_obj.nombre }}
+
           </div>
+
         </div>
 
+
+
         <div class="form-group">
+
           <label class="form-label">Año</label>
+
           <div class="readonly-field">{{ anio_fijo }}</div>
+
         </div>
 
+
+
         <div class="form-group">
+
           <label class="form-label">Mes</label>
+
           <div class="readonly-field">{{ mes_fijo|capfirst }}</div>
+
         </div>
+
+
 
         <div class="form-group full-width">
+
           <label class="form-label" for="{{ form.tipo.id_for_label }}">Tipo de descuento</label>
+
           {{ form.tipo }}
+
           {% if form.tipo.errors %}<div class="form-error">{{ form.tipo.errors }}</div>{% endif %}
+
         </div>
+
+
 
         <div id="rowMonto" class="form-group toggleable-group">
+
           <label class="form-label" for="{{ form.monto_descontar.id_for_label }}">Monto a descontar ($)</label>
+
           {{ form.monto_descontar }}
+
           {% if form.monto_descontar.errors %}<div class="form-error">{{ form.monto_descontar.errors }}</div>{% endif %}
+
         </div>
+
+
 
         <div id="rowPorc" class="form-group toggleable-group">
+
           <label class="form-label" for="{{ form.porcentaje_descontar.id_for_label }}">Porcentaje a descontar (%)</label>
+
           {{ form.porcentaje_descontar }}
+
           {% if form.porcentaje_descontar.errors %}<div class="form-error">{{ form.porcentaje_descontar.errors }}</div>{% endif %}
+
         </div>
+
+
 
         <div class="section-divider">
+
           <h2 class="section-title">📄 Datos para Archivo TXT Bancario</h2>
+
         </div>
 
+
+
         <div class="form-group">
+
           <label class="form-label" for="{{ form.codigo_mutual.id_for_label }}">
+
             Código Mutual/Servicio
+
           </label>
+
           {{ form.codigo_mutual }}
+
           {% if form.codigo_mutual.errors %}
+
             <div class="form-error">{{ form.codigo_mutual.errors }}</div>
+
           {% endif %}
+
           <small class="form-text">3 dígitos. Ej: 001=AMUR, 048=Préstamos</small>
+
         </div>
 
+
+
         <div class="form-group">
+
           <label class="form-label" for="{{ form.numero_cuota.id_for_label }}">
+
             Número de Cuota
+
           </label>
+
           {{ form.numero_cuota }}
+
           {% if form.numero_cuota.errors %}
+
             <div class="form-error">{{ form.numero_cuota.errors }}</div>
+
           {% endif %}
+
           <small class="form-text">Si es un monto fijo, usar 1.</small>
+
         </div>
+
+
 
         <div class="form-group full-width">
+
           <label class="form-label" for="{{ form.novedad.id_for_label }}">
+
             Tipo de Novedad
+
           </label>
+
           {{ form.novedad }}
+
           {% if form.novedad.errors %}
+
             <div class="form-error">{{ form.novedad.errors }}</div>
+
           {% endif %}
+
           <small class="form-text">D=Descuento, A=Alta, B=Baja.</small>
+
         </div>
 
+
+
       </div>
+
+
 
       <div class="form-actions">
+
         <button type="submit" class="btn-submit">Guardar Cambios</button>
+
       </div>
+
     </form>
+
   </main>
+
 </div>
 
+
+
 <script>
+
 document.addEventListener('DOMContentLoaded', function() {
+
   const tipoSelect = document.getElementById('{{ form.tipo.id_for_label }}');
+
   // Si el selector no existe en la página, detenemos el script.
+
   if (!tipoSelect) return;
 
+
+
   const rowMonto = document.getElementById('rowMonto');
+
   const rowPorc  = document.getElementById('rowPorc');
+
   const inpMonto = document.getElementById('{{ form.monto_descontar.id_for_label }}');
+
   const inpPorc  = document.getElementById('{{ form.porcentaje_descontar.id_for_label }}');
 
+
+
   function toggleCamposVisibles() {
+
     const valorSeleccionado = tipoSelect.value;
-    
+
+   
+
     // El valor '1' corresponde a MONTO
+
     if (valorSeleccionado === '1') {
+
       rowMonto.classList.remove('is-hidden');
+
       rowPorc.classList.add('is-hidden');
+
       if (inpPorc) inpPorc.value = '0'; // Limpia el campo oculto
-    } 
-    // El valor '2' corresponde a PORCENTAJE
-    else if (valorSeleccionado === '2') {
-      rowMonto.classList.add('is-hidden');
-      rowPorc.classList.remove('is-hidden');
-      if (inpMonto) inpMonto.value = '0'; // Limpia el campo oculto
-    } 
-    // Cualquier otro caso (como un campo vacío) muestra ambos
-    else {
-      rowMonto.classList.remove('is-hidden');
-      rowPorc.classList.remove('is-hidden');
+
     }
+
+    // El valor '2' corresponde a PORCENTAJE
+
+    else if (valorSeleccionado === '2') {
+
+      rowMonto.classList.add('is-hidden');
+
+      rowPorc.classList.remove('is-hidden');
+
+      if (inpMonto) inpMonto.value = '0'; // Limpia el campo oculto
+
+    }
+
+    // Cualquier otro caso (como un campo vacío) muestra ambos
+
+    else {
+
+      rowMonto.classList.remove('is-hidden');
+
+      rowPorc.classList.remove('is-hidden');
+
+    }
+
   }
 
+
+
   // Ejecutamos la función al cargar la página y cada vez que cambia el selector.
+
   toggleCamposVisibles();
+
   tipoSelect.addEventListener('change', toggleCamposVisibles);
+
 });
+
 </script>
+
+
 
 {% endblock %}

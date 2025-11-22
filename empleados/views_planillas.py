@@ -409,42 +409,47 @@ def exportar_contribuciones_pdf(request):
 @user_passes_test(is_presidencia)
 def generar_txt_banco(request):
     """
-    Genera archivo TXT formato DGISE (29 caracteres) para descuentos bancarios.
+    Genera archivo TXT formato DGISE (29 caracteres) para FONAVI.
     Formato: PLANTA(1) + CONTROL(8) + CODIGO(3) + IMPORTE(10) + CUOTAS(2) + NOVEDAD(1) + MES(2) + AÑO(2)
+    
+    Campos fijos:
+    - CODIGO: 508 (FONAVI)
+    - CUOTAS: 01 (mensual)
+    - NOVEDAD: 2 (alta)
     """
     # 1. Obtener parámetros de la URL
     mes = int(request.GET.get("mes", date.today().month))
     año = int(request.GET.get("año", date.today().year))
     tipo = request.GET.get("tipo", "todos")
     
-    # 2. Buscar oficios judiciales del período
-    oficios = OficioJudicial.objects.filter(
-        anio=año, 
+    # 2. Buscar liquidaciones del período
+    liquidaciones = Liquidacion.objects.filter(
+        año=año,
         mes=mes,
-        empleado__estado=1,
+        empleado__estado=1,  # Solo activos
         empleado__fecha_salida__isnull=True
     ).select_related('empleado')
     
     # 3. Filtrar por tipo de planta si es necesario
     if tipo == "permanentes":
-        oficios = oficios.filter(empleado__situacion='P')
+        liquidaciones = liquidaciones.filter(situacion='P')
     elif tipo == "contratados":
-        oficios = oficios.filter(empleado__situacion='C')
+        liquidaciones = liquidaciones.filter(situacion='C')
     
-    # 4. Verificar que haya oficios
-    if not oficios.exists():
-        messages.warning(request, f"No hay oficios judiciales para generar TXT en {mes:02d}/{año}.")
+    # 4. Verificar que haya liquidaciones
+    if not liquidaciones.exists():
+        messages.warning(request, f"No hay liquidaciones para generar TXT en {mes:02d}/{año}.")
         return redirect("empleados:ver_liquidacion_periodo")
     
     # 5. Generar líneas del archivo
     lineas = []
     errores = []
     
-    for oficio in oficios:
-        emp = oficio.empleado
+    for liq in liquidaciones:
+        emp = liq.empleado
         
         # === CAMPO 1: PLANTA (1 carácter) ===
-        planta = getattr(emp, 'situacion', 'P') or 'P'
+        planta = liq.situacion or 'P'
         
         # === CAMPO 2: CONTROL - DNI (8 caracteres) ===
         dni = str(emp.dni or '').replace('.', '').replace('-', '').strip()
@@ -453,35 +458,24 @@ def generar_txt_banco(request):
             continue
         control = dni.zfill(8)[:8]  # Rellenar con ceros a la izquierda, máximo 8
         
-        # === CAMPO 3: CODIGO - Código mutual (3 caracteres) ===
-        codigo = str(oficio.codigo_mutual).zfill(3)[:3]
+        # === CAMPO 3: CODIGO - FONAVI (3 caracteres) ===
+        codigo = "508"
         
-        # === CAMPO 4: IMPORTE (10 caracteres) - en centavos ===
-        if oficio.tipo == OficioJudicial.TIPO_MONTO:
-            # Usar monto fijo
-            monto = oficio.monto_descontar or Decimal('0')
-        else:  # TIPO_PORCENTAJE
-            # Calcular porcentaje sobre el bruto de la liquidación
-            liq = Liquidacion.objects.filter(empleado=emp, mes=mes, año=año).first()
-            if not liq:
-                errores.append(f"{emp}: No tiene liquidación en {mes:02d}/{año}")
-                continue
-            bruto = liq.bruto or Decimal('0')
-            porcentaje = (oficio.porcentaje_descontar or Decimal('0')) / Decimal('100')
-            monto = bruto * porcentaje
+        # === CAMPO 4: IMPORTE (10 caracteres) - líquido en centavos ===
+        liquido = liq.liquido or Decimal('0')
         
         # Convertir a centavos (multiplicar × 100) y formatear
-        monto_centavos = int(monto * 100)
+        monto_centavos = int(liquido * 100)
         if monto_centavos <= 0:
-            errores.append(f"{emp}: Monto $0 (no se incluye en el archivo)")
+            errores.append(f"{emp}: Líquido $0 (no se incluye en el archivo)")
             continue
         importe = str(monto_centavos).zfill(10)[:10]
         
         # === CAMPO 5: CUOTAS (2 caracteres) ===
-        cuotas = str(oficio.numero_cuota).zfill(2)[:2]
+        cuotas = "01"  # Mensual
         
         # === CAMPO 6: NOVEDAD (1 carácter) ===
-        novedad = oficio.novedad
+        novedad = "2"  # Alta
         
         # === CAMPO 7: MES (2 caracteres) ===
         mes_str = str(mes).zfill(2)
@@ -511,9 +505,8 @@ def generar_txt_banco(request):
         messages.error(request, "No se pudo generar ninguna línea válida para el archivo TXT.")
         return redirect("empleados:ver_liquidacion_periodo")
     
-    # 8. Generar nombre del archivo: Ncccmmaa.TXT
-    codigo_archivo = oficios.first().codigo_mutual.zfill(3)
-    nombre_archivo = f"N{codigo_archivo}{mes:02d}{str(año)[-2:]}.TXT"
+    # 8. Generar nombre del archivo: N508mmaa.TXT
+    nombre_archivo = f"N508{mes:02d}{str(año)[-2:]}.TXT"
     
     # 9. Crear contenido del archivo
     contenido = "\n".join(lineas)
