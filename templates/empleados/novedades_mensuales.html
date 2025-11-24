@@ -18,6 +18,7 @@
     --empleado-color: #28a745;
     --baja-color: #dc3545;
     --otro-color: #6c757d;
+    --estado-color: #6f42c1;
   }
   
   body {
@@ -203,6 +204,7 @@
   .badge-empleado-baja { background-color: var(--baja-color); }
   .badge-cambio-categ { background-color: #ffc107; color: #000; }
   .badge-otro { background-color: var(--otro-color); }
+  .badge-cambio-estado { background-color: var(--estado-color); }
 
   /* Estilos específicos para esta plantilla */
   .content-container {
@@ -278,44 +280,47 @@
       {% endif %}
     </div>
 
-    <div class="card shadow-sm mb-4 filter-card">
-        <div class="card-body">
-            <form method="get" class="row g-3 align-items-end" id="filterForm">
-                <div class="col-12 col-md-4 col-lg-3">
-                    <label for="tipo" class="form-label fw-bold">Filtrar por Tipo</label>
-                    <select name="tipo" id="tipo" class="form-select">
-                        <option value="">Todos los tipos</option>
-                        <option value="CAMBIO_CALIF" {% if f_tipo == 'CAMBIO_CALIF' %}selected{% endif %}>Calificaciones</option>
-                        <option value="OFICIO_CREADO" {% if f_tipo == 'OFICIO_CREADO' %}selected{% endif %}>Oficios Judiciales</option>
-                        <option value="EMPLEADO_ALTA" {% if f_tipo == 'EMPLEADO_ALTA' %}selected{% endif %}>Altas de Empleados</option>
-                        <option value="EMPLEADO_BAJA" {% if f_tipo == 'EMPLEADO_BAJA' %}selected{% endif %}>Bajas de Empleados</option>
-                        <option value="CAMBIO_CATEG" {% if f_tipo == 'CAMBIO_CATEG' %}selected{% endif %}>Cambios de Categoría</option>
-                        <option value="OTRO" {% if f_tipo == 'OTRO' %}selected{% endif %}>Otros Cambios</option>
-                    </select>
-                </div>
+   <div class="card shadow-sm mb-4 filter-card">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end" id="filterForm">
+            <div class="col-12 col-md-3 col-lg-3">
+                <label for="tipo" class="form-label fw-bold">Filtrar por Tipo</label>
+                <select name="tipo" id="tipo" class="form-select">
+                    <option value="">Todos los tipos</option>
+                    <option value="CAMBIO_CALIF" {% if f_tipo == 'CAMBIO_CALIF' %}selected{% endif %}>Calificaciones</option>
+                    <option value="OFICIO_CREADO" {% if f_tipo == 'OFICIO_CREADO' %}selected{% endif %}>Oficios Judiciales</option>
+                    <option value="EMPLEADO_ALTA" {% if f_tipo == 'EMPLEADO_ALTA' %}selected{% endif %}>Altas de Empleados</option>
+                    <option value="EMPLEADO_BAJA" {% if f_tipo == 'EMPLEADO_BAJA' %}selected{% endif %}>Bajas de Empleados</option>
+                    <option value="CAMBIO_ESTADO" {% if f_tipo == 'CAMBIO_ESTADO' %}selected{% endif %}>Cambios de Estado</option>
+                    <option value="CAMBIO_CATEG" {% if f_tipo == 'CAMBIO_CATEG' %}selected{% endif %}>Cambios de Categoría</option>
+                    <option value="OTRO" {% if f_tipo == 'OTRO' %}selected{% endif %}>Otros Cambios</option>
+                </select>
+            </div>
 
-                <div class="col-12 col-md-5 col-lg-6">
-                    <label for="searchInput" class="form-label fw-bold">Buscar en Descripción</label>
-                    <div class="input-group">
-                        <input id="searchInput" type="text" name="q" class="form-control" placeholder="Texto a buscar..." value="{{ f_q }}">
-                    </div>
-                </div>
+            <div class="col-12 col-md-6 col-lg-6">
+                <label for="searchInput" class="form-label fw-bold">Buscar en Descripción</label>
+                <input id="searchInput" type="text" name="q" class="form-control" placeholder="Texto a buscar..." value="{{ f_q }}">
+            </div>
 
-                <div class="col-12 col-md-3 col-lg-3 d-flex justify-content-end">
-                    <button type="submit" class="btn btn-primary animated-btn me-2"><i class="fas fa-search me-1"></i> Filtrar</button>
-                    {% if f_q or f_tipo %}
-                        <a href="?" class="btn btn-outline-secondary animated-btn"><i class="fas fa-eraser me-1"></i>Limpiar</a>
-                    {% endif %}
-                </div>
-            </form>
-        </div>
+            <div class="col-12 col-md-3 col-lg-3">
+                <button type="submit" class="btn btn-primary animated-btn w-100 mb-1"><i class="fas fa-search me-1"></i> Filtrar</button>
+                {% if f_q or f_tipo %}
+                    <a href="?" class="btn btn-outline-secondary animated-btn w-100 mt-1"><i class="fas fa-eraser me-1"></i> Limpiar</a>
+                {% endif %}
+            </div>
+        </form>
     </div>
-    
+</div>
+
     <div class="mb-3 text-muted fw-bold">
-      Mostrando <b>{{ novedades.count }}</b> novedad(es).
-    </div>
+  {% if page_obj.has_other_pages %}
+    Mostrando registros <b>{{ page_obj.start_index }}</b> al <b>{{ page_obj.end_index }}</b> de un total de <b>{{ total_novedades }}</b> novedades
+  {% else %}
+    Mostrando todas las <b>{{ total_novedades }}</b> novedades
+  {% endif %}
+</div>
 
-    <div class="card shadow-sm">
+<div class="card shadow-sm">
       <div class="table-container-fixed">
         <table class="table table-hover align-middle mb-0" id="novedadesTable">
           <thead class="table-light">
@@ -333,22 +338,24 @@
               <td class="text-nowrap">{{ n.fecha|date:"d/m/Y H:i" }}</td>
               <td>
                 {% if n.tipo == 'CAMBIO_CALIF' %}
-                    <span class="badge-tipo badge-calificacion">{{ n.get_tipo_display|default:"Calificación" }}</span>
-                {% elif n.tipo == 'OFICIO_CREADO' %}
-                    <span class="badge-tipo badge-oficio">{{ n.get_tipo_display|default:"Oficio Judicial" }}</span>
-                {% elif n.tipo == 'EMPLEADO_ALTA' %}
-                    <span class="badge-tipo badge-empleado-alta">{{ n.get_tipo_display|default:"Alta Empleado" }}</span>
-                {% elif n.tipo == 'EMPLEADO_BAJA' %}
-                    <span class="badge-tipo badge-empleado-baja">{{ n.get_tipo_display|default:"Baja Empleado" }}</span>
-                {% elif n.tipo == 'CAMBIO_CATEG' %}
-                    <span class="badge-tipo badge-cambio-categ">{{ n.get_tipo_display|default:"Cambio Categoría" }}</span>
-                {% else %}
-                    <span class="badge-tipo badge-otro">{{ n.get_tipo_display|default:n.tipo }}</span>
-                {% endif %}
+    <span class="badge-tipo badge-calificacion">{{ n.get_tipo_display|default:"Calificación" }}</span>
+{% elif n.tipo == 'OFICIO_CREADO' %}
+    <span class="badge-tipo badge-oficio">{{ n.get_tipo_display|default:"Oficio Judicial" }}</span>
+{% elif n.tipo == 'EMPLEADO_ALTA' %}
+    <span class="badge-tipo badge-empleado-alta">{{ n.get_tipo_display|default:"Alta Empleado" }}</span>
+{% elif n.tipo == 'EMPLEADO_BAJA' %}
+    <span class="badge-tipo badge-empleado-baja">{{ n.get_tipo_display|default:"Baja Empleado" }}</span>
+{% elif n.tipo == 'CAMBIO_ESTADO' %}
+    <span class="badge-tipo badge-cambio-estado">{{ n.get_tipo_display|default:"Cambio Estado" }}</span>
+{% elif n.tipo == 'CAMBIO_CATEG' %}
+    <span class="badge-tipo badge-cambio-categ">{{ n.get_tipo_display|default:"Cambio Categoría" }}</span>
+{% else %}
+    <span class="badge-tipo badge-otro">{{ n.get_tipo_display|default:n.tipo }}</span>
+{% endif %}
               </td>
               <td>{{ n.area|default:"—" }}</td>
               <td style="max-width:450px; word-break: break-word;">{{ n.descripcion }}</td>
-              <td>{% if n.empleado %}#{{ n.empleado_id }} {{ n.empleado }}{% else %}—{% endif %}</td>
+              <td>{% if n.empleado %}{{ n.empleado }}{% else %}—{% endif %}</td>
             </tr>
             {% empty %}
             <tr>
@@ -362,6 +369,48 @@
         </table>
       </div>
     </div>
+
+    <!-- ===== AQUÍ VA LA PAGINACIÓN ===== -->
+    {% if page_obj.has_other_pages %}
+    <nav aria-label="Paginación de novedades" class="mt-4">
+      <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page=1{% if f_tipo %}&tipo={{ f_tipo }}{% endif %}{% if f_q %}&q={{ f_q }}{% endif %}" aria-label="Primera">
+              <span aria-hidden="true">&laquo;&laquo;</span>
+            </a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if f_tipo %}&tipo={{ f_tipo }}{% endif %}{% if f_q %}&q={{ f_q }}{% endif %}" aria-label="Anterior">
+              <span aria-hidden="true">&laquo;</span>
+            </a>
+          </li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <li class="page-item"><a class="page-link" href="?page={{ num }}{% if f_tipo %}&tipo={{ f_tipo }}{% endif %}{% if f_q %}&q={{ f_q }}{% endif %}">{{ num }}</a></li>
+          {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if f_tipo %}&tipo={{ f_tipo }}{% endif %}{% if f_q %}&q={{ f_q }}{% endif %}" aria-label="Siguiente">
+              <span aria-hidden="true">&raquo;</span>
+            </a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if f_tipo %}&tipo={{ f_tipo }}{% endif %}{% if f_q %}&q={{ f_q }}{% endif %}" aria-label="Última">
+              <span aria-hidden="true">&raquo;&raquo;</span>
+            </a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
+    
 
   </div>
 </div>

@@ -105,12 +105,22 @@ def log_cambios_empleado(sender, instance: Empleado, created, **kwargs):
                 new_sit_name = sit_names.get(new_sit, new_sit or 'Sin definir')
                 cambios.append(f"Situación: {old_sit_name} → {new_sit_name}")
             
-            # Estado activo/inactivo
-            # Estado activo/inactivo
+            # Estado activo/inactivo/retención
             old_estado = old_values.get('estado', 1)
             new_estado = instance.estado
+            
             if old_estado != new_estado:
-                if new_estado == 0:  # 0 = Inactivo
+                # Mapeo de estados
+                estado_names = {
+                    0: 'Inactivo',
+                    1: 'Activo',
+                    2: 'Retención de Cargo'
+                }
+                old_estado_name = estado_names.get(old_estado, 'Desconocido')
+                new_estado_name = estado_names.get(new_estado, 'Desconocido')
+                
+                # Si pasa a Inactivo (0), es una BAJA
+                if new_estado == 0:
                     registrar_novedad(
                         tipo=NovedadMensual.Tipo.EMPLEADO_BAJA,
                         descripcion=f"Baja de empleado: {instance.apellido}, {instance.nombre}",
@@ -118,8 +128,18 @@ def log_cambios_empleado(sender, instance: Empleado, created, **kwargs):
                         area="PRESIDENCIA",
                     )
                     return
+                
+                # Cualquier otro cambio de estado se registra como CAMBIO_ESTADO
                 else:
-                    cambios.append("Estado: Inactivo → Activo")
+                    registrar_novedad(
+                        tipo=NovedadMensual.Tipo.CAMBIO_ESTADO,
+                        descripcion=f"Cambio de estado para {instance.apellido}, {instance.nombre}: {old_estado_name} → {new_estado_name}",
+                        empleado=instance,
+                        area="PRESIDENCIA",
+                    )
+                    return  # Ya registramos la novedad, no agregar a cambios[]
+
+            # Si hubo cambios, registrar novedad general
             
             # Si hubo cambios, registrar novedad general
             if cambios:

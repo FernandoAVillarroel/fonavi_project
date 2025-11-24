@@ -50,9 +50,15 @@ def novedades_mensuales_list(request):
             Q(descripcion__icontains=q) |
             Q(area__icontains=q) |
             Q(extra__icontains=q) |
-            Q(empleado__nombre__icontains=q) |
-            Q(empleado__apellido__icontains=q)
+            Q(empleado__apellido__icontains=q) |
+            Q(empleado__nombre__icontains=q)
         )
+
+    # PAGINACIÓN - 20 por página
+    from django.core.paginator import Paginator
+    paginator = Paginator(qs, 20)  # 20 novedades por página
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
 
     # Tipos disponibles para el selector
     tipos_novedad = (
@@ -67,13 +73,17 @@ def novedades_mensuales_list(request):
         "PERIODO_MES_NOMBRE": MONTH_NAMES.get(int(mes), str(mes)),
         "PERIODO": periodo_str,
 
-        # listado y filtros
-        "novedades": qs,
-        "tipos_novedad": tipos_novedad,
+        # novedades PAGINADAS
+        "page_obj": page_obj,
+        "novedades": page_obj,  # mantener compatibilidad con template
+        "total_novedades": paginator.count,
+        
+        # filtros aplicados
         "f_tipo": tipo,
         "f_q": q,
-        
-        # Estado del período para alertas
+        "tipos_novedad": tipos_novedad,
+
+        # control de permisos
         "periodo_confirmado": periodo_confirmado,
         "periodo_abierto": periodo_abierto,
     }

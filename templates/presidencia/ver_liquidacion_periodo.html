@@ -106,7 +106,7 @@
   <div class="card shadow-sm">
     <div class="table-responsive table-container-sticky">
       <table class="table table-striped table-hover table-sm align-middle mb-0">
-        <thead class="table-dark sticky-top">
+        <thead class="table-dark">
           <tr>
             <th>Oficina</th>
             <th>Empleado</th>
@@ -263,6 +263,7 @@
 <style>
   :root {
     --primary-color: #0d6efd;
+    --primary-dark: #003087;
     --secondary-color: #6c757d;
     --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
     --animation-speed: 0.3s;
@@ -281,9 +282,54 @@
 
   @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-  .table-container-sticky { max-height: 75vh; overflow-y: auto; }
+  .table-container-sticky { 
+  max-height: 75vh; 
+  overflow-y: auto; 
+  overflow-x: auto;
+  position: relative;
+}
   .totals-card { box-shadow: 0 3px 12px rgba(0,0,0,.08); transition: transform 0.3s ease; }
   .totals-card:hover { transform: translateY(-2px); }
+
+  /* Header sticky al hacer scroll vertical */
+.table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--primary-dark) !important;
+}
+
+/* Columna Empleado sticky (horizontal) */
+.table thead th:nth-child(2) {
+  position: sticky;
+  left: 0;
+  z-index: 101;
+  background: var(--primary-dark) !important;
+  min-width: 200px;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+}
+
+.table tbody td:nth-child(2) {
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  background: white !important;
+  min-width: 200px;
+  border-right: 2px solid #dee2e6;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+  font-weight: 600;
+}
+
+.table tbody tr:hover td:nth-child(2) {
+  background-color: rgba(0,0,0,0.05) !important;
+}
+
+/* Ocultar overflow de Oficina */
+.table tbody td:first-child,
+.table thead th:first-child {
+  overflow: hidden;
+}
+
 </style>
 
 {% endblock %}

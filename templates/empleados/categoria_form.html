@@ -127,15 +127,14 @@
     transform: translateY(-2px);
   }
   
-  /* Estilo de las opciones del dropdown */
-  .type-option[data-value="MONTO"] {
-      color: var(--color-monto);
-      font-weight: 600;
-  }
-  .type-option[data-value="PORCENTAJE"] {
-      color: var(--color-porcentaje);
-      font-weight: 600;
-  }
+  .type-option[data-value="2"] {
+    color: var(--color-monto);
+    font-weight: 600;
+}
+.type-option[data-value="1"] {
+    color: var(--color-porcentaje);
+    font-weight: 600;
+}
   
   /* Resto de estilos */
   fieldset {
@@ -186,6 +185,38 @@
     padding: 20px;
     margin-bottom: 20px;
   }
+
+  /* Fix para que los dropdowns se vean correctamente */
+.input-group {
+  position: relative;
+  overflow: visible !important;
+}
+
+.btn-group {
+  position: static !important;
+}
+
+.dropdown-menu {
+  position: absolute !important;
+  z-index: 9999 !important;
+  background-color: white !important;
+  border: 1px solid #dee2e6 !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+  min-width: 180px !important;
+  margin-top: 2px !important;
+}
+
+.dropdown-menu.show {
+  display: block !important;
+}
+
+fieldset {
+  overflow: visible !important;
+}
+
+.card {
+  overflow: visible !important;
+}
 </style>
 
 <div class="container py-5">
@@ -236,8 +267,10 @@
                 <label class="form-label small text-uppercase fw-bold">Sup. 1</label>
                 <div class="input-group">
                   {{ form.sup1 }}
-                  <span class="input-group-text symbol-display {% if form.tipo_sup1.value == 'PORCENTAJE' %}symbol-porcentaje{% else %}symbol-monto{% endif %}" data-target="tipo_sup1">
-                    {% if form.tipo_sup1.value == 'PORCENTAJE' %}
+                  <!-- ✅ BIEN -->
+<span class="input-group-text symbol-display {% if form.tipo_sup1.value == 1 %}symbol-porcentaje{% else %}symbol-monto{% endif %}">
+
+                    {% if form.tipo_sup1.value == 1 %}
                       %
                     {% else %}
                       $
@@ -248,8 +281,8 @@
                       <span class="visually-hidden">Tipo</span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
-                      <li><a class="dropdown-item type-option" href="#" data-value="MONTO" data-symbol="$" data-target="tipo_sup1">$ (Monto fijo)</a></li>
-                      <li><a class="dropdown-item type-option" href="#" data-value="PORCENTAJE" data-symbol="%" data-target="tipo_sup1"> % (Porcentaje)</a></li>
+                      <li><a class="dropdown-item type-option" href="#" data-value="2" data-symbol="$" data-target="tipo_sup1">$ (Monto fijo)</a></li>
+                      <li><a class="dropdown-item type-option" href="#" data-value="1" data-symbol="%" data-target="tipo_sup1"> % (Porcentaje)</a></li>
                     </ul>
                   </div>
                   {{ form.tipo_sup1.as_hidden }} 
@@ -260,8 +293,9 @@
                 <label class="form-label small text-uppercase fw-bold">Sup. 2</label>
                 <div class="input-group">
                   {{ form.sup2 }}
-                  <span class="input-group-text symbol-display {% if form.tipo_sup2.value == 'PORCENTAJE' %}symbol-porcentaje{% else %}symbol-monto{% endif %}" data-target="tipo_sup2">
-                    {% if form.tipo_sup2.value == 'PORCENTAJE' %}
+                  <!-- ✅ BIEN -->
+<span class="input-group-text symbol-display {% if form.tipo_sup2.value == 1 %}symbol-porcentaje{% else %}symbol-monto{% endif %}">
+                    {% if form.tipo_sup2.value == 1 %}
                       %
                     {% else %}
                       $
@@ -272,8 +306,8 @@
                       <span class="visually-hidden">Tipo</span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
-                      <li><a class="dropdown-item type-option" href="#" data-value="MONTO" data-symbol="$" data-target="tipo_sup2">$ (Monto fijo)</a></li>
-                      <li><a class="dropdown-item type-option" href="#" data-value="PORCENTAJE" data-symbol="%" data-target="tipo_sup2"> % (Porcentaje)</a></li>
+                      <li><a class="dropdown-item type-option" href="#" data-value="2" data-symbol="$" data-target="tipo_sup2">$ (Monto fijo)</a></li>
+                      <li><a class="dropdown-item type-option" href="#" data-value="1" data-symbol="%" data-target="tipo_sup2"> % (Porcentaje)</a></li>
                     </ul>
                   </div>
                   {{ form.tipo_sup2.as_hidden }} 
@@ -284,8 +318,9 @@
                 <label class="form-label small text-uppercase fw-bold">Sup. 3</label>
                 <div class="input-group">
                   {{ form.sup3 }}
-                  <span class="input-group-text symbol-display {% if form.tipo_sup3.value == 'PORCENTAJE' %}symbol-porcentaje{% else %}symbol-monto{% endif %}" data-target="tipo_sup3">
-                    {% if form.tipo_sup3.value == 'PORCENTAJE' %}
+                  <!-- ✅ BIEN -->
+<span class="input-group-text symbol-display {% if form.tipo_sup3.value == 1 %}symbol-porcentaje{% else %}symbol-monto{% endif %}">
+                    {% if form.tipo_sup3.value == 1 %}
                       %
                     {% else %}
                       $
@@ -296,8 +331,8 @@
                       <span class="visually-hidden">Tipo</span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
-                      <li><a class="dropdown-item type-option" href="#" data-value="MONTO" data-symbol="$" data-target="tipo_sup3">$ (Monto fijo)</a></li>
-                      <li><a class="dropdown-item type-option" href="#" data-value="PORCENTAJE" data-symbol="%" data-target="tipo_sup3"> % (Porcentaje)</a></li>
+                      <li><a class="dropdown-item type-option" href="#" data-value="2" data-symbol="$" data-target="tipo_sup3">$ (Monto fijo)</a></li>
+                      <li><a class="dropdown-item type-option" href="#" data-value="1" data-symbol="%" data-target="tipo_sup3"> % (Porcentaje)</a></li>
                     </ul>
                   </div>
                   {{ form.tipo_sup3.as_hidden }} 
@@ -308,8 +343,9 @@
                 <label class="form-label small text-uppercase fw-bold">Sup. 4</label>
                 <div class="input-group">
                   {{ form.sup4 }}
-                  <span class="input-group-text symbol-display {% if form.tipo_sup4.value == 'PORCENTAJE' %}symbol-porcentaje{% else %}symbol-monto{% endif %}" data-target="tipo_sup4">
-                    {% if form.tipo_sup4.value == 'PORCENTAJE' %}
+                  <!-- ✅ BIEN -->
+<span class="input-group-text symbol-display {% if form.tipo_sup4.value == 1 %}symbol-porcentaje{% else %}symbol-monto{% endif %}">
+                    {% if form.tipo_sup4.value == 1 %}
                       %
                     {% else %}
                       $
@@ -320,8 +356,8 @@
                       <span class="visually-hidden">Tipo</span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
-                      <li><a class="dropdown-item type-option" href="#" data-value="MONTO" data-symbol="$" data-target="tipo_sup4">$ (Monto fijo)</a></li>
-                      <li><a class="dropdown-item type-option" href="#" data-value="PORCENTAJE" data-symbol="%" data-target="tipo_sup4"> % (Porcentaje)</a></li>
+                      <li><a class="dropdown-item type-option" href="#" data-value="2" data-symbol="$" data-target="tipo_sup4">$ (Monto fijo)</a></li>
+                      <li><a class="dropdown-item type-option" href="#" data-value="1" data-symbol="%" data-target="tipo_sup4"> % (Porcentaje)</a></li>
                     </ul>
                   </div>
                   {{ form.tipo_sup4.as_hidden }} 
@@ -332,8 +368,9 @@
                 <label class="form-label small text-uppercase fw-bold">Sup. 6</label>
                 <div class="input-group">
                   {{ form.sup6 }}
-                  <span class="input-group-text symbol-display {% if form.tipo_sup6.value == 'PORCENTAJE' %}symbol-porcentaje{% else %}symbol-monto{% endif %}" data-target="tipo_sup6">
-                    {% if form.tipo_sup6.value == 'PORCENTAJE' %}
+                  <!-- ✅ BIEN -->
+<span class="input-group-text symbol-display {% if form.tipo_sup6.value == 1 %}symbol-porcentaje{% else %}symbol-monto{% endif %}">
+                    {% if form.tipo_sup6.value == 1 %}
                       %
                     {% else %}
                       $
@@ -344,8 +381,8 @@
                       <span class="visually-hidden">Tipo</span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
-                      <li><a class="dropdown-item type-option" href="#" data-value="MONTO" data-symbol="$" data-target="tipo_sup6">$ (Monto fijo)</a></li>
-                      <li><a class="dropdown-item type-option" href="#" data-value="PORCENTAJE" data-symbol="%" data-target="tipo_sup6"> % (Porcentaje)</a></li>
+                      <li><a class="dropdown-item type-option" href="#" data-value="2" data-symbol="$" data-target="tipo_sup6">$ (Monto fijo)</a></li>
+                      <li><a class="dropdown-item type-option" href="#" data-value="1" data-symbol="%" data-target="tipo_sup6"> % (Porcentaje)</a></li>
                     </ul>
                   </div>
                   {{ form.tipo_sup6.as_hidden }} 
@@ -356,8 +393,8 @@
                 <label class="form-label small text-uppercase fw-bold">Sup. 8</label>
                 <div class="input-group">
                   {{ form.sup8 }}
-                  <span class="input-group-text symbol-display {% if form.tipo_sup8.value == 'PORCENTAJE' %}symbol-porcentaje{% else %}symbol-monto{% endif %}" data-target="tipo_sup8">
-                    {% if form.tipo_sup8.value == 'PORCENTAJE' %}
+                  <!-- ✅ BIEN -->
+<span class="input-group-text symbol-display {% if form.tipo_sup8.value == 1 %}symbol-porcentaje{% else %}symbol-monto{% endif %}">                    {% if form.tipo_sup8.value == 1 %}
                       %
                     {% else %}
                       $
@@ -368,8 +405,8 @@
                       <span class="visually-hidden">Tipo</span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
-                      <li><a class="dropdown-item type-option" href="#" data-value="MONTO" data-symbol="$" data-target="tipo_sup8">$ (Monto fijo)</a></li>
-                      <li><a class="dropdown-item type-option" href="#" data-value="PORCENTAJE" data-symbol="%" data-target="tipo_sup8"> % (Porcentaje)</a></li>
+                      <li><a class="dropdown-item type-option" href="#" data-value="2" data-symbol="$" data-target="tipo_sup8">$ (Monto fijo)</a></li>
+                      <li><a class="dropdown-item type-option" href="#" data-value="1" data-symbol="%" data-target="tipo_sup8"> % (Porcentaje)</a></li>
                     </ul>
                   </div>
                   {{ form.tipo_sup8.as_hidden }} 
@@ -380,8 +417,9 @@
                 <label class="form-label small text-uppercase fw-bold">Sup. 12</label>
                 <div class="input-group">
                   {{ form.sup12 }}
-                  <span class="input-group-text symbol-display {% if form.tipo_sup12.value == 'PORCENTAJE' %}symbol-porcentaje{% else %}symbol-monto{% endif %}" data-target="tipo_sup12">
-                    {% if form.tipo_sup12.value == 'PORCENTAJE' %}
+                  <!-- ✅ BIEN -->
+<span class="input-group-text symbol-display {% if form.tipo_sup12.value == 1 %}symbol-porcentaje{% else %}symbol-monto{% endif %}">
+                    {% if form.tipo_sup12.value == 1 %}
                       %
                     {% else %}
                       $
@@ -392,8 +430,8 @@
                       <span class="visually-hidden">Tipo</span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
-                      <li><a class="dropdown-item type-option" href="#" data-value="MONTO" data-symbol="$" data-target="tipo_sup12">$ (Monto fijo)</a></li>
-                      <li><a class="dropdown-item type-option" href="#" data-value="PORCENTAJE" data-symbol="%" data-target="tipo_sup12"> % (Porcentaje)</a></li>
+                      <li><a class="dropdown-item type-option" href="#" data-value="2" data-symbol="$" data-target="tipo_sup12">$ (Monto fijo)</a></li>
+                      <li><a class="dropdown-item type-option" href="#" data-value="1" data-symbol="%" data-target="tipo_sup12"> % (Porcentaje)</a></li>
                     </ul>
                   </div>
                   {{ form.tipo_sup12.as_hidden }} 
@@ -443,10 +481,12 @@
   </div>
 </div>
 
+
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   
-  // 1. Añadir clases a los campos de formulario para mejorar la apariencia (sin los campos tipo_sup)
+  // 1. Añadir clases a los campos de formulario
   const inputs = document.querySelectorAll('input:not([type="hidden"]):not([type="checkbox"]), select');
   inputs.forEach(input => {
     if (input.tagName === 'SELECT') {
@@ -456,35 +496,37 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // 2. Lógica para actualizar el campo oculto, el símbolo visible y su color
+  // 2. Inicializar TODOS los dropdowns primero
+  const dropdownElements = document.querySelectorAll('[data-bs-toggle="dropdown"]');
+  dropdownElements.forEach(function(element) {
+    new bootstrap.Dropdown(element, {
+      autoClose: true
+    });
+  });
+
+  // 3. Agregar event listeners a las opciones
   const typeOptions = document.querySelectorAll('.type-option');
 
   typeOptions.forEach(option => {
     option.addEventListener('click', function(e) {
-      e.preventDefault(); 
+      e.preventDefault();
 
-      const value = this.getAttribute('data-value'); // AHORA ES 'MONTO' o 'PORCENTAJE'
-      const symbol = this.getAttribute('data-symbol'); // $ o %
-      const targetName = 'id_' + this.getAttribute('data-target'); // id_tipo_supX
+      const value = this.getAttribute('data-value');
+      const symbol = this.getAttribute('data-symbol');
+      const targetName = 'id_' + this.getAttribute('data-target');
 
-      // Encontramos los elementos relevantes dentro del mismo input-group
       const inputGroup = this.closest('.input-group');
       const hiddenField = document.getElementById(targetName);
       const symbolDisplay = inputGroup.querySelector('.symbol-display');
 
       if (hiddenField) {
-        // 1. Actualiza el campo de formulario oculto que Django necesita
-        // Esto asigna 'MONTO' o 'PORCENTAJE' al campo oculto.
         hiddenField.value = value;
       }
 
       if (symbolDisplay) {
-        // 2. Actualiza el símbolo visible
         symbolDisplay.textContent = symbol;
         
-        // 3. Actualiza el color
-        // Usamos el valor completo para la comparación:
-        if (value === 'PORCENTAJE') { 
+        if (value === '1') { 
           symbolDisplay.classList.remove('symbol-monto');
           symbolDisplay.classList.add('symbol-porcentaje');
         } else {
@@ -498,3 +540,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+

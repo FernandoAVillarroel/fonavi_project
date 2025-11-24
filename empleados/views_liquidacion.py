@@ -447,7 +447,7 @@ def ver_liquidacion_periodo(request):
     qs_base = (Liquidacion.objects
                .filter(año=anio, mes=mes)
                .select_related("empleado", "categoria", "oficina", "titulo")
-               .order_by("empleado__apellido", "empleado__nombre"))
+               .order_by("oficina__nombre", "empleado__apellido", "empleado__nombre"))
 
     # Preferimos 'conformada=True' si existe y hay filas
     qs = qs_base

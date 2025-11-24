@@ -884,6 +884,7 @@ class NovedadMensual(models.Model):
     class Tipo(models.TextChoices):
         EMPLEADO_ALTA   = "EMPLEADO_ALTA", "Alta de empleado"
         EMPLEADO_BAJA   = "EMPLEADO_BAJA", "Baja de empleado"
+        CAMBIO_ESTADO   = "CAMBIO_ESTADO", "Cambio de estado"
         CAMBIO_CATEG    = "CAMBIO_CATEG", "Cambio de categoría"
         CAMBIO_CALIF    = "CAMBIO_CALIF", "Cambio de calificación"
         OFICIO_CREADO   = "OFICIO_CREADO", "Oficio judicial creado"

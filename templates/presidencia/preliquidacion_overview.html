@@ -52,10 +52,10 @@
       <table class="table table-striped table-hover align-middle mb-0" id="preliqTable">
         <thead>
           <tr>
-            <th class="sortable" data-key="empleado">Empleado <i class="sort-icon fas fa-sort"></i></th>
-            <th class="sortable" data-key="cuil" data-sort="cuil" data-type="num">CUIL <i class="sort-icon fas fa-sort"></i></th>
-            <th class="sortable" data-key="categoria">Categoría <i class="sort-icon fas fa-sort"></i></th>
             <th class="sortable" data-key="oficina" data-sort="oficina">Oficina <i class="sort-icon fas fa-sort"></i></th>
+<th class="sortable" data-key="empleado" data-sort="empleado">Empleado <i class="sort-icon fas fa-sort"></i></th>
+<th class="sortable" data-key="cuil" data-sort="cuil" data-type="num">CUIL <i class="sort-icon fas fa-sort"></i></th>
+<th class="sortable" data-key="categoria" data-sort="categoria">Categoría <i class="sort-icon fas fa-sort"></i></th>
             <th class="sortable" data-key="titulo">Título <i class="sort-icon fas fa-sort"></i></th>
             <th class="sortable" data-key="nivel" data-sort="nivel" data-type="num">Nivel <i class="sort-icon fas fa-sort"></i></th>
             <th class="sortable" data-key="basico" data-sort="basico" data-type="num">Básico <i class="sort-icon fas fa-sort"></i></th>
@@ -108,10 +108,10 @@
               data-oficio_judicial="{{ preliq.oficio_judicial|default_if_none:0 }}"
               data-total_descuentos="{{ preliq.total_descuentos|default_if_none:0 }}"
               data-liquido="{{ preliq.liquido|default_if_none:0 }}">
-            <td>{{ preliq.empleado }}</td>
-            <td>{{ preliq.empleado.cuil }}</td>
-            <td>{{ preliq.categoria_nombre }}</td>
             <td>{{ preliq.oficina_nombre }}</td>
+<td>{{ preliq.empleado }}</td>
+<td>{{ preliq.empleado.cuil }}</td>
+<td>{{ preliq.categoria_nombre }}</td>
             <td>{{ preliq.titulo_completo }}</td>
             <td class="text-center">{% if preliq.nivel %}{{ preliq.nivel.id_nivel }}{% else %}—{% endif %}</td>
             <td class="text-end">{{ preliq.basico|default_if_none:0|ars_auto }}</td>
@@ -264,29 +264,70 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
-  .table-container-sticky {
-    max-height: 70vh;
-    overflow-y: auto;
-  }
-  .table { border-collapse: separate; border-spacing: 0; background:#fff; border-radius:8px; overflow:hidden; }
-  .table thead th {
-    background: var(--primary-dark);
-    color: #fff;
-    padding: 10px;
-    text-align: left;
-    font-weight: 600;
-    white-space: nowrap;
-    border-bottom: none;
-    font-size: .9rem;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-  }
+.table-container-sticky {
+  max-height: 70vh;
+  overflow-y: auto;
+  overflow-x: auto;
+  position: relative;
+}
+
+.table {
+  width: 100%;
+  background: #fff;
+  border-radius: 8px;
+  margin: 0;
+}
+
+.table thead th {
+  background: var(--primary-dark) !important;
+  color: #fff !important;
+  padding: 10px;
+  text-align: left;
+  font-weight: 600;
+  white-space: nowrap;
+  border-bottom: 2px solid #dee2e6;
+  font-size: .9rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+/* Columna Empleado sticky (horizontal) */
+.table thead th:nth-child(2) {
+  position: sticky;
+  left: 0;
+  z-index: 101;
+  background: var(--primary-dark) !important;
+  min-width: 200px;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+}
+
+.table tbody td:nth-child(2) {
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  background: white !important;
+  min-width: 200px;
+  border-right: 2px solid #dee2e6;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+  font-weight: 600;
+}
+
+.table tbody tr:hover td:nth-child(2) {
+  background-color: rgba(0,0,0,0.05) !important;
+}
+
+/* Ocultar overflow de Oficina cuando está detrás */
+.table tbody td:first-child,
+.table thead th:first-child {
+  overflow: hidden;
+}
   .table thead th:first-child { border-top-left-radius: 6px; }
   .table thead th:last-child { border-top-right-radius: 6px; }
 </style>
 
 <script>
+/*
 document.addEventListener('DOMContentLoaded', () => {
   const table = document.getElementById('preliqTable');
   if (table) {
@@ -327,6 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+*/
 </script>
 
 {% endblock %}

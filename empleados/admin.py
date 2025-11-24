@@ -207,12 +207,12 @@ class OficioJudicialAdmin(admin.ModelAdmin):
             liq.save()
 
 # ——— Opcional: remover modelos de auth del admin si no los usás ———
-from django.contrib.auth.models import User, Group
-try:
-    admin.site.unregister(User)
-    admin.site.unregister(Group)
-except admin.sites.NotRegistered:
-    pass
+# from django.contrib.auth.models import User, Group
+# try:
+#     admin.site.unregister(User)
+#     admin.site.unregister(Group)
+# except admin.sites.NotRegistered:
+#     pass
 
 # ----------------- OPCIONAL: modelo de estado por período -----------------
 # Si tenés el modelo NUEVO de estado (ABIERTA/CERRADA/CONFIRMADA), que se llame LiquidacionPeriodo.
@@ -261,6 +261,7 @@ class NovedadMensualAdmin(admin.ModelAdmin):
             'EMPLEADO_BAJA': "#da2a3b", 
             'CAMBIO_CATEG': '#ffc107',
             'CAMBIO_CALIF': '#17a2b8',
+            'CAMBIO_ESTADO': '#6f42c1',
             'OFICIO_CREADO': '#6c757d',
             'PRELIQ_GENERADA': '#007bff',
             'OTRO': '#343a40'

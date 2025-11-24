@@ -893,8 +893,18 @@ def preliquidacion_overview(request):
             empleado__fecha_salida__isnull=True
         )
         .select_related("empleado", "categoria", "oficina", "titulo", "nivel")
-        .order_by("empleado__apellido", "empleado__nombre")
+        .order_by("oficina__nombre", "empleado__apellido", "empleado__nombre")
     )
+    
+    # TEMPORAL - para debug
+    print(f"\n=== DEBUG PRELIQUIDACIONES ===")
+    print(f"Total registros: {qs.count()}")
+    if qs.exists():
+        primeros = list(qs[:5])
+        print("Primeros 5 registros:")
+        for p in primeros:
+            print(f"  - {p.oficina_nombre} | {p.empleado}")
+    print(f"=== FIN DEBUG ===\n")
 
     # Filtro por área del empleado (no por nombre de categoría)
     if area and area != "TODAS":
@@ -962,9 +972,9 @@ def preliquidacion_overview(request):
     }
     if sort_key == "empleado":
         if sort_dir == "desc":
-            qs = qs.order_by("-empleado__apellido", "-empleado__nombre")
+            qs = qs.order_by("oficina__nombre", "-empleado__apellido", "-empleado__nombre")
         else:
-            qs = qs.order_by("empleado__apellido", "empleado__nombre")
+            qs = qs.order_by("oficina__nombre", "empleado__apellido", "empleado__nombre")
     elif sort_key in allowed_sort:
         field = allowed_sort[sort_key]
         numeric_keys_int = {"nivel"}
@@ -977,12 +987,12 @@ def preliquidacion_overview(request):
         }
         if sort_key in numeric_keys_int:
             qs = qs.annotate(_sv=Coalesce(F(field), Value(0), output_field=IntegerField()))
-            qs = qs.order_by("-_sv" if sort_dir == "desc" else "_sv")
+            qs = qs.order_by("oficina__nombre", "-_sv" if sort_dir == "desc" else "_sv")
         elif sort_key in numeric_keys_dec:
             qs = qs.annotate(_sv=Coalesce(F(field), Value(Decimal("0.00")), output_field=DecimalField(max_digits=20, decimal_places=2)))
-            qs = qs.order_by("-_sv" if sort_dir == "desc" else "_sv")
+            qs = qs.order_by("oficina__nombre", "-_sv" if sort_dir == "desc" else "_sv")
         else:
-            qs = qs.order_by(f"-{field}" if sort_dir == "desc" else field)
+            qs = qs.order_by("oficina__nombre", f"-{field}" if sort_dir == "desc" else field)
 
     # === PAGINACIÓN ===
     paginator = Paginator(qs, 15)  # 15 registros por página
@@ -996,7 +1006,7 @@ def preliquidacion_overview(request):
         preliquidaciones_paginadas = paginator.page(paginator.num_pages)
 
     ctx = {
-        "preliquidaciones": preliquidaciones_paginadas,  # Ahora paginado
+        "preliquidaciones": preliquidaciones_paginadas,
         "areas"           : areas,
         "mes_sel"         : mes,
         "año_sel"         : año,

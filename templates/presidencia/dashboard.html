@@ -60,12 +60,13 @@
   /* Novedades: colores originales */
   .nov-stats{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:15px; }
   .badge-tipo{ font-weight:600; letter-spacing:.2px; padding:6px 10px; border-radius:12px; font-size:0.8rem; color:white; }
-  .badge-alta{ background-color:#28a745; }      /* verde */
-  .badge-baja{ background-color:#dc3545; }      /* rojo */
-  .badge-calificacion{ background-color:#17a2b8; } /* celeste */
-  .badge-oficio{ background-color:#6f42c1; }    /* violeta */
-  .badge-categoria{ background-color:#fd7e14; } /* naranja */
-  .badge-otro{ background-color:#6c757d; }      /* gris */
+.badge-alta{ background-color:#28a745; }      /* verde */
+.badge-baja{ background-color:#dc3545; }      /* rojo */
+.badge-calificacion{ background-color:#17a2b8; } /* celeste */
+.badge-oficio{ background-color:#6f42c1; }    /* violeta */
+.badge-categoria{ background-color:#fd7e14; } /* naranja */
+.badge-estado{ background-color:#6f42c1; }    /* morado - NUEVO */
+.badge-otro{ background-color:#6c757d; }      /* gris */
 
   .nov-tools .form-select,.nov-tools .form-control{ max-width:220px; }
   .nov-counter{ font-size:.85rem; color:#6c757d; }
@@ -161,9 +162,12 @@
             <span class="badge-tipo badge-oficio">{{ stats_novedades.OFICIO_CREADO }} Oficio(s)</span>
           {% endif %}
           {% if stats_novedades.CAMBIO_CATEG %}
-            <span class="badge-tipo badge-categoria">{{ stats_novedades.CAMBIO_CATEG }} Categoría(s)</span>
-          {% endif %}
-          {% if stats_novedades.OTRO %}
+  <span class="badge-tipo badge-categoria">{{ stats_novedades.CAMBIO_CATEG }} Categoría(s)</span>
+{% endif %}
+{% if stats_novedades.CAMBIO_ESTADO %}
+  <span class="badge-tipo badge-estado">{{ stats_novedades.CAMBIO_ESTADO }} Cambio(s) Estado</span>
+{% endif %}
+{% if stats_novedades.OTRO %}
             <span class="badge-tipo badge-otro">{{ stats_novedades.OTRO }} Otro(s)</span>
           {% endif %}
         </div>
@@ -195,10 +199,12 @@
                   {% elif n.tipo == 'OFICIO_CREADO' %}
                     <span class="badge-tipo badge-oficio">Oficio Judicial</span>
                   {% elif n.tipo == 'CAMBIO_CATEG' %}
-                    <span class="badge-tipo badge-categoria">Cambio Categoría</span>
-                  {% else %}
-                    <span class="badge-tipo badge-otro">{{ n.get_tipo_display|default:n.tipo }}</span>
-                  {% endif %}
+  <span class="badge-tipo badge-categoria">Cambio Categoría</span>
+{% elif n.tipo == 'CAMBIO_ESTADO' %}
+  <span class="badge-tipo badge-estado">Cambio Estado</span>
+{% else %}
+  <span class="badge-tipo badge-otro">{{ n.get_tipo_display|default:n.tipo }}</span>
+{% endif %}
                 </td>
                 <td>{{ n.empleado|default:"—" }}</td>
                 <td style="max-width: 400px; word-break: break-word;">{{ n.descripcion|truncatewords:15 }}</td>
