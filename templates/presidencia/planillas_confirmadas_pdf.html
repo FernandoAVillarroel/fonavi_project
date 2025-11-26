@@ -301,7 +301,7 @@
 
 <div class="header">
   <h1>IPVU - INSTITUTO PROVINCIAL DE VIVIENDA Y URBANISMO</h1>
-  <h2>ÁREA DE PRESIDENCIA - LIQUIDACIÓN DE SUELDOS</h2>
+  <h2>ÁREA DE PRESIDENCIA - LIQUIDACIÓN FONAVI</h2>
   <div class="periodo-principal">{{ month_name|upper }} DE {{ año_sel }}</div>
 </div>
 
@@ -474,7 +474,7 @@
 
 <div class="footer">
   <strong>IPVU - Sistema de Liquidaciones</strong> | 
-  Documento generado el {{ "now"|date:"d/m/Y" }} a las {{ "now"|date:"H:i" }} hs | 
+  Documento generado el {% now "d/m/Y" %} a las {% now "H:i" %} hs | 
   Total de empleados: {{ total_planillas }} | Uso interno
 </div>
 

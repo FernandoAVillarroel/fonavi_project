@@ -45,10 +45,11 @@
   }
   .btn-toolbar {
     display: flex;
-    justify-content: space-between;
-    margin-top: 1.5rem;
+    justify-content: flex-end;
+    margin-top: 3rem;
+    gap: 1.25rem;
   }
-  .btn-primary, .btn-success, .btn-link {
+  .btn-primary, .btn-success, .btn-secondary, .btn-link {
     min-width: 120px;
     font-weight: 600;
     border-radius: 0.5rem;
@@ -71,6 +72,15 @@
     background: #218838;
     border-color: #176835;
   }
+  .btn-secondary {
+    background: #6c757d;
+    border-color: #6c757d;
+    color: #fff;
+  }
+  .btn-secondary:hover {
+    background: #5c636a;
+    border-color: #4d5258;
+  }
   .btn-link {
     background: none;
     border: none;
@@ -79,6 +89,14 @@
   .btn-link:hover {
     text-decoration: underline;
   }
+
+  .emp-info {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: .5rem;
+    padding: .75rem 1rem;
+  }
+  .calif-field { margin-bottom: 3rem; }
 </style>
 
 <div class="card">
@@ -90,7 +108,7 @@
     {% endif %}
   </h1>
 
-  <form method="post">
+  <form method="post" class="js-calificacion-form">
     {% csrf_token %}
 
     {# ERRORES GLOBALES DEL FORMULARIO #}
@@ -116,28 +134,30 @@
         {{ form.empleado }}
       </div>
     {% else %}
-      {# Editar: solo mostrar el empleado #}
       <div class="form-group">
         <label>Empleado</label>
-        <div>
+        <div class="emp-info mb-3">
           {% if empleado %}
-            {{ empleado.apellido }}, {{ empleado.nombre }}<br>
-            DNI: {{ empleado.dni }} — CUIL: {{ empleado.cuil }}
+            <div class="fw-bold">{{ empleado.apellido }}, {{ empleado.nombre }}</div>
+            <div class="mt-1">
+              <span class="badge bg-secondary me-2">DNI: {{ empleado.dni }}</span>
+              <span class="badge bg-secondary">CUIL: {{ empleado.cuil }}</span>
+            </div>
           {% else %}
-            <span style="color: #dc3545;">Empleado no disponible</span>
+            <div class="text-danger">Empleado no disponible</div>
           {% endif %}
         </div>
       </div>
     {% endif %}
 
-    <div class="form-group">
+    <div class="form-group calif-field mb-4 mb-lg-5">
       {{ form.calificacion.label_tag }}
       {{ form.calificacion }}
     </div>
 
-    <div class="btn-toolbar">
+    <div class="btn-toolbar d-flex justify-content-end gap-3 mt-4 mt-lg-5">
       <button type="submit" class="btn btn-success">Guardar</button>
-      <a href="{% url 'empleados:calificacion-list' %}" class="btn btn-link">Cancelar</a>
+      <a href="{% url 'empleados:calificacion-list' %}" class="btn btn-secondary js-cancel">Cancelar</a>
     </div>
   </form>
 </div>

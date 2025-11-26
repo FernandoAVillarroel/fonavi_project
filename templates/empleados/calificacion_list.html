@@ -238,7 +238,7 @@
               <td>
                 {% if allow_edit %}
                   <a href="{% if emp.cal_pk %}{% url 'empleados:calificacion-update' emp.cal_pk %}{% else %}{% url 'empleados:calificacion-create' %}?empleado={{ emp.pk }}{% endif %}"
-                     class="btn btn-sm btn-outline-primary animated-btn">
+                     class="btn btn-sm btn-outline-primary animated-btn js-calif-edit">
                     <i class="fas fa-edit me-1"></i>
                     {% if emp.cal_pk %}Editar{% else %}Calificar{% endif %}
                   </a>
@@ -335,6 +335,20 @@
   </div>
 </div>
 
+<div class="modal fade" id="califModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="califModalTitle">Calificación</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div id="califModalBody" class="py-2">Cargando…</div>
+      </div>
+    </div>
+  </div>
+  </div>
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   // Sidebar
@@ -404,6 +418,104 @@ document.addEventListener('DOMContentLoaded', () => {
       el => new bootstrap.Tooltip(el)
     );
   }
+
+  // Modal de edición/creación de calificación
+  const editLinks = document.querySelectorAll('.js-calif-edit');
+  const modalEl = document.getElementById('califModal');
+  const modalBody = document.getElementById('califModalBody');
+  const modalTitle = document.getElementById('califModalTitle');
+  const bsModal = modalEl ? new bootstrap.Modal(modalEl) : null;
+
+  function extractForm(htmlText) {
+    const temp = document.createElement('div');
+    temp.innerHTML = htmlText;
+    let form = temp.querySelector('form.js-calificacion-form');
+    if (!form) {
+      const forms = temp.querySelectorAll('form');
+      if (forms.length) {
+        form = forms[forms.length - 1];
+      }
+    }
+    const title = temp.querySelector('h1');
+    return { form, titleText: title ? title.textContent.trim() : 'Calificación' };
+  }
+
+  async function loadFormIntoModal(url) {
+    modalTitle.textContent = 'Calificación';
+    modalBody.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>';
+    try {
+      const resp = await fetch(url, { credentials: 'same-origin' });
+      const html = await resp.text();
+      const { form, titleText } = extractForm(html);
+      modalTitle.textContent = titleText || 'Calificación';
+      if (form) {
+        // Encapsular el formulario dentro de contenedor
+        const wrapper = document.createElement('div');
+        wrapper.appendChild(form);
+        modalBody.innerHTML = '';
+        modalBody.appendChild(wrapper);
+
+        const frm = modalBody.querySelector('form');
+        const cancelBtn = modalBody.querySelector('.js-cancel');
+        if (cancelBtn && bsModal) {
+          cancelBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            bsModal.hide();
+          });
+        }
+        frm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const fd = new FormData(frm);
+          const action = frm.getAttribute('action') || url;
+          const method = (frm.getAttribute('method') || 'post').toUpperCase();
+          const btn = frm.querySelector('[type="submit"]');
+          if (btn) { btn.disabled = true; btn.classList.add('disabled'); }
+          try {
+            const resp2 = await fetch(action, {
+              method: method,
+              body: fd,
+              credentials: 'same-origin'
+            });
+            if (resp2.redirected || resp2.status === 302) {
+              bsModal.hide();
+              window.location.reload();
+              return;
+            }
+            const html2 = await resp2.text();
+            const { form: form2 } = extractForm(html2);
+            if (form2) {
+              const wrap2 = document.createElement('div');
+              wrap2.appendChild(form2);
+              modalBody.innerHTML = '';
+              modalBody.appendChild(wrap2);
+            } else {
+              bsModal.hide();
+              window.location.reload();
+            }
+          } catch (err) {
+            console.error(err);
+            bsModal.hide();
+          } finally {
+            if (btn) { btn.disabled = false; btn.classList.remove('disabled'); }
+          }
+        });
+      } else {
+        modalBody.innerHTML = '<div class="alert alert-danger">No se pudo cargar el formulario.</div>';
+      }
+    } catch (err) {
+      console.error(err);
+      modalBody.innerHTML = '<div class="alert alert-danger">Error al cargar el formulario.</div>';
+    }
+    bsModal && bsModal.show();
+  }
+
+  editLinks.forEach(a => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      const url = a.getAttribute('href');
+      loadFormIntoModal(url);
+    });
+  });
 });
 </script>
 {% endblock %}
