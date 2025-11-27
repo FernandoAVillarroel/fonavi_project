@@ -161,14 +161,11 @@
             </a>
           {% endif %}
 
-          {% if estado == 'CONFIRMADA' %}
-            <a class="btn btn-outline-secondary animated-btn" href="{% url 'ver_liquidacion_periodo' %}?mes={{ PERIODO_MES }}&año={{ PERIODO_ANIO }}">
-              <i class="fas fa-eye me-2"></i>Ver Liquidación
-            </a>
-            <a class="btn btn-outline-primary animated-btn" href="{% url 'reabrir_liquidacion' %}">
-              <i class="fas fa-folder-open me-2"></i>Reabrir
-            </a>
-          {% endif %}
+     {% if estado == 'CONFIRMADA' %}
+  <a class="btn btn-outline-secondary animated-btn" href="{% url 'ver_liquidacion_periodo' %}?mes={{ PERIODO_MES }}&año={{ PERIODO_ANIO }}">
+    <i class="fas fa-eye me-2"></i>Ver Liquidación
+  </a>
+{% endif %}
         </div>
       </div>
 

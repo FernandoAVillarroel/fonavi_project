@@ -25,7 +25,7 @@ def seleccionar_periodo(request):
         messages.error(request, "Mes inválido.")
         return redirect("periodo_panel")
 
-    # Usar la función principal, no el alias
+    # Usar la función principal, no el aliasf
     set_periodo_en_sesion(request, anio, mes)
     
     print(f"Session DESPUÉS: ANIO={request.session.get('PERIODO_ANIO')}, MES={request.session.get('PERIODO_MES')}, ELEGIDO={request.session.get('PERIODO_ELEGIDO')}")
