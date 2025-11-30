@@ -122,13 +122,24 @@ Gestiona más de 600 empleados y automatiza el proceso completo de:
 
 ### Frontend
 - **Django Templates** + `staticfiles` - Renderizado del lado del servidor
+- **HTML5 / CSS3** - Estructura y estilos base
+- **JavaScript (ES6+)** - Interactividad y lógica del cliente
+  - Manejo de dropdowns dinámicos
+  - Sistema de notificaciones paginadas
+  - Validaciones de formularios
+  - Interacción con APIs internas
 - **Bootstrap 5.2.2** (CDN) - Framework CSS responsive
+  - Grid system para layouts
+  - Componentes (modals, dropdowns, alerts, cards)
+  - Utilidades responsive
 - **Font Awesome 6.4.2** (CDN) - Sistema de iconos
 - **Google Fonts (Lato)** - Tipografía principal
 - **Componentes personalizados:**
-  - Panel "Presidencia"
-  - Panel de Período con estados visuales (Abierto/Cerrado/Sin crear)
+  - Panel "Presidencia" con indicadores visuales
+  - Panel de Período con estados (Abierto/Cerrado/Sin crear)
   - Esquema de colores dinámico (verde/rojo/gris)
+  - Sistema de notificaciones mensuales con paginación
+  - Formularios con validación en tiempo real
 
 ### Arquitectura
 - **Apps Django separadas** por dominio:
