@@ -109,10 +109,14 @@ Gestiona más de 600 empleados y automatiza el proceso completo de:
   - Sistema de autenticación (`LoginRequiredMixin`, `contrib.auth`, permisos y grupos)
   - Mensajería (`django.contrib.messages`) para alertas y feedback
   - Gestión de sesiones para persistencia de Período de trabajo
+  - **Class-Based Views** (CBV): `ListView`, `DetailView`, `CreateView`, `UpdateView`
+  - **Django Signals** - Logging automático de cambios de estado
+  - **Sistema de migraciones** - Control de versiones del esquema de BD
 - **Django ORM Avanzado**
   - QuerySets con `Q`, `Subquery`, `OuterRef`, `Coalesce`, `Value`
   - Operaciones con `DecimalField`, `IntegerField`
-  - Vistas y consultas optimizadas
+  - Agregaciones y anotaciones (`Count`, `Sum`, `Avg`)
+  - Vistas SQL personalizadas para reportes optimizados
 
 ### Base de Datos
 - **MySQL 8.x** - Motor principal (producción/desarrollo)
