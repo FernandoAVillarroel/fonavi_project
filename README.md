@@ -9,22 +9,24 @@
 ---
 
 ## 📸 Capturas del Sistema
-![Pantalla de Login](https:://github.com/FernandoAVillarroel/fonavi_project/blob/rama-admin-fernando/Screenshot_262.png?raw=true)
+
 ### Acceso al Sistema
 
-
 ![Pantalla de Login](https://github.com/FernandoAVillarroel/fonavi_project/blob/rama-admin-fernando/Screenshot_262.png?raw=true)
-*Pantalla de inicio de sesión con autenticación segura*
 
-### Gestión de Empleados
+*Interfaz de inicio de sesión con autenticación segura y diseño moderno*
 
-![Gestión de Empleados](https://github.com/FernandoAVillarroel/fonavi_project/blob/rama-admin-fernando/Screenshot_660.png?raw=true)
-*Panel principal de administración de empleados*
+---
 
-### Simulación de Liquidaciones
+### Liquidaciones Confirmadas
 
-![Liquidación Confirmada](https://github.com/FernandoAVillarroel/fonavi_project/blob/rama-admin-fernando/Screenshot_661.png?raw=true)
-*Vista de liquidaciones confirmadas con recibos duales*
+![Liquidaciones Confirmadas - Septiembre 2025](https://github.com/FernandoAVillarroel/fonavi_project/blob/rama-admin-fernando/Screenshot_264.png?raw=true)
+
+*Vista detallada de liquidaciones confirmadas con:*
+- Totales generales (empleados, bruto, descuentos, líquido)
+- Desglose completo por empleado con todos los suplementos
+- Filtros por tipo de agente
+- Exportación a PDF, TXT y Contribuciones Patronales
 
 ![Panel de Control](https://github.com/FernandoAVillarroel/fonavi_project/blob/5d6f43906d8aee8fcd161b9784105dd4052eea36/Screenshot_733.png)
 *Dashboard con indicadores y métricas del sistema*
