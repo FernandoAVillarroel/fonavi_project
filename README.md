@@ -312,7 +312,7 @@ Este proyecto es de uso interno del **Instituto Provincial de Vivienda y Urbanis
 ## 📞 Contacto
 
 **Equipo de Desarrollo FONAVI**
-- 📧 Email: [correo del equipo]
+- 📧 Email: agustinvillarroel17@gmail.com
 - 🏢 IPVU - Santiago del Estero
 
 ---
