@@ -27,6 +27,7 @@
 
 ![Panel de Control](https://github.com/FernandoAVillarroel/fonavi_project/blob/5d6f43906d8aee8fcd161b9784105dd4052eea36/Screenshot_733.png)
 *Dashboard con indicadores y métricas del sistema*
+<img width="1919" height="1035" alt="Screenshot_263" src="https://github.com/user-attachments/assets/86c3f1d6-be50-4275-89a1-2fbd9128a36c" />
 
 ---
 
