@@ -28,42 +28,11 @@
 
 <img width="1919" height="1035" alt="Screenshot_263" src="https://github.com/user-attachments/assets/86c3f1d6-be50-4275-89a1-2fbd9128a36c" />
 
----
-
-## ✨ Características Principales
-
-- 🧮 **Cálculo automático de bonos FONAVI** con antigüedad del 2% anual
-- 📊 **Gestión de suplementos múltiples** (zona, función, título, etc.)
-- 📝 **Recibos duales** generados automáticamente para cada liquidación
-- 🔄 **Control de estados** (Activo, Inactivo, Retención)
-- 📅 **Gestión de períodos** con estados controlados (Abierto/Cerrado/Sin crear)
-- 🔍 **Auditoría completa** con registro detallado de cambios
-- 🔐 **Autenticación dual** (Panel Admin + Usuarios operativos)
-- ⚡ **Eficiencia mejorada**: De 5-7 días a 2 horas de procesamiento
-- 📱 **Interfaz responsive** optimizada con Bootstrap 5
-- 🔔 **Sistema de notificaciones** automáticas por cambios de estado
-
----
-
-## 🎯 Impacto del Sistema
-
-Este sistema automatiza la liquidación de bonos FONAVI para más de **200 empleados** del IPVU, reduciendo:
-- ✅ Tiempo de procesamiento: **de 5-7 días a 2 horas**
-- ✅ Errores de cálculo: **eliminados por completo**
-- ✅ Transparencia: **acceso inmediato a recibos y notificaciones**
-
----
-
-[Resto de tu README actual...]
 *Vista detallada de liquidaciones confirmadas con:*
 - Totales generales (empleados, bruto, descuentos, líquido)
 - Desglose completo por empleado con todos los suplementos
 - Filtros por tipo de agente
 - Exportación a PDF, TXT y Contribuciones Patronales
-
-![Panel de Control](https://github.com/FernandoAVillarroel/fonavi_project/blob/5d6f43906d8aee8fcd161b9784105dd4052eea36/Screenshot_733.png)
-*Dashboard con indicadores y métricas del sistema*
-
 ---
 
 ## ✨ Características Principales
@@ -88,9 +57,6 @@ Este sistema automatiza la liquidación de bonos FONAVI para más de **200 emple
 - ✅ Errores de cálculo: **eliminados por completo**
 - ✅ Transparencia: **acceso inmediato a recibos y notificaciones**
 
----
-
-[Resto de tu README actual...]
 
 Tecnologías utilizadas
 Backend
