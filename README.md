@@ -1,6 +1,8 @@
-## Proyecto Fonavi
+# 🏢 Sistema FONAVI - Liquidación de Sueldos IPVU
 
-Este proyecto Django **Fonavi** te permite gestionar preliquidaciones y liquidaciones de empleados.
+> Sistema integral de gestión de liquidaciones y preliquidaciones para empleados del Instituto Provincial de Vivienda y Urbanismo
+
+[Badge de Django] [Badge de Python] [Badge de MySQL]
 
 ![image alt](https://github.com/FernandoAVillarroel/fonavi_project/blob/rama-admin-fernando/Screenshot_659.png?raw=true)
 
