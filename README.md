@@ -101,180 +101,209 @@ Gestiona más de 600 empleados y automatiza el proceso completo de:
 ✅ **Transparencia:** Auditoría completa + notificaciones automáticas  
 ✅ **Integración:** Exportación directa a sistemas provinciales
 
-Tecnologías utilizadas
-Backend
+## 🛠️ Tecnologías Utilizadas
 
-Python 3.13 – Lenguaje principal del proyecto.
+### Backend
+- **Python 3.13** - Lenguaje principal del proyecto
+- **Django 5.2.x** - Framework web (MVT)
+  - Sistema de autenticación (`LoginRequiredMixin`, `contrib.auth`, permisos y grupos)
+  - Mensajería (`django.contrib.messages`) para alertas y feedback
+  - Gestión de sesiones para persistencia de Período de trabajo
+- **Django ORM Avanzado**
+  - QuerySets con `Q`, `Subquery`, `OuterRef`, `Coalesce`, `Value`
+  - Operaciones con `DecimalField`, `IntegerField`
+  - Vistas y consultas optimizadas
 
-Django 5.2.x – Framework web (MVC/MVT), auth, sesiones, mensajes, ORM.
+### Base de Datos
+- **MySQL 8.x** - Motor principal (producción/desarrollo)
+- **mysqlclient** - Driver recomendado para Django + MySQL
+- **MySQL Workbench** - Administración e inspección de datos
+- Vistas SQL personalizadas para reportes (categorías, displays)
 
-Django ORM (QuerySets avanzados con Q, Subquery, OuterRef, Coalesce, Value, DecimalField, IntegerField).
+### Frontend
+- **Django Templates** + `staticfiles` - Renderizado del lado del servidor
+- **Bootstrap 5.2.2** (CDN) - Framework CSS responsive
+- **Font Awesome 6.4.2** (CDN) - Sistema de iconos
+- **Google Fonts (Lato)** - Tipografía principal
+- **Componentes personalizados:**
+  - Panel "Presidencia"
+  - Panel de Período con estados visuales (Abierto/Cerrado/Sin crear)
+  - Esquema de colores dinámico (verde/rojo/gris)
 
-Sistema de autenticación de Django (LoginRequiredMixin, contrib.auth, permisos y grupos según panel).
+### Arquitectura
+- **Apps Django separadas** por dominio:
+  - `empleados` - Gestión de personal
+  - `autenticacion` - Sistema de login dual
+  - *(otras apps del proyecto)*
+  
+- **Modelos principales:**
+  - `Empleado`, `Categoria`, `Oficina`
+  - `OficioJudicial`, `Liquidacion`, `Preliquidacion`
+  - `Calificacion`, `NivelBasico`, suplementos
 
-Mensajería de Django (django.contrib.messages) para alertas/feedback en UI.
+- **Casos de uso:**
+  - ABM de empleados y oficinas
+  - Gestión de categorías y suplementos
+  - Administración de períodos de trabajo
+  - Listados filtrados por Período y Área
+  - Procesamiento de oficios judiciales y descuentos
 
-Gestión de sesión para selección y persistencia de Periodo de trabajo.
+### Herramientas de Desarrollo
+- **Git & GitHub** - Control de versiones
+  - Ramas: `rama-admin-fernando`, `manuel-front`
+- **Visual Studio Code** - Editor principal
+  - Extensions: Python, Django
+- **Entorno virtual** - `.venv` para aislamiento de dependencias
+- **Logging/Debug** - Registro de eventos y debugging
 
-Base de datos
+### Calidad y Documentación
+- **draw.io / diagrams.net** - Diagramas ERD del modelo de datos
+- **PlantUML** - Diagramas PERT y de flujo para Gestión de Proyectos
+- **Buenas prácticas Django:**
+  - Class-Based Views (`ListView`, `DetailView`)
+  - Separación de responsabilidades
+  - Validación de formularios
+  - Patrones de consulta eficientes
 
-MySQL 8.x – Motor de BD en producción/desarrollo.
+### Seguridad
+- 🔒 Sesiones seguras (Período en sesión)
+- 🔐 Login protegido con `LoginRequiredMixin`
+- 👥 Vistas restringidas por rol
+- ✅ Mensajes de error/éxito controlados
+- 🔄 Redirecciones seguras post-login
 
-Conector: mysqlclient (driver recomendado para Django + MySQL).
-
-MySQL Workbench – Administración, inspección de datos y scripts SQL.
-
-Vistas/consultas en BD para reportes (p.ej., vistas de categorías y displays).
-
-Frontend
-
-Django Templates + staticfiles – Render del lado servidor.
-
-Bootstrap 5.2.2 (CDN) – Maquetado responsive y componentes.
-
-Font Awesome 6.4.2 (CDN) – Íconos en paneles/menús.
-
-Google Fonts (Lato) – Tipografía principal.
-
-Componentes propios: Panel “Presidencia”, panel de Periodo con estados (Abierto/ Cerrado/ Sin crear) y esquema de colores (verde/rojo/gris).
-
-Arquitectura y módulos del dominio
-
-Apps Django separadas (ej.: empleados, autenticacion, etc.).
-
-Modelos clave: Empleado, Categoria, Oficina, OficioJudicial, estructuras de Liquidación/Preliquidación, Calificación, Nivel Básico, etc.
-
-Casos de uso: ABM de empleados y oficinas, gestión de categorías/suplementos, periodos de trabajo, listados filtrados por Periodo y Área, oficios judiciales y descuentos.
-
-Herramientas de desarrollo
-
-Git & GitHub – Control de versiones y ramas (rama-admin-fernando, manuel-front, etc.).
-
-Visual Studio Code – Editor principal (con Python/Django extensions).
-
-Entorno virtual: .venv para aislar dependencias.
-
-Logging/Debug – Prints y logs en vistas (e.g., intentos de login y redirecciones).
-
-Calidad, diagramas y documentación
-
-draw.io / diagrams.net – ERD del modelo de datos.
-
-PlantUML – Diagramas (PERT, de flujo/actividad) para Gestión de Proyectos.
-
-Buenas prácticas Django: CBV (ListView/DetailView), separación de responsabilidades, validación de formularios, mensajes de usuario, patrones de consulta eficientes.
-
-Seguridad y autenticación
-
-Sesiones seguras (Periodo en sesión).
-
-Login protegido con LoginRequiredMixin, vistas restringidas por rol.
-
-Mensajes de error/éxito controlados y redirecciones post-login.
-
-Despliegue (base)
-
-Configuraciones por entorno (DEBUG vs. PROD).
-
-Variables de entorno para credenciales de BD.
-
-Archivos estáticos servidos por collectstatic en producción.
+### Despliegue
+- ⚙️ Configuraciones por entorno (`DEBUG` vs. `PROD`)
+- 🔑 Variables de entorno para credenciales
+- 📦 Archivos estáticos con `collectstatic`
 
 ---
 
-## Cómo poner en marcha el proyecto localmente
+## 🚀 Instalación y Configuración
 
-Sigue estos pasos para clonar el repositorio y ponerlo a funcionar en tu máquina.
+### Requisitos Previos
+- Python 3.13+
+- MySQL 8.x
+- Git
 
-### 1. Clonar el repositorio
-
+### 1️⃣ Clonar el Repositorio
 ```bash
-# Reemplaza tu-usuario por tu nombre de usuario en GitHub
 git clone https://github.com/FernandoAVillarroel/fonavi_project.git
 cd fonavi_project
 ```
 
-### 2. Crear y activar un entorno virtual
+### 2️⃣ Crear y Activar Entorno Virtual
 
-\*\*Windows (PowerShell)\*\*
-
+**Windows (PowerShell)**
 ```powershell
 python -m venv .venv
-Set-ExecutionPolicy RemoteSigned -Scope CurrentUser  # Si no lo habías hecho
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser  # Solo si es necesario
 .\.venv\Scripts\Activate.ps1
 ```
 
-\*\*macOS / Linux\*\*
-
+**macOS / Linux**
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-### 3. Instalar dependencias
-
+### 3️⃣ Instalar Dependencias
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Configurar variables de entorno
-
-Copia el archivo de ejemplo y ajusta tus credenciales de base de datos:
-
+### 4️⃣ Configurar Variables de Entorno
 ```bash
 cp .env.example .env
-# Edita .env con tu editor favorito
+# Edita .env con tus credenciales de MySQL
 ```
 
-### 5. Ejecutar migraciones y cargar datos
+**Ejemplo de `.env`:**
+```env
+DB_NAME=fonavi_db
+DB_USER=tu_usuario
+DB_PASSWORD=tu_contraseña
+DB_HOST=localhost
+DB_PORT=3306
+SECRET_KEY=tu-secret-key-aqui
+DEBUG=True
+```
 
+### 5️⃣ Ejecutar Migraciones
 ```bash
 python manage.py makemigrations
 python manage.py migrate
 ```
 
-### 6. Crear un superusuario
-
+### 6️⃣ Crear Superusuario
 ```bash
 python manage.py createsuperuser
 ```
 
-### 7. Iniciar el servidor de desarrollo
-
+### 7️⃣ Iniciar Servidor de Desarrollo
 ```bash
 python manage.py runserver
 ```
 
-Abre tu navegador en `http://127.0.0.1:8000/` e inicia sesión con el superusuario.
+🌐 Abre tu navegador en **http://127.0.0.1:8000/** e inicia sesión con el superusuario.
 
 ---
 
-## Despliegue en producción
-
-Revisa la guía oficial de Django para [despliegue en producción](https://docs.djangoproject.com/en/5.2/howto/deployment/).
-
----
-
-## Estructura principal del proyecto
-
+## 📁 Estructura del Proyecto
 ```
-fona vi_project/
-├── autenticacion/    # App de autenticación personalizada
-├── empleados/        # App principal de gestión de empleados
-├── fonavi_project/   # Configuración global (settings, urls, wsgi)
-├── requirements.txt  # Dependencias Python
-├── manage.py         # Script de administración de Django
-└── README.md         # Esta documentación
+fonavi_project/
+├── autenticacion/       # App de autenticación personalizada
+├── empleados/           # App principal de gestión de empleados
+├── fonavi_project/      # Configuración global (settings, urls, wsgi)
+├── static/              # Archivos estáticos (CSS, JS, imágenes)
+├── templates/           # Plantillas HTML globales
+├── .env.example         # Ejemplo de variables de entorno
+├── requirements.txt     # Dependencias Python
+├── manage.py            # Script de administración Django
+└── README.md            # Documentación del proyecto
 ```
 
 ---
 
-## Contribuciones
+## 📚 Despliegue en Producción
 
-¡Se aceptan PRs! Por favor revisa las [guías de contribución](CONTRIBUTING.md) antes de enviar.
+Para desplegar en producción, consulta la [guía oficial de Django](https://docs.djangoproject.com/en/5.2/howto/deployment/).
+
+**Checklist de producción:**
+- [ ] `DEBUG = False` en settings
+- [ ] Configurar `ALLOWED_HOSTS`
+- [ ] Usar servidor web (Nginx/Apache)
+- [ ] Configurar WSGI (Gunicorn/uWSGI)
+- [ ] Habilitar HTTPS
+- [ ] Configurar backups de BD
+- [ ] Ejecutar `collectstatic`
 
 ---
 
-## Licencia
+## 🤝 Contribuciones
 
-Este proyecto está bajo la licencia MIT. Ver el archivo [LICENSE](LICENSE) para más detalles.
+¡Las contribuciones son bienvenidas! Por favor:
+
+1. Haz fork del proyecto
+2. Crea una rama para tu feature (`git checkout -b feature/NuevaCaracteristica`)
+3. Commit tus cambios (`git commit -m 'Agrega nueva característica'`)
+4. Push a la rama (`git push origin feature/NuevaCaracteristica`)
+5. Abre un Pull Request
+
+---
+
+## 📄 Licencia
+
+Este proyecto es de uso interno del **Instituto Provincial de Vivienda y Urbanismo (IPVU)**.
+
+---
+
+## 📞 Contacto
+
+**Equipo de Desarrollo FONAVI**
+- 📧 Email: [correo del equipo]
+- 🏢 IPVU - Santiago del Estero
+
+---
+
+**Desarrollado con ❤️ para IPVU**
