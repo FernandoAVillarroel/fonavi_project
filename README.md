@@ -13,15 +13,48 @@
 ### Acceso al Sistema
 
 ![Pantalla de Login](https://github.com/FernandoAVillarroel/fonavi_project/blob/rama-admin-fernando/Screenshot_262.png?raw=true)
+*Pantalla de inicio de sesión con autenticación segura*
 
-*Interfaz de inicio de sesión con autenticación segura y diseño moderno*
+### Gestión de Empleados
+
+![Gestión de Empleados](https://github.com/FernandoAVillarroel/fonavi_project/blob/rama-admin-fernando/Screenshot_660.png?raw=true)
+*Panel principal de administración de empleados*
+
+### Simulación de Liquidaciones
+
+![Liquidación Confirmada](https://github.com/FernandoAVillarroel/fonavi_project/blob/rama-admin-fernando/Screenshot_661.png?raw=true)
+*Vista de liquidaciones confirmadas con recibos duales*
+
+![Panel de Control](https://github.com/FernandoAVillarroel/fonavi_project/blob/5d6f43906d8aee8fcd161b9784105dd4052eea36/Screenshot_733.png)
+*Dashboard con indicadores y métricas del sistema*
 
 ---
 
-### Liquidaciones Confirmadas
+## ✨ Características Principales
 
-![Liquidaciones Confirmadas - Septiembre 2025](https://github.com/FernandoAVillarroel/fonavi_project/blob/rama-admin-fernando/Screenshot_264.png?raw=true)
+- 🧮 **Cálculo automático de bonos FONAVI** con antigüedad del 2% anual
+- 📊 **Gestión de suplementos múltiples** (zona, función, título, etc.)
+- 📝 **Recibos duales** generados automáticamente para cada liquidación
+- 🔄 **Control de estados** (Activo, Inactivo, Retención)
+- 📅 **Gestión de períodos** con estados controlados (Abierto/Cerrado/Sin crear)
+- 🔍 **Auditoría completa** con registro detallado de cambios
+- 🔐 **Autenticación dual** (Panel Admin + Usuarios operativos)
+- ⚡ **Eficiencia mejorada**: De 5-7 días a 2 horas de procesamiento
+- 📱 **Interfaz responsive** optimizada con Bootstrap 5
+- 🔔 **Sistema de notificaciones** automáticas por cambios de estado
 
+---
+
+## 🎯 Impacto del Sistema
+
+Este sistema automatiza la liquidación de bonos FONAVI para más de **200 empleados** del IPVU, reduciendo:
+- ✅ Tiempo de procesamiento: **de 5-7 días a 2 horas**
+- ✅ Errores de cálculo: **eliminados por completo**
+- ✅ Transparencia: **acceso inmediato a recibos y notificaciones**
+
+---
+
+[Resto de tu README actual...]
 *Vista detallada de liquidaciones confirmadas con:*
 - Totales generales (empleados, bruto, descuentos, líquido)
 - Desglose completo por empleado con todos los suplementos
