@@ -14,14 +14,22 @@ Gestiona más de 600 empleados y automatiza el proceso completo de:
 - 🔄 Integración directa con sistemas provinciales
 - 🔒 Liquidaciones confirmadas no modificables (integridad de datos)
 
+### 🛠️ Tecnologías
+
+**Backend:**
 [![Django](https://img.shields.io/badge/Django-5.2-green.svg)](https://www.djangoproject.com/)
 [![Python](https://img.shields.io/badge/Python-3.13-blue.svg)](https://www.python.org/)
 [![MySQL](https://img.shields.io/badge/MySQL-8.x-orange.svg)](https://www.mysql.com/)
-[![Bootstrap](https://img.shields.io/badge/Bootstrap-5-purple.svg)](https://getbootstrap.com/)
-![Django ORM](https://img.shields.io/badge/ORM-Django-green.svg)
-![Arquitectura](https://img.shields.io/badge/Arquitectura-MVT-blue.svg)
-![Autenticación](https://img.shields.io/badge/Auth-Django%20%2B%20Custom-orange.svg)
-![Estado](https://img.shields.io/badge/Estado-Producción-success.svg)
+
+**Frontend:**
+[![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3-purple.svg)](https://getbootstrap.com/)
+[![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-yellow.svg)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+[![HTML5](https://img.shields.io/badge/HTML5-E34F26.svg?logo=html5&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/HTML)
+[![CSS3](https://img.shields.io/badge/CSS3-1572B6.svg?logo=css3&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/CSS)
+
+**Estado del Proyecto:**
+![Status](https://img.shields.io/badge/Estado-En%20Desarrollo-brightgreen.svg)
+![Versión](https://img.shields.io/badge/Versión-1.0-blue.svg)
 ---
 
 ## 📸 Capturas del Sistema
