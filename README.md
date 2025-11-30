@@ -1,11 +1,27 @@
 # 🏢 Sistema FONAVI - Liquidación de Sueldos IPVU
 
-> Sistema integral de gestión de liquidaciones y preliquidaciones para empleados del Instituto Provincial de Vivienda y Urbanismo
+Sistema integral de gestión de empleados, preliquidaciones y liquidaciones salariales para el Instituto Provincial de Vivienda y Urbanismo (IPVU).
+
+### 💡 ¿Qué hace?
+Gestiona más de 600 empleados y automatiza el proceso completo de:
+- Preliquidaciones con cálculos de antigüedad (2% anual), suplementos y embargos
+- Liquidaciones confirmadas que se exportan automáticamente
+- Generación de archivos TXT para la Dirección de Informática de la Provincia
+
+### 🎯 Impacto
+- ⏱️ Reduce el tiempo de procesamiento de **5-7 días a 2 horas**
+- ✅ Elimina errores de cálculo manual
+- 🔄 Integración directa con sistemas provinciales
+- 🔒 Liquidaciones confirmadas no modificables (integridad de datos)
 
 [![Django](https://img.shields.io/badge/Django-5.2-green.svg)](https://www.djangoproject.com/)
 [![Python](https://img.shields.io/badge/Python-3.13-blue.svg)](https://www.python.org/)
 [![MySQL](https://img.shields.io/badge/MySQL-8.x-orange.svg)](https://www.mysql.com/)
-
+[![Bootstrap](https://img.shields.io/badge/Bootstrap-5-purple.svg)](https://getbootstrap.com/)
+![Django ORM](https://img.shields.io/badge/ORM-Django-green.svg)
+![Arquitectura](https://img.shields.io/badge/Arquitectura-MVT-blue.svg)
+![Autenticación](https://img.shields.io/badge/Auth-Django%20%2B%20Custom-orange.svg)
+![Estado](https://img.shields.io/badge/Estado-Producción-success.svg)
 ---
 
 ## 📸 Capturas del Sistema
