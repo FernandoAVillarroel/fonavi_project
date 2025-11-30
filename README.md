@@ -12,7 +12,8 @@
 
 ### Acceso al Sistema
 
-![Pantalla de Login](https://github.com/FernandoAVillarroel/fonavi_project/blob/rama-admin-fernando/Screenshot_262.png?raw=true)
+<img width="1913" height="1038" alt="Screenshot_262" src="https://github.com/user-attachments/assets/8e88936d-71dc-4698-bf29-b2fdc98e1d80" />
+
 *Pantalla de inicio de sesión con autenticación segura*
 
 ### Gestión de Empleados
@@ -25,8 +26,6 @@
 ![Liquidación Confirmada](https://github.com/FernandoAVillarroel/fonavi_project/blob/rama-admin-fernando/Screenshot_661.png?raw=true)
 *Vista de liquidaciones confirmadas con recibos duales*
 
-![Panel de Control](https://github.com/FernandoAVillarroel/fonavi_project/blob/5d6f43906d8aee8fcd161b9784105dd4052eea36/Screenshot_733.png)
-*Dashboard con indicadores y métricas del sistema*
 <img width="1919" height="1035" alt="Screenshot_263" src="https://github.com/user-attachments/assets/86c3f1d6-be50-4275-89a1-2fbd9128a36c" />
 
 ---
