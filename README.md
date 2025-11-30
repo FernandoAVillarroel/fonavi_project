@@ -9,8 +9,9 @@
 ---
 
 ## 📸 Capturas del Sistema
-
+![Pantalla de Login](https:://github.com/FernandoAVillarroel/fonavi_project/blob/rama-admin-fernando/Screenshot_262.png?raw=true)
 ### Acceso al Sistema
+
 
 ![Pantalla de Login](https://github.com/FernandoAVillarroel/fonavi_project/blob/rama-admin-fernando/Screenshot_262.png?raw=true)
 *Pantalla de inicio de sesión con autenticación segura*
